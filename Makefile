@@ -14,7 +14,7 @@ setup: ## Initial setup (create .env, directories)
 
 install: ## Install dependencies
 	@echo "Installing dependencies..."
-	pip install -e ".[dev,extraction]"
+	pip install -e ".[dev,extraction,telegram]"
 	@echo "Dependencies installed!"
 
 test: ## Run tests
@@ -37,6 +37,11 @@ clean: ## Clean generated files
 run: ## Run the walking skeleton demonstration
 	@echo "Running walking skeleton demonstration..."
 	.venv/bin/python scripts/demo_walking_skeleton.py
+
+telegram: ## Run Telegram bot
+	@echo "Starting Telegram bot..."
+	@if [ ! -f .env ]; then echo "Error: .env file not found. Run 'make setup' first."; exit 1; fi
+	python scripts/run_telegram_bot.py
 
 status: ## Check system status and event log
 	@echo "=== Helionyx System Status ==="

@@ -91,6 +91,9 @@ Thin translation layers for external interfaces (Telegram, API, CLI).
 # Run the walking skeleton
 make run
 
+# Run Telegram bot
+make telegram
+
 # Check system status
 make status
 
@@ -106,6 +109,30 @@ make test
 # Clean generated files
 make clean
 ```
+
+## Telegram Bot Setup
+
+1. Create a bot via [@BotFather](https://t.me/botfather) on Telegram
+2. Get your bot token
+3. Start a conversation with your bot
+4. Send `/start` to get your chat ID (logged in console)
+5. Add credentials to `.env`:
+   ```bash
+   TELEGRAM_BOT_TOKEN=your_bot_token_here
+   TELEGRAM_CHAT_ID=your_chat_id_here
+   ```
+6. Run the bot: `make telegram`
+
+### Available Commands
+
+- `/start` - Welcome message
+- `/help` - List available commands
+- `/todos [status]` - List todos (optional: pending, completed, etc.)
+- `/notes [search]` - List notes (optional: search term)
+- `/tracks` - List tracking items
+- `/stats` - System statistics
+
+You can also send regular messages and the bot will extract todos, notes, and tracks automatically!
 
 ## Documentation
 
