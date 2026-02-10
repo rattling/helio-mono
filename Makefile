@@ -43,6 +43,10 @@ telegram: ## Run Telegram bot
 	@if [ ! -f .env ]; then echo "Error: .env file not found. Run 'make setup' first."; exit 1; fi
 	python scripts/run_telegram_bot.py
 
+rebuild: ## Rebuild projections from event log
+	@echo "Rebuilding projections from event log..."
+	python scripts/rebuild_projections.py
+
 status: ## Check system status and event log
 	@echo "=== Helionyx System Status ==="
 	@echo ""
