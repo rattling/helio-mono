@@ -34,8 +34,26 @@ clean: ## Clean generated files
 	find . -type d -name "*.egg-info" -exec rm -rf {} +
 	rm -rf .pytest_cache .mypy_cache .coverage htmlcov/
 
-run: ## Run the walking skeleton (to be implemented)
-	@echo "Walking skeleton not yet implemented (see issue #3)"
+run: ## Run the walking skeleton demonstration
+	@echo "Running walking skeleton demonstration..."
+	.venv/bin/python scripts/demo_walking_skeleton.py
 
-status: ## Check system status (to be implemented)
-	@echo "Status check not yet implemented (see issue #5)"
+status: ## Check system status and event log
+	@echo "=== Helionyx System Status ==="
+	@echo ""
+	@if [ -d .venv ]; then \
+		echo "✓ Virtual environment: .venv/"; \
+	else \
+		echo "✗ Virtual environment not found - run 'make install'"; \
+	fi
+	@echo ""
+	@if [ -d data/events ]; then \
+		echo "Event Log Status:"; \
+		ls -lh data/events/ 2>/dev/null || echo "  No event files yet"; \
+		echo ""; \
+		echo "Total events:"; \
+		wc -l data/events/*.jsonl 2>/dev/null | tail -1 || echo "  0 events"; \
+	else \
+		echo "Event log directory not yet created"; \
+	fi
+	@echo ""

@@ -14,17 +14,17 @@ Personal decision and execution substrate built on an append-only event log foun
 git clone git@github.com:rattling/helio-mono.git
 cd helio-mono
 
-# 2. Set up environment
+# 2. Set up environment (creates .env and data directories)
 make setup
 
-# 3. Edit .env with your API keys
-# (copy .env.example to .env and fill in values)
-
-# 4. Install dependencies
+# 3. Install dependencies (creates virtual environment)
 make install
 
-# 5. Run tests (once implemented)
-make test
+# 4. Run the walking skeleton demonstration
+make run
+
+# 5. Check system status
+make status
 ```
 
 ## Project Structure
@@ -88,13 +88,19 @@ Thin translation layers for external interfaces (Telegram, API, CLI).
 ## Development
 
 ```bash
+# Run the walking skeleton
+make run
+
+# Check system status
+make status
+
 # Run linters
 make lint
 
 # Format code
 make format
 
-# Run tests
+# Run tests (when implemented)
 make test
 
 # Clean generated files
