@@ -18,7 +18,10 @@ install: ## Install dependencies
 	@echo "Dependencies installed!"
 
 test: ## Run tests
-	pytest tests/ -v
+	.venv/bin/python -m pytest tests/ -v
+
+test-cov: ## Run tests with coverage
+	.venv/bin/python -m pytest tests/ --cov=services --cov=shared --cov-report=html --cov-report=term
 
 lint: ## Run linters
 	ruff check .
@@ -41,11 +44,24 @@ run: ## Run the walking skeleton demonstration
 telegram: ## Run Telegram bot
 	@echo "Starting Telegram bot..."
 	@if [ ! -f .env ]; then echo "Error: .env file not found. Run 'make setup' first."; exit 1; fi
-	python scripts/run_telegram_bot.py
+	.venv/bin/python scripts/run_telegram_bot.py
 
 rebuild: ## Rebuild projections from event log
 	@echo "Rebuilding projections from event log..."
-	python scripts/rebuild_projections.py
+	.venv/bin/python scripts/rebuild_projections.py
+
+import-chatgpt: ## Import ChatGPT conversation history (pass FILE=path/to/conversations.json)
+	@if [ -z "$(FILE)" ]; then \
+		echo "Error: FILE parameter required."; \
+		echo "Usage: make import-chatgpt FILE=path/to/conversations.json"; \
+		exit 1; \
+	fi
+	@echo "Importing ChatGPT conversation history from $(FILE)..."
+	.venv/bin/python scripts/import_chatgpt.py $(FILE)
+
+view-events: ## View recent events from the event log
+	@echo "Recent events from event log:"
+	.venv/bin/python scripts/view_events.py
 
 status: ## Check system status and event log
 	@echo "=== Helionyx System Status ==="

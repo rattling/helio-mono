@@ -7,12 +7,14 @@ from typing import Optional
 
 from .formatters import format_reminder, format_daily_summary
 from .errors import send_with_retry
+from services.query import database
 
 logger = logging.getLogger(__name__)
 
 # Service instances and config (injected from bot.py)
 query_service = None
 config = None
+db_conn = None
 
 
 async def notification_scheduler(application):
@@ -67,8 +69,9 @@ async def check_and_send_reminders(bot):
                     pass
         
         for todo in due_soon:
-            # Check if already reminded today (simple check - could use DB)
-            # For M1, we'll just send once per check cycle
+            # Check if already reminded today
+            if db_conn and database.was_reminded_today(db_conn, todo['object_id']):
+                continue
             
             # Format and send reminder
             message = format_reminder(todo)
@@ -80,6 +83,10 @@ async def check_and_send_reminders(bot):
                 text=message,
                 parse_mode='Markdown'
             )
+            
+            # Mark as reminded
+            if db_conn:
+                database.mark_reminder_sent(db_conn, todo['object_id'])
             
             logger.info(f"Sent reminder for todo: {todo['title']}")
             
@@ -99,6 +106,10 @@ async def check_and_send_daily_summary(bot):
         # Only send during the configured hour, first 5 minutes
         return
     
+    # Check if already sent today
+    if db_conn and database.was_daily_summary_sent_today(db_conn):
+        return
+    
     try:
         # Get stats and pending todos
         stats = query_service.get_stats()
@@ -115,6 +126,10 @@ async def check_and_send_daily_summary(bot):
             text=message,
             parse_mode='Markdown'
         )
+        
+        # Mark as sent
+        if db_conn:
+            database.mark_daily_summary_sent(db_conn)
         
         logger.info("Sent daily summary")
         

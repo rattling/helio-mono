@@ -201,3 +201,81 @@ def transaction(conn: sqlite3.Connection):
         conn.rollback()
         logger.error(f"Transaction failed, rolled back: {e}")
         raise
+
+
+# =============================================================================
+# Notification Log Functions
+# =============================================================================
+
+def was_reminded_today(conn: sqlite3.Connection, object_id: str) -> bool:
+    """
+    Check if a reminder was sent today for an object.
+    
+    Args:
+        conn: Database connection
+        object_id: ID of object to check
+        
+    Returns:
+        True if reminder sent today
+    """
+    today = datetime.utcnow().date().isoformat()
+    
+    cursor = conn.execute(
+        "SELECT 1 FROM notification_log "
+        "WHERE notification_type = ? AND object_id = ? AND DATE(sent_at) = ?",
+        ("reminder", object_id, today)
+    )
+    
+    return cursor.fetchone() is not None
+
+
+def mark_reminder_sent(conn: sqlite3.Connection, object_id: str) -> None:
+    """
+    Record that a reminder was sent.
+    
+    Args:
+        conn: Database connection
+        object_id: ID of object reminded about
+    """
+    conn.execute(
+        "INSERT INTO notification_log (notification_type, object_id, sent_at) "
+        "VALUES (?, ?, ?)",
+        ("reminder", object_id, datetime.utcnow().isoformat())
+    )
+    conn.commit()
+
+
+def was_daily_summary_sent_today(conn: sqlite3.Connection) -> bool:
+    """
+    Check if daily summary was sent today.
+    
+    Args:
+        conn: Database connection
+        
+    Returns:
+        True if summary sent today
+    """
+    today = datetime.utcnow().date().isoformat()
+    
+    cursor = conn.execute(
+        "SELECT 1 FROM notification_log "
+        "WHERE notification_type = ? AND DATE(sent_at) = ?",
+        ("daily_summary", today)
+    )
+    
+    return cursor.fetchone() is not None
+
+
+def mark_daily_summary_sent(conn: sqlite3.Connection) -> None:
+    """
+    Record that daily summary was sent.
+    
+    Args:
+        conn: Database connection
+    """
+    conn.execute(
+        "INSERT INTO notification_log (notification_type, sent_at) "
+        "VALUES (?, ?)",
+        ("daily_summary", datetime.utcnow().isoformat())
+    )
+    conn.commit()

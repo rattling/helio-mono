@@ -33,6 +33,7 @@ def create_application(bot_token: str, services: dict, cfg) -> Application:
     message_handler.extraction_service = services['extraction']
     scheduler.query_service = services['query']
     scheduler.config = cfg
+    scheduler.db_conn = services['query'].conn
     
     # Build application
     application = (
