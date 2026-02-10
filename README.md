@@ -94,6 +94,9 @@ make run
 # Run Telegram bot
 make telegram
 
+# Rebuild projections from event log
+make rebuild
+
 # Check system status
 make status
 
@@ -109,6 +112,42 @@ make test
 # Clean generated files
 make clean
 ```
+
+## OpenAI Integration
+
+Helionyx uses OpenAI's API for intelligent extraction of todos, notes, and tracking items from natural language messages.
+
+### Setup
+
+1. Get an OpenAI API key from [platform.openai.com](https://platform.openai.com)
+2. Add it to your `.env`:
+   ```bash
+   OPENAI_API_KEY=sk-...
+   OPENAI_MODEL=gpt-4o-mini  # or gpt-4o
+   ```
+3. Optional rate limiting and cost control:
+   ```bash
+   OPENAI_RATE_LIMIT_RPM=10
+   OPENAI_RATE_LIMIT_TPM=150000
+   LLM_DAILY_COST_WARNING_USD=1.0
+   LLM_DAILY_COST_LIMIT_USD=10.0
+   ```
+
+### Cost Tracking
+
+The system automatically tracks:
+- Token usage per API call
+- Estimated costs (based on current OpenAI pricing)
+- Cumulative daily costs
+
+All LLM interactions are recorded as artifacts in the event log for full traceability.
+
+### Mock Mode
+
+Without an OpenAI API key, the system uses a mock LLM service with keyword-based extraction. This is useful for:
+- Development and testing
+- Running the walking skeleton demo
+- Cost-free exploration
 
 ## Telegram Bot Setup
 

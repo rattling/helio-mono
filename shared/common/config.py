@@ -20,6 +20,18 @@ class Config:
         self.OPENAI_MAX_TOKENS = int(os.getenv('OPENAI_MAX_TOKENS', '1000'))
         self.OPENAI_TEMPERATURE = float(os.getenv('OPENAI_TEMPERATURE', '0.7'))
         
+        # OpenAI Rate Limiting
+        self.OPENAI_RATE_LIMIT_RPM = int(os.getenv('OPENAI_RATE_LIMIT_RPM', '10'))
+        self.OPENAI_RATE_LIMIT_TPM = int(os.getenv('OPENAI_RATE_LIMIT_TPM', '150000'))
+        
+        # LLM Error Handling
+        self.LLM_MAX_RETRIES = int(os.getenv('LLM_MAX_RETRIES', '3'))
+        self.LLM_RETRY_BASE_DELAY = float(os.getenv('LLM_RETRY_BASE_DELAY', '1.0'))
+        
+        # LLM Cost Control
+        self.LLM_DAILY_COST_WARNING_USD = float(os.getenv('LLM_DAILY_COST_WARNING_USD', '1.0'))
+        self.LLM_DAILY_COST_LIMIT_USD = float(os.getenv('LLM_DAILY_COST_LIMIT_USD', '10.0'))
+        
         # Telegram
         self.TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
         self.TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')

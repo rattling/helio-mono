@@ -1,40 +1,56 @@
 """Extraction service for extracting structured objects from messages."""
 
-import re
+import logging
 from typing import Optional
 from uuid import UUID
 
 from shared.contracts import (
-    ArtifactRecordedEvent,
-    ArtifactType,
     EventType,
     MessageIngestedEvent,
     ObjectExtractedEvent,
     Todo,
-    TodoPriority,
     Note,
     Track,
 )
-from services.event_store.file_store import FileEventStore
+from shared.contracts.protocols import LLMServiceProtocol, EventStoreProtocol
+
+logger = logging.getLogger(__name__)
 
 
 class ExtractionService:
     """
-    Service for extracting structured objects from messages.
+    Service for extracting structured objects from messages using LLM.
     
-    For M0, uses simple keyword detection instead of real LLM.
-    M1 will integrate OpenAI API.
+    Delegates actual extraction to LLMServiceProtocol implementation
+    (OpenAI or Mock), manages object validation and event recording.
     """
 
-    def __init__(self, event_store: FileEventStore):
-        self.event_store = event_store
-
-    async def extract_from_message(self, message_event_id: UUID) -> list[UUID]:
+    def __init__(
+        self,
+        event_store: EventStoreProtocol,
+        llm_service: LLMServiceProtocol
+    ):
         """
-        Extract objects from a message event.
+        Initialize extraction service.
+        
+        Args:
+            event_store: Event store for reading messages and recording objects
+            llm_service: LLM service for extraction (OpenAI or Mock)
+        """
+        self.event_store = event_store
+        self.llm_service = llm_service
+
+    async def extract_from_message(
+        self,
+        message_event_id: UUID,
+        context: Optional[dict] = None
+    ) -> list[UUID]:
+        """
+        Extract objects from a message event using LLM.
         
         Args:
             message_event_id: ID of the MessageIngestedEvent
+            context: Optional context for extraction (conversation history, etc.)
             
         Returns:
             List of ObjectExtractedEvent IDs
@@ -43,95 +59,131 @@ class ExtractionService:
         message_event = await self.event_store.get_by_id(message_event_id)
         
         if not message_event or not isinstance(message_event, MessageIngestedEvent):
+            logger.warning(f"Message event {message_event_id} not found or invalid type")
             return []
         
-        content = message_event.content.lower()
+        # Extract using LLM
+        try:
+            result = await self.llm_service.extract_objects(
+                message_event.content,
+                context=context
+            )
+        except Exception as e:
+            logger.error(f"LLM extraction failed: {e}")
+            return []
+        
+        logger.info(
+            f"Extracted {len(result.objects)} objects from message {message_event_id} "
+            f"(model: {result.model_used}, tokens: {result.tokens_used})"
+        )
+        
+        # Validate and record each extracted object
         extracted_ids = []
-        
-        # Simple keyword-based extraction (stub for M0)
-        # Todo detection
-        if any(keyword in content for keyword in ["todo", "task", "remind me", "need to", "should"]):
-            todo = self._extract_todo(message_event.content, message_event_id)
-            if todo:
-                event_id = await self._record_extracted_object("todo", todo.model_dump(), message_event_id)
-                extracted_ids.append(event_id)
-        
-        # Note detection
-        if any(keyword in content for keyword in ["note", "remember", "important", "fyi"]):
-            note = self._extract_note(message_event.content, message_event_id)
-            if note:
-                event_id = await self._record_extracted_object("note", note.model_dump(), message_event_id)
-                extracted_ids.append(event_id)
-        
-        # Track detection
-        if any(keyword in content for keyword in ["track", "monitor", "watch", "keep an eye"]):
-            track = self._extract_track(message_event.content, message_event_id)
-            if track:
-                event_id = await self._record_extracted_object("track", track.model_dump(), message_event_id)
-                extracted_ids.append(event_id)
+        for obj_data in result.objects:
+            try:
+                # Validate object type and schema
+                validated_obj = self._validate_object(obj_data, message_event_id)
+                if validated_obj:
+                    event_id = await self._record_extracted_object(
+                        object_type=obj_data["type"],
+                        object_data=validated_obj.model_dump(),
+                        source_event_id=message_event_id,
+                        confidence=result.confidence,
+                        extraction_metadata={
+                            **result.extraction_metadata,
+                            "prompt_artifact_id": str(result.prompt_artifact_id),
+                            "response_artifact_id": str(result.response_artifact_id),
+                        }
+                    )
+                    extracted_ids.append(event_id)
+            except Exception as e:
+                logger.warning(f"Failed to validate/record object {obj_data}: {e}")
+                continue
         
         return extracted_ids
 
-    def _extract_todo(self, content: str, source_event_id: UUID) -> Optional[Todo]:
-        """Extract a todo from content (stub)."""
-        # Simple extraction: use first sentence as title
-        title = content.split(".")[0].strip()
-        if not title:
-            title = content[:100]
+    def _validate_object(
+        self,
+        obj_data: dict,
+        source_event_id: UUID
+    ) -> Optional[Todo | Note | Track]:
+        """
+        Validate and construct typed object from extraction data.
         
-        # Detect priority
-        priority = TodoPriority.MEDIUM
-        content_lower = content.lower()
-        if "urgent" in content_lower or "asap" in content_lower:
-            priority = TodoPriority.URGENT
-        elif "high priority" in content_lower or "important" in content_lower:
-            priority = TodoPriority.HIGH
-        elif "low priority" in content_lower or "when you have time" in content_lower:
-            priority = TodoPriority.LOW
+        Args:
+            obj_data: Raw object dict from LLM
+            source_event_id: Source message event ID
+            
+        Returns:
+            Validated Pydantic model or None if invalid
+        """
+        obj_type = obj_data.get("type")
         
-        return Todo(
-            title=title,
-            description=content if len(content) > len(title) else None,
-            priority=priority,
-            source_event_id=source_event_id,
-        )
-
-    def _extract_note(self, content: str, source_event_id: UUID) -> Optional[Note]:
-        """Extract a note from content (stub)."""
-        title = content.split(".")[0].strip()
-        if not title:
-            title = content[:100]
-        
-        return Note(
-            title=title,
-            content=content,
-            source_event_id=source_event_id,
-        )
-
-    def _extract_track(self, content: str, source_event_id: UUID) -> Optional[Track]:
-        """Extract a tracking item from content (stub)."""
-        title = content.split(".")[0].strip()
-        if not title:
-            title = content[:100]
-        
-        return Track(
-            title=title,
-            description=content,
-            source_event_id=source_event_id,
-        )
+        try:
+            if obj_type == "todo":
+                return Todo(
+                    title=obj_data["title"],
+                    description=obj_data.get("description"),
+                    priority=obj_data.get("priority", "medium"),
+                    due_date=obj_data.get("due_date"),
+                    tags=obj_data.get("tags", []),
+                    source_event_id=source_event_id,
+                )
+            
+            elif obj_type == "note":
+                return Note(
+                    title=obj_data["title"],
+                    content=obj_data.get("content", obj_data["title"]),
+                    tags=obj_data.get("tags", []),
+                    source_event_id=source_event_id,
+                )
+            
+            elif obj_type == "track":
+                return Track(
+                    title=obj_data["title"],
+                    description=obj_data.get("description"),
+                    check_in_frequency=obj_data.get("check_in_frequency"),
+                    tags=obj_data.get("tags", []),
+                    source_event_id=source_event_id,
+                )
+            
+            else:
+                logger.warning(f"Unknown object type: {obj_type}")
+                return None
+                
+        except Exception as e:
+            logger.warning(f"Object validation failed: {e}")
+            return None
 
     async def _record_extracted_object(
         self,
         object_type: str,
         object_data: dict,
         source_event_id: UUID,
+        confidence: float,
+        extraction_metadata: dict,
     ) -> UUID:
-        """Record an extracted object as an event."""
+        """
+        Record an extracted object as an event.
+        
+        Args:
+            object_type: Type of object (todo, note, track)
+            object_data: Validated object data
+            source_event_id: Source message event ID
+            confidence: Extraction confidence (0-1)
+            extraction_metadata: LLM extraction metadata
+            
+        Returns:
+            UUID of the ObjectExtractedEvent
+        """
         event = ObjectExtractedEvent(
             object_type=object_type,
             object_data=object_data,
             source_event_id=source_event_id,
-            extraction_confidence=0.7,  # Stub confidence
+            extraction_confidence=confidence,
+            extraction_metadata=extraction_metadata,
         )
         
-        return await self.event_store.append(event)
+        event_id = await self.event_store.append(event)
+        logger.debug(f"Recorded {object_type} object: {event_id}")
+        return event_id
