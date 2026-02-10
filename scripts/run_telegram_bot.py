@@ -52,7 +52,6 @@ async def main():
     
     # Initialize services
     event_store = FileEventStore(data_dir=config.EVENT_STORE_PATH)
-    await event_store.initialize()
     
     # Initialize LLM service (OpenAI or Mock)
     if config.OPENAI_API_KEY:

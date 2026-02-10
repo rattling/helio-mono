@@ -44,7 +44,6 @@ async def main():
     logger.info(f"Database path: {config.PROJECTIONS_DB_PATH}")
     
     event_store = FileEventStore(data_dir=config.EVENT_STORE_PATH)
-    await event_store.initialize()
     
     query_service = QueryService(event_store, db_path=Path(config.PROJECTIONS_DB_PATH))
     

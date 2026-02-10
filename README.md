@@ -4,8 +4,8 @@ Personal decision and execution substrate built on an append-only event log foun
 
 ## Project Status
 
-**Current Milestone**: Milestone 0 - Architecture Baseline  
-**Status**: In Progress
+**Current Milestone**: Milestone 1 - Core Functionality and LLM Integration  
+**Status**: ✅ Complete (QA Approved)
 
 ## Quick Start
 
