@@ -1,9 +1,17 @@
-.PHONY: help setup install test lint format clean run status
+.PHONY: help setup install test lint format clean run demo telegram rebuild import-chatgpt view-events status
+
+# Default environment if not specified
+ENV ?= dev
 
 help: ## Show this help message
-	@echo 'Usage: make [target]'
+	@echo 'Usage: make [target] [ENV=dev|staging|live]'
 	@echo ''
-	@echo 'Available targets:'
+	@echo 'Service Commands:'
+	@echo '  make run [ENV=dev]       - Run Helionyx service (default: dev)'
+	@echo '  make run ENV=staging     - Run service in staging mode'
+	@echo '  make run ENV=live        - Run service in live mode'
+	@echo ''
+	@echo 'Other Commands:'
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 setup: ## Initial setup (create .env, directories)
@@ -37,7 +45,12 @@ clean: ## Clean generated files
 	find . -type d -name "*.egg-info" -exec rm -rf {} +
 	rm -rf .pytest_cache .mypy_cache .coverage htmlcov/
 
-run: ## Run the walking skeleton demonstration
+run: ## Run Helionyx service (use ENV=dev|staging|live, default: dev)
+	@echo "Starting Helionyx service (env: $(ENV))..."
+	@if [ ! -f .env ]; then echo "Error: .env file not found. Run 'make setup' first."; exit 1; fi
+	ENV=$(ENV) .venv/bin/python services/api/runner.py
+
+demo: ## Run the walking skeleton demonstration
 	@echo "Running walking skeleton demonstration..."
 	.venv/bin/python scripts/demo_walking_skeleton.py
 

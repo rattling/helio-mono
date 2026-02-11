@@ -4,8 +4,8 @@ Personal decision and execution substrate built on an append-only event log foun
 
 ## Project Status
 
-**Current Milestone**: Milestone 1 - Core Functionality and LLM Integration  
-**Status**: ✅ Complete (QA Approved)
+**Current Milestone**: Milestone 2 - Service Infrastructure Foundation  
+**Status**: 🔄 In Progress
 
 ## Quick Start
 
@@ -20,11 +20,52 @@ make setup
 # 3. Install dependencies (creates virtual environment)
 make install
 
-# 4. Run the walking skeleton demonstration
+# 4. Run the Helionyx service (default: dev environment)
 make run
 
 # 5. Check system status
 make status
+```
+
+## Running the Service
+
+Helionyx runs as a unified service that combines:
+- FastAPI HTTP server for API endpoints
+- Telegram bot (optional, if configured)
+- Event store and query projections
+
+### Start the Service
+
+```bash
+# Run in development mode (default)
+make run
+
+# Run in staging mode
+make run ENV=staging
+
+# Run in live mode
+make run ENV=live
+```
+
+The service will:
+1. Load configuration for the specified environment
+2. Initialize all services (event store, ingestion, extraction, query)
+3. Rebuild projections from the event log
+4. Start the Telegram bot (if credentials configured)
+5. Start the FastAPI HTTP server on port 8000
+
+Logs are visible on the console. Press Ctrl+C to stop the service cleanly.
+
+### Health Check
+
+While the service is running, verify it's working:
+
+```bash
+# Check health endpoint
+curl http://localhost:8000/health
+
+# Check readiness
+curl http://localhost:8000/health/ready
 ```
 
 ## Project Structure
@@ -88,10 +129,16 @@ Thin translation layers for external interfaces (Telegram, API, CLI).
 ## Development
 
 ```bash
-# Run the walking skeleton
+# Run the Helionyx service
 make run
 
-# Run Telegram bot
+# Run with specific environment
+make run ENV=staging
+
+# Run the walking skeleton demo
+make demo
+
+# Run Telegram bot (legacy - now integrated into main service)
 make telegram
 
 # Rebuild projections from event log
@@ -106,7 +153,7 @@ make lint
 # Format code
 make format
 
-# Run tests (when implemented)
+# Run tests
 make test
 
 # Clean generated files
