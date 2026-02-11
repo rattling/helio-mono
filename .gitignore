@@ -48,6 +48,10 @@ dmypy.json
 # Environment
 .env
 .env.local
+.env.dev
+.env.staging
+.env.live
+# Keep .env.template and .env.example in git
 
 # Runtime data
 *.log
