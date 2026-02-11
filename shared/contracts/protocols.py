@@ -108,9 +108,7 @@ class LLMServiceProtocol(ABC):
 
     @abstractmethod
     async def extract_objects(
-        self,
-        message: str,
-        context: Optional[dict] = None
+        self, message: str, context: Optional[dict] = None
     ) -> "ExtractionResult":
         """
         Extract structured objects from message using LLM.

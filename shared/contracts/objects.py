@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 class LLMServiceError(Exception):
     """Exception raised by LLM service on unrecoverable errors."""
+
     pass
 
 
@@ -99,11 +100,10 @@ ExtractedObject = Todo | Note | Track
 class ExtractionResult:
     """Result of LLM extraction operation."""
 
-    objects: list[dict]              # Raw extracted object dicts
-    confidence: Optional[float]      # Overall extraction confidence (0-1)
-    model_used: str                  # e.g. "gpt-4o-mini"
-    tokens_used: int                 # Total tokens consumed
-    prompt_artifact_id: UUID         # Event ID of prompt artifact
-    response_artifact_id: UUID       # Event ID of response artifact
-    extraction_metadata: dict        # Additional LLM-specific data
-
+    objects: list[dict]  # Raw extracted object dicts
+    confidence: Optional[float]  # Overall extraction confidence (0-1)
+    model_used: str  # e.g. "gpt-4o-mini"
+    tokens_used: int  # Total tokens consumed
+    prompt_artifact_id: UUID  # Event ID of prompt artifact
+    response_artifact_id: UUID  # Event ID of response artifact
+    extraction_metadata: dict  # Additional LLM-specific data

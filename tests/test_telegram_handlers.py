@@ -42,7 +42,7 @@ def mock_query_service():
 async def test_start_command(mock_update, mock_context):
     """Test /start command."""
     await handlers.start_command(mock_update, mock_context)
-    
+
     mock_update.message.reply_text.assert_called_once()
     call_args = mock_update.message.reply_text.call_args[0][0]
     assert "Welcome to Helionyx" in call_args
@@ -53,7 +53,7 @@ async def test_start_command(mock_update, mock_context):
 async def test_help_command(mock_update, mock_context):
     """Test /help command."""
     await handlers.help_command(mock_update, mock_context)
-    
+
     mock_update.message.reply_text.assert_called_once()
     call_args = mock_update.message.reply_text.call_args[0][0]
     assert "Available Commands" in call_args
@@ -64,9 +64,9 @@ async def test_help_command(mock_update, mock_context):
 async def test_todos_command_empty(mock_update, mock_context, mock_query_service):
     """Test /todos command with no todos."""
     mock_query_service.get_todos.return_value = []
-    
+
     await handlers.todos_command(mock_update, mock_context)
-    
+
     mock_update.message.reply_text.assert_called_once()
     call_args = mock_update.message.reply_text.call_args[0][0]
     assert "No todos found" in call_args
@@ -79,9 +79,9 @@ async def test_todos_command_with_filter(mock_update, mock_context, mock_query_s
     mock_query_service.get_todos.return_value = [
         {"title": "Test todo", "status": "pending", "priority": "medium"}
     ]
-    
+
     await handlers.todos_command(mock_update, mock_context)
-    
+
     mock_query_service.get_todos.assert_called_once_with(status="pending")
     mock_update.message.reply_text.assert_called_once()
 
@@ -90,9 +90,9 @@ async def test_todos_command_with_filter(mock_update, mock_context, mock_query_s
 async def test_todos_command_invalid_status(mock_update, mock_context, mock_query_service):
     """Test /todos command with invalid status."""
     mock_context.args = ["invalid_status"]
-    
+
     await handlers.todos_command(mock_update, mock_context)
-    
+
     call_args = mock_update.message.reply_text.call_args[0][0]
     assert "Invalid status" in call_args
 
@@ -101,15 +101,17 @@ async def test_todos_command_invalid_status(mock_update, mock_context, mock_quer
 async def test_stats_command(mock_update, mock_context, mock_query_service):
     """Test /stats command."""
     # get_stats is a sync method, not async
-    mock_query_service.get_stats = MagicMock(return_value={
-        'todos': 5,
-        'notes': 3,
-        'tracks': 2,
-        'total_objects': 10,
-    })
-    
+    mock_query_service.get_stats = MagicMock(
+        return_value={
+            "todos": 5,
+            "notes": 3,
+            "tracks": 2,
+            "total_objects": 10,
+        }
+    )
+
     await handlers.stats_command(mock_update, mock_context)
-    
+
     mock_update.message.reply_text.assert_called_once()
     call_args = mock_update.message.reply_text.call_args[0][0]
     assert "Statistics" in call_args

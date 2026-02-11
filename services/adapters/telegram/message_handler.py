@@ -15,14 +15,14 @@ extraction_service = None
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle non-command messages (ingest and extract)."""
-    
+
     message = update.message
-    
+
     if not message.text:
         # Skip non-text messages for M1
         await message.reply_text("I can only process text messages for now.")
         return
-    
+
     try:
         # Ingest message
         event_id = await ingestion_service.ingest_message(
@@ -35,12 +35,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "telegram_user_id": update.effective_user.id,
                 "telegram_username": update.effective_user.username,
                 "telegram_chat_id": update.effective_chat.id,
-            }
+            },
         )
-        
+
         # Trigger extraction (synchronous for M1)
         extracted_items = await extraction_service.extract_from_message(event_id)
-        
+
         # Acknowledge with details
         if extracted_items:
             lines = ["✅ Got it! Extracted:"]
@@ -54,12 +54,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     lines.append(f"  📊 Track: {obj_data['title']}")
             await message.reply_text("\n".join(lines))
         else:
-            await message.reply_text(
-                "✅ Message recorded. No objects extracted."
-            )
-        
+            await message.reply_text("✅ Message recorded. No objects extracted.")
+
     except Exception as e:
         logger.error(f"Error processing message: {e}", exc_info=True)
-        await message.reply_text(
-            "❌ Sorry, I couldn't process that message. Please try again."
-        )
+        await message.reply_text("❌ Sorry, I couldn't process that message. Please try again.")

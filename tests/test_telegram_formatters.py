@@ -31,9 +31,9 @@ def test_format_todos_list_with_todos():
             "due_date": None,
         },
     ]
-    
+
     result = format_todos_list(todos)
-    
+
     assert "Your Todos" in result
     assert "Complete report" in result
     assert "Review code" in result
@@ -59,9 +59,9 @@ def test_format_notes_list_with_notes():
             "content": "LLM integration patterns",
         },
     ]
-    
+
     result = format_notes_list(notes)
-    
+
     assert "Your Notes" in result
     assert "Meeting notes" in result
     assert "Research" in result
@@ -85,9 +85,9 @@ def test_format_tracks_list_with_tracks():
             "status": "active",
         },
     ]
-    
+
     result = format_tracks_list(tracks)
-    
+
     assert "Your Tracks" in result
     assert "Project Alpha progress" in result
     assert "Team morale" in result

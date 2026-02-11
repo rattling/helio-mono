@@ -31,19 +31,19 @@ telegram_task: Optional[asyncio.Task] = None
 async def lifespan(app: FastAPI):
     """Manage service lifecycle - startup and shutdown."""
     global services, telegram_task
-    
+
     # STARTUP
     logger.info("=== Service Startup ===")
-    
+
     # Load configuration
     config = Config.from_env()
     logger.info(f"Environment: {config.ENV}")
     logger.info(f"Log level: {config.LOG_LEVEL}")
-    
+
     # Initialize event store
     event_store = FileEventStore(data_dir=config.EVENT_STORE_PATH)
     logger.info(f"Event store: {config.EVENT_STORE_PATH}")
-    
+
     # Initialize LLM service
     if config.OPENAI_API_KEY:
         logger.info(f"LLM: OpenAI ({config.OPENAI_MODEL})")
@@ -59,32 +59,35 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("LLM: Mock (no OpenAI API key)")
         llm_service = MockLLMService(event_store=event_store)
-    
+
     # Initialize domain services
     ingestion_service = IngestionService(event_store)
     extraction_service = ExtractionService(event_store, llm_service)
     query_service = QueryService(event_store, db_path=config.PROJECTIONS_DB_PATH)
     logger.info(f"Projections DB: {config.PROJECTIONS_DB_PATH}")
-    
+
     # Rebuild projections on startup
     logger.info("Rebuilding projections...")
     await query_service.rebuild_projections()
     logger.info("Projections rebuilt")
-    
+
     # Store services globally
-    services['config'] = config
-    services['event_store'] = event_store
-    services['ingestion'] = ingestion_service
-    services['extraction'] = extraction_service
-    services['query'] = query_service
-    
+    services["config"] = config
+    services["event_store"] = event_store
+    services["ingestion"] = ingestion_service
+    services["extraction"] = extraction_service
+    services["query"] = query_service
+
     # Start Telegram bot if configured
     if config.TELEGRAM_BOT_TOKEN:
         logger.info("Starting Telegram bot...")
         if not config.TELEGRAM_CHAT_ID:
-            logger.info("Telegram chat id not configured; reminders/summaries will be disabled until TELEGRAM_CHAT_ID is set")
+            logger.info(
+                "Telegram chat id not configured; reminders/summaries will be disabled until TELEGRAM_CHAT_ID is set"
+            )
         try:
             from services.adapters.telegram.bot import start_bot
+
             telegram_task = asyncio.create_task(
                 start_bot(config.TELEGRAM_BOT_TOKEN, services, config)
             )
@@ -96,14 +99,14 @@ async def lifespan(app: FastAPI):
             logger.error(f"Failed to start Telegram bot: {e}", exc_info=True)
     else:
         logger.info("Telegram bot disabled (no bot token)")
-    
+
     logger.info("=== Service Ready ===")
-    
+
     yield  # Application runs
-    
+
     # SHUTDOWN
     logger.info("=== Service Shutdown ===")
-    
+
     # Stop Telegram bot
     if telegram_task and not telegram_task.done():
         logger.info("Stopping Telegram bot...")
@@ -113,13 +116,13 @@ async def lifespan(app: FastAPI):
         except asyncio.CancelledError:
             pass
         logger.info("Telegram bot stopped")
-    
+
     # Close query service database connection
-    if 'query' in services:
+    if "query" in services:
         logger.info("Closing database connection...")
-        services['query'].close()
+        services["query"].close()
         logger.info("Database closed")
-    
+
     logger.info("=== Service Shutdown Complete ===")
 
 
@@ -128,7 +131,7 @@ app = FastAPI(
     title="Helionyx API",
     description="Personal decision and execution substrate",
     version="0.1.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Register routes
@@ -144,5 +147,5 @@ async def root():
         "name": "Helionyx API",
         "version": "0.1.0",
         "status": "running",
-        "environment": services.get('config', Config.from_env()).ENV
+        "environment": services.get("config", Config.from_env()).ENV,
     }

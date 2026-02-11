@@ -18,7 +18,7 @@ router = APIRouter()
 # Response schemas
 class TodoResponse(BaseModel):
     """Response schema for a todo item."""
-    
+
     object_id: str
     title: str
     description: Optional[str]
@@ -34,7 +34,7 @@ class TodoResponse(BaseModel):
 
 class NoteResponse(BaseModel):
     """Response schema for a note."""
-    
+
     object_id: str
     title: str
     content: str
@@ -46,7 +46,7 @@ class NoteResponse(BaseModel):
 
 class TrackResponse(BaseModel):
     """Response schema for a track item."""
-    
+
     object_id: str
     title: str
     description: Optional[str]
@@ -61,7 +61,7 @@ class TrackResponse(BaseModel):
 
 class StatsResponse(BaseModel):
     """Response schema for system statistics."""
-    
+
     todos: int
     notes: int
     tracks: int
@@ -73,7 +73,7 @@ class StatsResponse(BaseModel):
 # Dependency to get query service
 def get_query_service() -> QueryService:
     """Get initialized query service.
-    
+
     Returns:
         QueryService instance ready to use
     """
@@ -84,36 +84,38 @@ def get_query_service() -> QueryService:
 
 @router.get("/todos", response_model=List[Dict[str, Any]])
 async def get_todos(
-    status: Optional[str] = Query(None, description="Filter by status (pending, in_progress, completed, abandoned)"),
+    status: Optional[str] = Query(
+        None, description="Filter by status (pending, in_progress, completed, abandoned)"
+    ),
     tags: Optional[str] = Query(None, description="Comma-separated list of tags to filter by"),
-    query_service: QueryService = Depends(get_query_service)
+    query_service: QueryService = Depends(get_query_service),
 ) -> List[Dict[str, Any]]:
     """Get all todos with optional filters.
-    
+
     Args:
         status: Optional status filter
         tags: Optional comma-separated tags
         query_service: Injected query service
-    
+
     Returns:
         List of todos matching filters
-    
+
     Raises:
         HTTPException: 500 for service errors
     """
     try:
         # Parse tags if provided
         tag_list = [t.strip() for t in tags.split(",")] if tags else None
-        
+
         # Query todos
         todos = await query_service.get_todos(status=status, tags=tag_list)
-        
+
         return todos
-    
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve todos: {str(e)}"
+            detail=f"Failed to retrieve todos: {str(e)}",
         )
 
 
@@ -121,95 +123,95 @@ async def get_todos(
 async def get_notes(
     tags: Optional[str] = Query(None, description="Comma-separated list of tags to filter by"),
     search: Optional[str] = Query(None, description="Text to search in title and content"),
-    limit: Optional[int] = Query(None, description="Maximum number of results (not yet implemented)"),
+    limit: Optional[int] = Query(
+        None, description="Maximum number of results (not yet implemented)"
+    ),
     offset: Optional[int] = Query(None, description="Offset for pagination (not yet implemented)"),
-    query_service: QueryService = Depends(get_query_service)
+    query_service: QueryService = Depends(get_query_service),
 ) -> List[Dict[str, Any]]:
     """Get all notes with optional filters.
-    
+
     Args:
         tags: Optional comma-separated tags
         search: Optional text search
         limit: Optional result limit (not implemented yet, accepted for future compatibility)
         offset: Optional result offset (not implemented yet, accepted for future compatibility)
         query_service: Injected query service
-    
+
     Returns:
         List of notes matching filters
-    
+
     Raises:
         HTTPException: 500 for service errors
     """
     try:
         # Parse tags if provided
         tag_list = [t.strip() for t in tags.split(",")] if tags else None
-        
+
         # Query notes
         notes = await query_service.get_notes(tags=tag_list, search=search)
-        
+
         # TODO: Apply limit/offset when pagination is implemented
         # For now, just accept the parameters for API compatibility
-        
+
         return notes
-    
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve notes: {str(e)}"
+            detail=f"Failed to retrieve notes: {str(e)}",
         )
 
 
 @router.get("/tracks", response_model=List[Dict[str, Any]])
 async def get_tracks(
     status: Optional[str] = Query(None, description="Filter by status"),
-    query_service: QueryService = Depends(get_query_service)
+    query_service: QueryService = Depends(get_query_service),
 ) -> List[Dict[str, Any]]:
     """Get all tracked items with optional filters.
-    
+
     Args:
         status: Optional status filter
         query_service: Injected query service
-    
+
     Returns:
         List of tracks matching filters
-    
+
     Raises:
         HTTPException: 500 for service errors
     """
     try:
         # Query tracks
         tracks = await query_service.get_tracks(status=status)
-        
+
         return tracks
-    
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve tracks: {str(e)}"
+            detail=f"Failed to retrieve tracks: {str(e)}",
         )
 
 
 @router.get("/stats", response_model=Dict[str, Any])
-async def get_stats(
-    query_service: QueryService = Depends(get_query_service)
-) -> Dict[str, Any]:
+async def get_stats(query_service: QueryService = Depends(get_query_service)) -> Dict[str, Any]:
     """Get system statistics.
-    
+
     Args:
         query_service: Injected query service
-    
+
     Returns:
         Statistics about todos, notes, tracks, and system state
-    
+
     Raises:
         HTTPException: 500 for service errors
     """
     try:
         stats = query_service.get_stats()
         return stats
-    
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve stats: {str(e)}"
+            detail=f"Failed to retrieve stats: {str(e)}",
         )

@@ -20,16 +20,16 @@ def main():
     """Main entry point for Helionyx service."""
     # Load configuration first
     config = Config.from_env()
-    
+
     # Setup logging
     setup_logging(config.LOG_LEVEL)
     logger = logging.getLogger(__name__)
-    
+
     logger.info(f"Starting Helionyx service (env: {config.ENV})")
-    
+
     # Import uvicorn here to ensure logging is configured first
     import uvicorn
-    
+
     # Run the FastAPI application
     # Lifespan events will handle service initialization and Telegram bot
     uvicorn.run(
@@ -37,7 +37,7 @@ def main():
         host=config.API_HOST,
         port=config.API_PORT,
         log_level=config.LOG_LEVEL.lower(),
-        reload=False  # Reload disabled for production stability
+        reload=False,  # Reload disabled for production stability
     )
 
 
