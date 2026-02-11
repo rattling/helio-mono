@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 # OpenAI pricing per 1000 tokens (as of Dec 2024)
+#TODO - get latest model list and pricing as per Feb 2026
 PRICING = {
     "gpt-4o-mini": {
         "prompt": 0.00015,
@@ -135,9 +136,25 @@ class OpenAILLMService(LLMServiceProtocol):
                 
                 # Parse JSON response
                 try:
-                    objects = json.loads(content)
-                    if not isinstance(objects, list):
-                        objects = [objects]
+                    parsed = json.loads(content)
+                    
+                    # Handle different response formats
+                    if isinstance(parsed, list):
+                        # Direct array format
+                        objects = parsed
+                    elif isinstance(parsed, dict):
+                        # Wrapped in object - try common keys
+                        objects = (
+                            parsed.get("extracted_items") or 
+                            parsed.get("objects") or 
+                            parsed.get("items") or
+                            list(parsed.values())[0] if parsed else []
+                        )
+                        if not isinstance(objects, list):
+                            objects = [objects] if objects else []
+                    else:
+                        objects = []
+                        
                 except json.JSONDecodeError as e:
                     logger.warning(f"Failed to parse LLM response as JSON: {e}")
                     objects = []
