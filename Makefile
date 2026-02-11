@@ -1,4 +1,4 @@
-.PHONY: help setup install test lint format clean run demo telegram rebuild import-chatgpt view-events status deploy restart logs stop
+.PHONY: help setup install test lint format clean run demo telegram rebuild import-chatgpt view-events status deploy restart logs stop backup restore
 
 # Default environment if not specified
 ENV ?= dev
@@ -65,6 +65,17 @@ telegram: ## Run Telegram bot
 	@echo "Starting Telegram bot..."
 	@if [ ! -f .env ]; then echo "Error: .env file not found. Run 'make setup' first."; exit 1; fi
 	.venv/bin/python scripts/run_telegram_bot.py
+
+backup: ## Create a timestamped backup artifact (requires ENV=dev|staging|live)
+	@ENV=$(ENV) ./scripts/backup.sh
+
+restore: ## Restore from backup (requires ENV=dev|staging|live and BACKUP=<timestamp>)
+	@if [ -z "$(BACKUP)" ]; then \
+		echo "Error: BACKUP parameter required"; \
+		echo "Usage: make restore ENV=$(ENV) BACKUP=20260211T120000Z"; \
+		exit 1; \
+	fi
+	@ENV=$(ENV) BACKUP=$(BACKUP) ./scripts/restore.sh
 
 rebuild: ## Rebuild projections from event log
 	@echo "Rebuilding projections from event log..."

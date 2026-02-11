@@ -70,6 +70,10 @@ data/projections/
 data/dev/events/
 data/dev/projections/
 
+# Backup/restore artifacts (runtime)
+data/backups/
+data/rollbacks/
+
 # OS
 .DS_Store
 Thumbs.db
