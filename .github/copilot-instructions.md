@@ -51,6 +51,12 @@ Escalate when boundaries are unclear or when work exceeds role scope.
 
 ## Critical Execution Rules
 
+### Git Repository Context
+- **At session start, run `git remote -v` to verify repository URL**
+- The repository is at `git@github.com:rattling/helio-mono.git`
+- If attempting GitHub API operations, use owner `rattling` and repo `helio-mono`
+- Do not guess or assume repository details
+
 ### Python Virtual Environment
 - **ALWAYS use `.venv/bin/python` instead of `python`**
 - **ALWAYS use `.venv/bin/pip` instead of `pip`**

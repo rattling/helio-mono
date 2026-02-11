@@ -109,7 +109,19 @@ Every milestone must include:
    - limited in scope
    - layered onto the spine
 
-A milestone that does not preserve a runnable spine is invalid.
+4. **User Interaction Preservation**
+   - All existing user interaction paths continue to work
+   - New interfaces **add to**, not replace, existing entry points
+   - Core domain code remains directly callable
+   - Examples:
+     - Adding API doesn't break direct Python calls to services
+     - Adding UI doesn't break CLI/API access
+     - Service wrapper doesn't prevent direct module import
+   - README.md documents all active interaction methods
+   - Makefile provides convenient commands for key paths
+
+A milestone that does not preserve a runnable spine is invalid.  
+A milestone that breaks existing user interaction paths is invalid.
 
 ---
 

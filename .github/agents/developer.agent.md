@@ -106,10 +106,28 @@ Before marking an issue complete:
 - ensure tests pass
 - add tests if the issue meaningfully affects behavior
 - verify the system remains runnable
+- **verify all existing user interaction paths still work**
 
 If testing is deferred:
 - state this explicitly in the issue closing comment
 - explain why
+
+**User Interaction Path Preservation**:
+
+When adding new interfaces (API, UI, service runners):
+- **Preserve existing interaction methods**
+- Core domain code must remain directly importable and callable
+- CLI scripts must continue to function
+- Do not make new interface the only way to use the system
+- Examples:
+  - Adding REST API? Direct Python imports should still work
+  - Adding service wrapper? Direct module usage should still work
+  - Adding CLI? Python API should still be accessible
+
+If a change risks breaking existing paths:
+- Test the old methods still work
+- Document any intentional removals in the issue
+- Get explicit approval before removing interaction methods
 
 ---
 
