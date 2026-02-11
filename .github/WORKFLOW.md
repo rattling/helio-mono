@@ -58,9 +58,12 @@ If an issue is too large, it must be split.
 
 ### 3.1 Required Project Documents
 Before implementation begins, the following must exist:
-- PROJECT_CHARTER.md
+- PROJECT_CHARTER.md (core vision, principles, invariants - milestone-agnostic)
+- Current milestone charter (e.g., MILESTONE2_CHARTER.md - goals, deliverables, scope)
 - PROJECT_INVARIANTS.md (if applicable)
 - ARCHITECTURE.md (baseline, may evolve)
+
+Historical milestone charters (MILESTONE0_CHARTER.md, MILESTONE1_CHARTER.md, etc.) are preserved for reference.
 
 ### 3.2 Architecture Baseline (Optional but Recommended)
 A project may begin with an explicit **Architecture Baseline milestone**, producing:

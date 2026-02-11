@@ -10,9 +10,11 @@
    - Your role charter in [.github/agents/](.github/agents/) directory
 
 2. **Project Context**:
-   - [docs/PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md) - Project vision, scope, and guiding principles
+   - [docs/PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md) - Project vision, scope, and guiding principles (milestone-agnostic)
+   - Current milestone charter (e.g., `docs/MILESTONE2_CHARTER.md`) - Active milestone goals and deliverables
    - `docs/PROJECT_INVARIANTS.md` - Non-negotiable technical constraints (to be created)
    - `docs/ARCHITECTURE.md` - Current system structure (if exists)
+   - Historical milestone charters (e.g., `MILESTONE0_CHARTER.md`, `MILESTONE1_CHARTER.md`) - Available for reference when needed
 
 **At Session Start**: Acknowledge you have read these documents by briefly stating:
 - Your role (Architect/Developer/QA)
@@ -134,7 +136,8 @@ Core principles:
 - Append-only event log is foundational
 - State must be durable and inspectable
 
-See [PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md) for full context.
+See [PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md) for core principles.
+For milestone-specific context, consult the current milestone's charter (e.g., MILESTONE2_CHARTER.md).
 
 ---
 
