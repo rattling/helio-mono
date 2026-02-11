@@ -5,19 +5,19 @@
 **You must read these documents in order before starting any work:**
 
 1. **Engineering Framework**:
-   - [ENGINEERING_CONSTITUTION.md](.github/ENGINEERING_CONSTITUTION.md) - Core engineering values and technical posture
-   - [WORKFLOW.md](.github/WORKFLOW.md) - How work is structured and executed
-   - Your role charter in [.github/agents/](.github/agents/) directory
+  - [ENGINEERING_CONSTITUTION.md](ENGINEERING_CONSTITUTION.md) - Core engineering values and technical posture
+  - [WORKFLOW.md](WORKFLOW.md) - How work is structured and executed
+  - Your role charter in [agents/](agents/) directory
 
 2. **Project Context**:
-   - [docs/PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md) - Project vision, scope, and guiding principles (milestone-agnostic)
+  - [docs/PROJECT_CHARTER.md](../docs/PROJECT_CHARTER.md) - Project vision, scope, and guiding principles (milestone-agnostic)
    - Current milestone charter (e.g., `docs/MILESTONE2_CHARTER.md`) - Active milestone goals and deliverables
    - `docs/PROJECT_INVARIANTS.md` - Non-negotiable technical constraints (to be created)
    - `docs/ARCHITECTURE.md` - Current system structure (if exists)
    - Historical milestone charters (e.g., `MILESTONE0_CHARTER.md`, `MILESTONE1_CHARTER.md`) - Available for reference when needed
 
 **At Session Start**: Acknowledge you have read these documents by briefly stating:
-- Your role (Architect/Developer/QA)
+- Your current mode (ARCH/DEV/QA)
 - The milestone or issue you're working on
 - Key constraints you understand from the docs
 
@@ -25,27 +25,38 @@ This confirms you have context before proceeding.
 
 ---
 
-## Role Assignment
+## Mode Assignment
 
-When work is assigned, identify your active role:
+This repo is operated as **one agent that switches modes**.
 
-- **Architect** ([architect.agent.md](.github/agents/architect.agent.md))
+When work is assigned, identify your active **mode**:
+
+- **ARCH mode** ([architect.agent.md](agents/architect.agent.md))
   - System structure, boundaries, contracts
   - Milestone planning and decomposition
   - Service boundaries and architectural review
 
-- **Developer** ([developer.agent.md](.github/agents/developer.agent.md))
+- **DEV mode** ([developer.agent.md](agents/developer.agent.md))
   - Scoped issue implementation only
   - Execute within defined boundaries
   - No architectural changes without escalation
 
-- **QA** ([qa.agent.md](.github/agents/qa.agent.md))
+- **QA mode** ([qa.agent.md](agents/qa.agent.md))
   - End-to-end validation
   - System runnability verification
   - Reality-checking documented behavior
 
-**Operate strictly within your role's authority.**  
+**Operate strictly within the current mode's authority.**
 Escalate when boundaries are unclear or when work exceeds role scope.
+
+### Mode Switching Discipline
+
+- The agent may switch modes within a single session, but must announce the switch.
+- In **QA mode**, do not “just patch” defects.
+  - Create a bug issue.
+  - Switch to **DEV mode** to implement the fix.
+  - Close the bug issue with the handoff template.
+  - Switch back to **QA mode** and re-verify.
 
 ---
 
@@ -95,7 +106,7 @@ Escalate when boundaries are unclear or when work exceeds role scope.
 
 ## Templates Location
 
-All workflow templates are in [.github/agents/templates/](.github/agents/templates/):
+All workflow templates are in [agents/templates/](agents/templates/):
 
 - `MILESTONE_META_ISSUE_TEMPLATE.md` - Milestone tracking
 - `ISSUE_TEMPLATE.md` - Issue creation
@@ -104,6 +115,9 @@ All workflow templates are in [.github/agents/templates/](.github/agents/templat
 - `PR_REQUEST_TEMPLATE.md` - Pull request creation
 - `ADR_TEMPLATE.md` - Architecture decision records
 - `BLOCKER_TEMPLATE.md` - Escalations and blockers
+
+Canonical two-prompt workflow:
+- `TWO_PROMPTS.md` - Copy/paste prompts for (1) ARCH planning and (2) DEV→QA implementation+validation
 
 ---
 
@@ -118,6 +132,61 @@ Every agent must assume:
   - Issue and PR discussions
 
 **If work cannot be resumed from these artifacts alone, the workflow has failed.**
+
+---
+
+## Rehydration Protocol (After Context Reset / Compaction)
+
+When starting a new session with limited prior context, the agent must quickly re-establish: **mode, milestone, branch, current issue, and last verified state**.
+
+Minimum steps:
+1. Confirm repo context: run `git remote -v`.
+2. Confirm working state: `git status` and current branch.
+3. Identify the active milestone branch (usually `milestone-N`).
+4. In GitHub:
+   - open the **Milestone Meta-Issue** for the active milestone
+   - find the first unchecked issue (or the meta-issue “Current Focus”, if present)
+   - scan the most recent closed issue handoff comments to see what’s done and how it was verified
+5. Re-run the most recent “How to Verify” command(s) from the last closed issue if there is any doubt.
+
+If GitHub state is inaccessible for any reason, stop and ask the human for the milestone meta-issue link/number.
+
+---
+
+## Status Line Convention (Human Visibility)
+
+To keep work obviously on-track, the agent should frequently state a short status line in responses, especially when switching tasks:
+
+- `MODE: <ARCH|DEV|QA> | MILESTONE: <N> | ISSUE: #<id> | STATE: <starting|in-progress|done|blocked>`
+
+When finishing an issue, explicitly say:
+- `Finished #<id>; starting #<next-id>` (or “moving to QA recheck”).
+
+This is not a substitute for durable state in GitHub issues/commits; it is for operator confidence.
+
+---
+
+## Durable State Rules (Issues + Commits)
+
+To maximize recoverability:
+- Do not move to the next issue until the current issue has:
+  - at least one coherent commit (using `COMMIT_MSG_TEMPLATE.md`, referencing `#<issue>`)
+  - verification recorded (tests run / not run + why)
+  - a closing handoff comment (`ISSUE_HANDOFF_TEMPLATE.md`) and is **closed** in GitHub
+- Keep the milestone meta-issue checklist up to date as issues close.
+
+### Interruption Safety (Mid-Issue)
+
+If you might be interrupted (or you realize you’ve been interrupted) mid-issue, leave a durable checkpoint:
+- Create a **WIP commit** that references the issue number and states what is done vs. remaining.
+- Add a short **WIP comment** on the issue with:
+  - current state (what works / what doesn’t)
+  - files touched
+  - next steps
+  - any commands to resume / verify
+- Update the milestone meta-issue “Current Focus” to the current issue + mode.
+
+Goal: a rehydrated agent can resume without guesswork.
 
 ---
 
@@ -142,7 +211,7 @@ Core principles:
 - Append-only event log is foundational
 - State must be durable and inspectable
 
-See [PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md) for core principles.
+See [PROJECT_CHARTER.md](../docs/PROJECT_CHARTER.md) for core principles.
 For milestone-specific context, consult the current milestone's charter (e.g., MILESTONE2_CHARTER.md).
 
 ---

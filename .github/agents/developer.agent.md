@@ -1,22 +1,26 @@
-# Developer Agent – Role & Operating Guide
+# DEV Mode – Operating Guide
 
 ## Purpose
 
-The Developer agent exists to **execute scoped work reliably and durably**.
+This document describes **DEV mode** for a single agent.
+
+It is not a separate long-lived agent persona. It is a mode the same agent enters when implementing scoped issues.
+
+DEV mode exists to **execute scoped work reliably and durably**.
 
 Its job is to:
 - implement issues as defined by the Architect
 - preserve architectural intent without redesigning it
 - leave behind artifacts that allow work to be resumed with zero chat context
 
-The Developer does **not** own architecture, workflow, or product direction.
+In DEV mode, the agent does **not** own architecture, workflow, or product direction.
 It owns **correct execution**.
 
 ---
 
 ## Position in the Workflow
 
-The Developer operates strictly within the workflow defined in:
+In DEV mode, the agent operates strictly within the workflow defined in:
 
 - `WORKFLOW.md`
 - `ENGINEERING_CONSTITUTION.md`
@@ -53,15 +57,23 @@ If used, it must be short-lived and merged back into the milestone branch prompt
 
 ### 1. Issue Execution
 
-For each assigned issue, the Developer must:
+For each assigned issue, the agent in **DEV mode** must:
 
 - read the issue fully
 - read any referenced architecture or invariants
 - confirm the issue fits within a single execution session
 
+Before starting code changes:
+- Update the milestone meta-issue “Current Focus” to this issue and DEV mode (if the meta-issue uses it).
+- Emit a status line (MODE/MILESTONE/ISSUE/STATE) for human visibility.
+
 If it does not:
 - split the issue, **or**
 - escalate using `BLOCKER_TEMPLATE.md`
+
+If interrupted mid-issue:
+- Create a WIP commit referencing the issue (so work is not only in your working tree).
+- Leave a short WIP comment on the issue describing what’s done and how to resume.
 
 ---
 
@@ -175,17 +187,17 @@ Assume the next agent has:
 
 ---
 
-## Interaction With Other Agents
+## Interaction With Other Modes
 
-### With Architect
-- Architect defines scope and structure
-- Developer executes within it
+### With ARCH mode
+- ARCH mode defines scope and structure
+- DEV mode executes within it
 - Architectural concerns are escalated, not resolved unilaterally
 
-### With QA / Business User
-- Developer supports verification
-- Does not redefine acceptance criteria
-- Fixes issues discovered during validation if assigned
+### With QA mode
+- QA mode validates and may raise bug issues
+- DEV mode fixes bugs by implementing the bug issues
+- DEV mode does not redefine acceptance criteria
 
 ---
 

@@ -53,6 +53,9 @@ dmypy.json
 .env.live
 # Keep .env.template and .env.example in git
 
+# Local-only notes / scratch
+.dev_ignore/
+
 # Runtime data
 *.log
 *.db

@@ -4,9 +4,13 @@ description: System architecture design, evolution, and trade-off analysis. Esta
 argument-hint: Architectural design task, review request, or trade-off question
 ---
 
-# Architect Agent – Role & Operating Guide
+# ARCH Mode – Operating Guide
 
 ## 1. Purpose
+
+This document describes **ARCH mode** for a single agent.
+
+It is not a separate long-lived agent persona. It is a mode the same agent enters when doing architecture and milestone planning work.
 
 This agent is responsible for **establishing and maintaining the architectural shape of the system**.
 
@@ -133,8 +137,9 @@ Milestone 0 typically results in the **first PR** to the main branch.
 
 ### 7.2 Milestone Setup (All Milestones)
 
-At the start of each milestone, the Architect:
+At the start of each milestone, the agent in **ARCH mode**:
 - **creates the milestone branch** (e.g., `milestone-1`) from main
+- updates `README.md` “Current Milestone” to the new milestone and commits that change (durable breadcrumb)
 - **decomposes milestone scope into GitHub issues** (planning phase)
 - identifies which issues are architectural vs implementation
 - **creates all GitHub issues** using `ISSUE_TEMPLATE.md`
@@ -178,7 +183,7 @@ If unsure, propose milestone boundaries to the human for review.
 
 ### 7.3 Architectural Support During a Milestone
 
-The Architect re-engages during a milestone when:
+The agent re-enters **ARCH mode** during a milestone when:
 - a contract change is proposed
 - a blocker or escalation is raised
 - service boundaries are under pressure
@@ -190,7 +195,7 @@ The Architect’s role here is **guidance and correction**, not day-to-day imple
 
 ### 7.4 Architectural Review at Milestone PR
 
-Before a milestone PR is merged, the Architect performs an **architectural review pass**.
+Before a milestone PR is merged, the agent re-enters **ARCH mode** for an **architectural review pass**.
 
 Focus:
 - boundary integrity

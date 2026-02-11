@@ -20,6 +20,34 @@ All execution artifacts must conform to the templates defined in:
 
 ---
 
+## 1.1 Single Agent, Multiple Modes
+
+This repo is operated as a **single Copilot agent that switches modes**, not three separate agents.
+
+Modes:
+- **ARCH mode**: architecture + milestone planning + contract decisions
+- **DEV mode**: implementation of scoped issues
+- **QA mode**: runnable-system validation + acceptance checks + PR creation
+
+**Mode discipline**:
+- The agent must explicitly state its current mode at the start of a working session.
+- If switching modes mid-session, the agent must announce the switch and follow that mode’s rules.
+
+### Two-Prompt Cadence (Default)
+
+Milestones are typically executed with **two human prompts**:
+1. **Architecture prompt** (ARCH mode): decompose the milestone, create issues/meta-issue, establish/adjust contracts and architecture artifacts.
+2. **Implementation prompt** (DEV → QA loop): implement issues, validate end-to-end, raise bug issues as needed, fix them, re-validate, then create the PR.
+
+Canonical prompt templates live in:
+- `.github/agents/templates/TWO_PROMPTS.md`
+
+The human intervenes primarily to:
+- approve the ARCH output (milestone plan/contracts)
+- review and merge the milestone PR
+
+---
+
 ## 2. Units of Work
 
 ### 2.1 Project
@@ -81,13 +109,13 @@ No feature work begins until the baseline is accepted.
 Each milestone follows the same internal shape.
 
 ### 4.1 Milestone Planning
-The Architect agent:
+The agent in **ARCH mode**:
 - defines milestone scope
 - proposes a set of issues
 - identifies dependencies and service boundaries
 - ensures a runnable spine exists or will be created
 
-The Product Owner approves or amends the milestone plan.
+The human approves or amends the milestone plan.
 
 ### 4.2 Milestone Composition Pattern
 Every milestone must include:
@@ -142,6 +170,8 @@ During execution:
 - changes remain within the issue scope
 - service boundaries and contracts are respected
 
+If execution is interrupted mid-issue, the agent must leave a durable checkpoint (WIP commit + issue comment) so work can be resumed after a context reset.
+
 All commits must use:
 - `.github/agents/templates/COMMIT_MESSAGE_TEMPLATE.md`
 
@@ -164,15 +194,19 @@ An issue is complete only when **all** of the following are done:
 
 This closing comment is the **durable handoff artifact**.
 
+Additionally:
+- Do not start the next issue until the current issue has at least one coherent commit referencing the issue number.
+- Keep the milestone meta-issue up to date (checkboxes, and “Current Focus” if used).
+
 ---
 
-## 6. Parallel Agent Work
+## 6. Parallel Work (Optional)
 
 ### 6.1 Branch Discipline
 - Each milestone is worked on a dedicated milestone branch (e.g., `milestone-1`, `milestone-2`).
 - All issues within a milestone are completed on that milestone branch.
-- The Architect creates the milestone branch at the start of milestone setup.
-- Agents assume other agents may be working concurrently.
+- The agent in **ARCH mode** creates the milestone branch at the start of milestone setup.
+- If multiple agents are used concurrently, assume others may be working and resolve conflicts explicitly.
 - Conflicts are resolved explicitly, never silently.
 
 ### 6.2 Service Ownership
@@ -196,20 +230,20 @@ When all milestone issues are complete:
 - system is verified as runnable
 - milestone acceptance criteria are checked
 
-### 7.2 Milestone Validation (QA Agent)
-The QA agent performs final milestone validation:
+### 7.2 Milestone Validation (QA mode)
+The agent in **QA mode** performs final milestone validation:
 - verifies system is runnable end-to-end
 - confirms all acceptance criteria met
 - validates documented usage paths
 - checks issue state and traceability
 - produces milestone QA summary
 
-### 7.3 Pull Request Creation (QA Agent)
-After successful validation, the QA agent:
+### 7.3 Pull Request Creation (QA mode)
+After successful validation, the agent in **QA mode**:
 - confirms all milestone issues are closed with handoffs
 - confirms meta-issue is updated
 - confirms branch is mergeable with main
-- creates PR using `.github/agents/templates/PULL_REQUEST_TEMPLATE.md`
+- creates PR using `.github/agents/templates/PR_REQUEST_TEMPLATE.md`
 - includes QA validation summary in PR description
 - notifies human for review
 

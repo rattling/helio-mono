@@ -4,7 +4,7 @@ Personal decision and execution substrate built on an append-only event log foun
 
 ## Project Status
 
-**Current Milestone**: Milestone 2 - Service Infrastructure Foundation  
+**Current Milestone**: Milestone 3 - Deployment & CI Discipline  
 **Status**: 🔄 In Progress
 
 ## Quick Start
@@ -239,13 +239,20 @@ Without an OpenAI API key, the system uses a mock LLM service with keyword-based
 1. Create a bot via [@BotFather](https://t.me/botfather) on Telegram
 2. Get your bot token
 3. Start a conversation with your bot
-4. Send `/start` to get your chat ID (logged in console)
-5. Add credentials to `.env`:
+4. Send `/start` to the bot
+5. Get your chat ID:
+   - Preferred: check the service/bot logs for a line like `Chat ID: 123456789` after sending `/start`
+   - Fallback: call the Telegram Bot API and read `message.chat.id`:
+     ```bash
+     curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getUpdates" | jq '.result[-1].message.chat.id'
+     ```
+     (If you don’t have `jq`, just open the JSON and look for `\"chat\": { \"id\": ... }`.)
+6. Add credentials to `.env`:
    ```bash
    TELEGRAM_BOT_TOKEN=your_bot_token_here
    TELEGRAM_CHAT_ID=your_chat_id_here
    ```
-6. Run the bot: `make telegram`
+7. Run the bot: `make run` (or `make telegram` if you’re using the legacy standalone target)
 
 ### Available Commands
 

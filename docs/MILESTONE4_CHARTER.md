@@ -19,7 +19,7 @@ Its purpose is to ensure Helionyx is secure and data-durable enough for real dai
 
 **Unified Arc Context:**
 - **Milestone 2**: Service infrastructure foundation (complete)
-- **Milestone 3**: Deployment & CI discipline (complete)
+- **Milestone 3**: Deployment & CI discipline
 - **Milestone 4** (this): Hardening & security baseline
 
 Milestone 4 assumes M2's service foundation and M3's deployment discipline are in place.
