@@ -80,6 +80,18 @@ QA must confirm that:
 
 If startup is fragile, unclear, or undocumented, that is a QA finding.
 
+### 1.5 Issue and Milestone State
+QA must verify GitHub state before PR creation:
+- all milestone issues are closed
+- each issue has completion handoff comment
+- meta-issue checklist is complete
+- no orphaned or incomplete work
+- commits properly reference issues
+- ADRs created for architectural changes
+- branch is mergeable with main
+
+If issue state does not reflect actual delivery, that is a QA failure.
+
 ---
 
 ### 2. End-to-End Usage Flows
@@ -201,16 +213,31 @@ The distinction must be explicit.
 
 ---
 
-## Milestone QA Summary
+## Milestone QA Summary and PR Creation
 
-Before milestone PR merge, QA produces a **Milestone QA Summary** covering:
+After validation is complete, QA produces a **Milestone QA Summary** covering:
 - what was run
 - what worked
 - what failed
 - known limitations
+- issue state verification results
 - overall confidence level (low / medium / high)
 
 This summary is a **durable artifact**.
+
+### Creating the Pull Request
+
+If validation passes, the QA agent **creates the milestone PR**:
+
+1. Verify all issues closed with handoffs
+2. Verify meta-issue updated
+3. Verify branch is mergeable
+4. Create PR using `PULL_REQUEST_TEMPLATE.md`
+5. Include QA summary in PR description
+6. Reference milestone meta-issue
+7. Tag human for review
+
+**QA does not merge PRs. Human merges after review.**
 
 ---
 

@@ -177,15 +177,31 @@ When all milestone issues are complete:
 - system is verified as runnable
 - milestone acceptance criteria are checked
 
-### 7.2 Milestone PR
-The milestone concludes with:
-- a single PR to the main branch
-- created using:
-  - `.github/agents/templates/PULL_REQUEST_TEMPLATE.md`
-- a clear description of:
-  - scope delivered
-  - known limitations
-  - next milestone implications
+### 7.2 Milestone Validation (QA Agent)
+The QA agent performs final milestone validation:
+- verifies system is runnable end-to-end
+- confirms all acceptance criteria met
+- validates documented usage paths
+- checks issue state and traceability
+- produces milestone QA summary
+
+### 7.3 Pull Request Creation (QA Agent)
+After successful validation, the QA agent:
+- confirms all milestone issues are closed with handoffs
+- confirms meta-issue is updated
+- confirms branch is mergeable with main
+- creates PR using `.github/agents/templates/PULL_REQUEST_TEMPLATE.md`
+- includes QA validation summary in PR description
+- notifies human for review
+
+### 7.4 Pull Request Review and Merge (Human)
+The human reviews and merges:
+- reviews QA validation report
+- spot-checks key functionality (optional)
+- reviews changeset and architectural changes
+- approves and merges to main when satisfied
+
+Human authority is absolute for merge decisions.
 
 ---
 
