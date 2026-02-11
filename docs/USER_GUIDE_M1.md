@@ -94,10 +94,29 @@ TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
 TELEGRAM_CHAT_ID=123456789
 ```
 
-To get your chat ID:
-1. Message your bot
-2. Visit: `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates`
-3. Look for the `"chat":{"id":...}` field
+**To get your chat ID**:
+1. Open Telegram and search for your bot (use the username you created with @BotFather)
+2. **Send any message to your bot** (e.g., "hello" or "/start")
+3. Visit in your browser: `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates`
+   - Replace `<YOUR_BOT_TOKEN>` with your actual token
+4. Look for `"chat":{"id":123456789}` in the JSON response
+5. Copy that number (e.g., `123456789`) - this is your chat ID
+
+**Example**:
+```json
+{
+  "ok": true,
+  "result": [{
+    "message": {
+      "chat": {
+        "id": 123456789,    <-- This is your chat ID
+        "first_name": "John",
+        "type": "private"
+      }
+    }
+  }]
+}
+```
 
 ### Notifications
 
