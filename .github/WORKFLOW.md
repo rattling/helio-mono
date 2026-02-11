@@ -142,8 +142,10 @@ An issue is complete only when **all** of the following are done:
 - code committed and pushed
 - tests pass
 - docs/runbooks updated if affected
-- issue updated with a closing comment using:
+- issue closed in GitHub with handoff comment using:
   - `.github/agents/templates/ISSUE_HANDOFF_TEMPLATE.md`
+
+**The issue must be marked as closed (state=closed) in GitHub.**
 
 This closing comment is the **durable handoff artifact**.
 
@@ -152,7 +154,9 @@ This closing comment is the **durable handoff artifact**.
 ## 6. Parallel Agent Work
 
 ### 6.1 Branch Discipline
-- Each issue is worked on its own branch.
+- Each milestone is worked on a dedicated milestone branch (e.g., `milestone-1`, `milestone-2`).
+- All issues within a milestone are completed on that milestone branch.
+- The Architect creates the milestone branch at the start of milestone setup.
 - Agents assume other agents may be working concurrently.
 - Conflicts are resolved explicitly, never silently.
 

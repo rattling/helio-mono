@@ -135,6 +135,10 @@ Docs must reflect reality, not aspiration.
 
 An issue is **not complete** until the following handoff is written.
 
+**Required Actions**:
+1. Add closing comment using `.github/agents/templates/ISSUE_HANDOFF_TEMPLATE.md`
+2. **Close the issue in GitHub** (set state to closed)
+
 The closing comment must include:
 
 - **Summary** – what was done
@@ -143,6 +147,8 @@ The closing comment must include:
 - **Notes** – limitations, follow-ups, or risks
 
 This comment is the **durable handoff artifact**.
+
+**Do not consider the issue complete until it is closed in GitHub with the handoff comment.**
 
 Assume the next agent has:
 - no chat history

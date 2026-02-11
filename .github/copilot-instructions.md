@@ -14,6 +14,13 @@
    - `docs/PROJECT_INVARIANTS.md` - Non-negotiable technical constraints (to be created)
    - `docs/ARCHITECTURE.md` - Current system structure (if exists)
 
+**At Session Start**: Acknowledge you have read these documents by briefly stating:
+- Your role (Architect/Developer/QA)
+- The milestone or issue you're working on
+- Key constraints you understand from the docs
+
+This confirms you have context before proceeding.
+
 ---
 
 ## Role Assignment
@@ -41,6 +48,13 @@ Escalate when boundaries are unclear or when work exceeds role scope.
 ---
 
 ## Critical Execution Rules
+
+### Python Virtual Environment
+- **ALWAYS use `.venv/bin/python` instead of `python`**
+- **ALWAYS use `.venv/bin/pip` instead of `pip`**
+- The project uses a virtual environment in `.venv/` directory
+- Running `python` directly may use system Python with wrong dependencies
+- Example: `.venv/bin/python scripts/run_telegram_bot.py`
 
 ### Branching and Integration
 - **All milestone work occurs on the milestone branch**

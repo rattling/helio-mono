@@ -127,13 +127,31 @@ QA checks that:
 
 ---
 
-### 6. Architectural Compliance (Lightweight)
-QA verifies that:
-- service boundaries are respected
-- contracts are honored
-- no accidental tight coupling is introduced
+### 6. Architectural Compliance
 
-QA flags drift; it does not redesign.
+QA must verify that the implementation has not drifted from architectural intent.
+
+**Required Checks**:
+- Service boundaries are respected (no cross-service internal access)
+- Contracts are honored (APIs, schemas, events)
+- No accidental tight coupling introduced
+- ADRs exist for non-trivial architectural changes
+- Contract changes are documented and versioned
+- Architecture diagrams still match implementation (if diagrams exist)
+
+**How to Check**:
+- Read `docs/ARCHITECTURE.md` (if exists)
+- Review any ADRs in `docs/ADR_*.md`
+- Inspect imports and dependencies
+- Check if services reach into each other's internals
+- Verify contracts in `shared/contracts/` match actual usage
+
+**If Drift Found**:
+- Document the drift in QA findings
+- Assess severity: blocker vs. concern
+- Flag for Architect review if significant
+
+**QA flags drift; it does not redesign.**
 
 ---
 
@@ -210,6 +228,52 @@ QA may allow merge with notes if:
 - non-critical edge cases
 
 The distinction must be explicit.
+
+---
+
+## Bug Fix Workflow
+
+When QA finds bugs during validation, follow this workflow:
+
+### 1. Document Findings
+- List all bugs in QA findings section
+- For each bug, document:
+  - What was attempted
+  - Expected behavior
+  - Actual behavior
+  - Severity (blocker / concern / note)
+  - Steps to reproduce
+
+### 2. Create Bug Issues
+For each **blocking** bug:
+- Create a new GitHub issue using `ISSUE_TEMPLATE.md`
+- Title: "Bug: [concise description]"
+- Include reproduction steps
+- Tag with milestone
+- Assign to Developer for fix
+
+For **non-blocking** concerns, document in QA report only.
+
+### 3. Hand Off to Developer
+- QA does not fix bugs itself
+- Developer receives assigned issues
+- Developer fixes and closes with handoff comment
+- Developer commits fixes with "Fixes #N" references
+
+### 4. QA Recheck (Targeted)
+After Developer fixes:
+- QA runs **targeted recheck** on previously failing areas only
+- Does not repeat full milestone validation
+- Updates QA report with recheck results:
+  - "✅ Bug #N fixed and verified"
+  - "❌ Bug #N still present" (create new issue or comment)
+  - "⚠️ Bug #N fixed, but new issue found" (create separate issue)
+
+### 5. Iterate if Needed
+- If new bugs found during recheck: return to step 2
+- If fixes verified: proceed to PR creation
+
+**Critical**: QA must never silently fix bugs without issue tracking and proper commits.
 
 ---
 
