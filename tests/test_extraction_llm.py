@@ -1,7 +1,6 @@
 """Tests for extraction service with LLM integration."""
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 from shared.contracts import MessageIngestedEvent, SourceType
@@ -134,7 +133,7 @@ async def test_mock_llm_records_artifacts(event_store, extraction_service):
     events_before = await event_store.stream_events()
     
     # Extract objects
-    extracted_items = await extraction_service.extract_from_message(message_id)
+    await extraction_service.extract_from_message(message_id)
     
     # Count events after extraction
     events_after = await event_store.stream_events()

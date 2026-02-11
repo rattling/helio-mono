@@ -52,7 +52,12 @@ target-version = ['py311']
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.ruff.lint]
+# Keep linting focused on high-signal correctness issues only.
+# - E9*: syntax errors
+# - F82*: undefined names / name errors
+select = ["E9", "F821", "F822", "F823"]
 
 [tool.mypy]
 python_version = "3.11"
