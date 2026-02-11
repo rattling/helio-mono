@@ -7,6 +7,7 @@ from telegram.ext import ContextTypes
 from shared.contracts import SourceType
 
 logger = logging.getLogger(__name__)
+audit_logger = logging.getLogger("helionyx.audit")
 
 # Service instances (injected from bot.py)
 ingestion_service = None
@@ -38,8 +39,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             },
         )
 
+        audit_logger.info("telegram_message_ingested event_id=%s", str(event_id))
+
         # Trigger extraction (synchronous for M1)
         extracted_items = await extraction_service.extract_from_message(event_id)
+        audit_logger.info(
+            "telegram_extraction_triggered event_id=%s extracted_count=%s",
+            str(event_id),
+            len(extracted_items),
+        )
 
         # Acknowledge with details
         if extracted_items:

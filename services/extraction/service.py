@@ -49,6 +49,23 @@ class ExtractionService:
         Returns:
             List of tuples (event_id, object_type, object_data) for extracted objects
         """
+        # Best-effort idempotency: if we've already emitted ObjectExtractedEvent(s)
+        # for this message, do not re-trigger extraction.
+        try:
+            recent = await self.event_store.get_by_type(EventType.OBJECT_EXTRACTED, limit=200)
+            for event in recent:
+                if isinstance(event, ObjectExtractedEvent) and event.source_event_id == message_event_id:
+                    logger.info(f"Extraction skipped (already extracted): {message_event_id}")
+                    logging.getLogger("helionyx.audit").info(
+                        "extraction_skipped_already_extracted message_event_id=%s",
+                        str(message_event_id),
+                    )
+                    return []
+        except Exception:
+            # Fail open on idempotency check errors; extraction is still safe,
+            # but may duplicate events.
+            pass
+
         # Get the message event
         message_event = await self.event_store.get_by_id(message_event_id)
 
@@ -72,6 +89,9 @@ class ExtractionService:
         extracted_items = []
         for obj_data in result.objects:
             try:
+                if not isinstance(obj_data, dict):
+                    logger.warning(f"Skipping invalid extracted object payload: {obj_data!r}")
+                    continue
                 # Validate object type and schema
                 validated_obj = self._validate_object(obj_data, message_event_id)
                 if validated_obj:
