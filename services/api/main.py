@@ -5,7 +5,7 @@ Domain services remain framework-agnostic.
 """
 
 from fastapi import FastAPI
-from services.api.routes import health, ingestion
+from services.api.routes import health, ingestion, query
 
 # Create FastAPI application
 app = FastAPI(
@@ -17,6 +17,7 @@ app = FastAPI(
 # Register routes
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(ingestion.router, prefix="/api/v1/ingest", tags=["ingestion"])
+app.include_router(query.router, prefix="/api/v1", tags=["query"])
 
 
 @app.get("/")
