@@ -1,4 +1,4 @@
-.PHONY: help setup install test lint format clean run demo telegram rebuild import-chatgpt view-events status deploy restart logs stop backup restore
+.PHONY: help setup install test lint format precommit clean run demo telegram rebuild import-chatgpt view-events status deploy restart logs stop backup restore
 
 # Default environment if not specified
 ENV ?= dev
@@ -45,6 +45,9 @@ lint: ## Run linters
 format: ## Format code
 	.venv/bin/black services/ shared/ tests/
 	.venv/bin/ruff check --fix services/ shared/ tests/
+
+precommit: ## Run pre-commit hooks (same checks as CI)
+	.venv/bin/pre-commit run --all-files --show-diff-on-failure
 
 clean: ## Clean generated files
 	find . -type d -name __pycache__ -exec rm -rf {} +

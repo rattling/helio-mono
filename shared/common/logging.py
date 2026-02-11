@@ -19,9 +19,7 @@ class SecretRedactionFilter(logging.Filter):
         (re.compile(r"\b\d{5,}:[A-Za-z0-9_-]{20,}\b"), "***REDACTED_TELEGRAM_TOKEN***"),
         # Common env var key-value shapes
         (
-            re.compile(
-                r"\b(OPENAI_API_KEY|TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID)\s*=\s*([^\s,;]+)"
-            ),
+            re.compile(r"\b(OPENAI_API_KEY|TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID)\s*=\s*([^\s,;]+)"),
             r"\1=***REDACTED***",
         ),
     ]

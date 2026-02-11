@@ -54,7 +54,10 @@ class ExtractionService:
         try:
             recent = await self.event_store.get_by_type(EventType.OBJECT_EXTRACTED, limit=200)
             for event in recent:
-                if isinstance(event, ObjectExtractedEvent) and event.source_event_id == message_event_id:
+                if (
+                    isinstance(event, ObjectExtractedEvent)
+                    and event.source_event_id == message_event_id
+                ):
                     logger.info(f"Extraction skipped (already extracted): {message_event_id}")
                     logging.getLogger("helionyx.audit").info(
                         "extraction_skipped_already_extracted message_event_id=%s",
