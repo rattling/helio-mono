@@ -68,6 +68,44 @@ curl http://localhost:8000/health
 curl http://localhost:8000/health/ready
 ```
 
+## Configuration
+
+Helionyx supports environment-specific configuration via `.env` files.
+
+### Configuration Files
+
+Three environment-specific example files are provided:
+
+- **`.env.dev.example`** - Development environment (port 8000, verbose logging, local paths)
+- **`.env.staging.example`** - Staging environment (port 8001, moderate logging, isolated data)
+- **`.env.live.example`** - Production environment (port 8002, minimal logging, production paths)
+
+### Setup
+
+```bash
+# For development
+cp .env.dev.example .env.dev
+# Edit .env.dev and fill in your credentials (OPENAI_API_KEY, TELEGRAM_BOT_TOKEN, etc.)
+
+# For staging
+cp .env.staging.example .env.staging
+# Edit .env.staging with staging-specific values
+
+# For production
+cp .env.live.example .env.live
+# Edit .env.live with production values
+```
+
+### Key Configuration Points
+
+- **API Ports**: Each environment must use a unique port (8000/8001/8002) for same-host deployment
+- **Data Paths**: Environments must have isolated event stores and projection databases
+- **Telegram Bots**: Each environment should use a separate Telegram bot (create via @BotFather)
+- **Cost Limits**: Adjust LLM cost limits per environment (lower for dev, higher for live)
+- **Logging Levels**: Use DEBUG for dev, INFO for staging, WARNING for live
+
+See [`.env.template`](.env.template) for complete documentation of all configuration options.
+
 ## Project Structure
 
 ```
