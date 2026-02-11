@@ -1,7 +1,7 @@
 # Helionyx — Project Charter
 
 ## Version
-v0.1 — Initial Charter (Milestone 1 Focus)
+v0.2 — Core Charter (Milestone-Agnostic)
 
 ## 1. Purpose
 
@@ -97,106 +97,45 @@ The artifact model is expected to expand over time.
 
 ---
 
-## 6. Interfaces and Interaction Model
+## 6. Milestones
 
-### 6.1 Input Streams
-Initial input consists of:
-- conversational data
-- messages exchanged between the user and LLMs
+Helionyx development is organized into milestones, each with specific goals and deliverables.
 
-For Milestone 1:
-- ingestion of ChatGPT conversation dumps is used as a **temporary bootstrap mechanism**
-- this is not a long-term interaction strategy
+### Milestone 0: Architecture Baseline ✅
 
-### 6.2 Active Interaction Surface
-For Milestone 1:
-- **Telegram** is the primary active interface
-- it is treated as an adapter, not a core dependency
+**Status**: Complete (Feb 10, 2026)  
+**Purpose**: Establish foundational architecture with service boundaries, contracts, and working walking skeleton.
 
-Future interfaces (native UI, alternate channels) are anticipated.
+**Key Deliverables**:
+- Service-oriented monorepo structure
+- Event-sourced architecture with file-based event log
+- Contract definitions and protocols
+- Walking skeleton demonstration
+- Comprehensive architecture documentation
 
-### 6.3 Push vs Pull
-In Milestone 1:
-- **Push**: reminders and summaries only
-- **Pull**: conversational queries about recorded items
+**See**: [MILESTONE0_CHARTER.md](MILESTONE0_CHARTER.md) for complete details.
 
-No autonomous task execution occurs in Milestone 1.
+### Milestone 1: Core Functionality and LLM Integration ✅
 
----
+**Status**: Complete (Feb 11, 2026)  
+**Purpose**: Transform baseline into functional system with real LLM extraction, durable persistence, and active user interaction.
 
-## 7. Core Object Types (Milestone 1)
+**Key Deliverables**:
+- OpenAI integration with MockLLM for testing
+- SQLite persistence with projection rebuild
+- Telegram bot interface with commands and notifications
+- ChatGPT import capability
+- Comprehensive test suite (31 tests)
 
-Helionyx initially supports three first-class tagged object types:
+**See**: [MILESTONE1_CHARTER.md](MILESTONE1_CHARTER.md) for complete details.
 
-- **Todo**
-  - explicit actions or commitments
-- **Note**
-  - noteworthy information worth retaining
-- **Track**
-  - declarative intent to monitor something over time
+### Future Milestones
 
-Properties:
-- objects may carry multiple tags (e.g. note + track)
-- tags represent interpretation, not irreversible classification
+Future milestones will be planned and documented as development progresses. Each milestone will have its own charter document following the same pattern.
 
 ---
 
-## 8. Milestone 1 Goals
-
-Milestone 1 exists to prove that:
-
-- an ongoing information stream can be ingested
-- structured meaning can be extracted reliably
-- decisions and interpretations are explicit and inspectable
-- durable state accumulates coherently over time
-- the system can push and answer basic questions meaningfully
-
-Milestone 1 prioritizes:
-- correctness
-- traceability
-- controllability
-
-It explicitly deprioritizes breadth, automation, and sophistication.
-
-### 8.1 User Interaction Requirements
-
-Milestone 1 must provide **clear, documented pathways** for the business user to:
-
-1. **Bring up the system** and keep it running in a "live" state
-2. **Ingest new messages** through multiple channels:
-   - Interactive CLI scripts
-   - Telegram bot interface
-   - ChatGPT conversation imports
-3. **Trigger and verify extraction** of structured objects from messages
-4. **Query the system** for todos, notes, and tracks with tag filtering
-5. **View raw event log** and extracted objects for inspection
-6. **Interact via Telegram** for all core operations
-
-**Acceptance Criterion**: The QA agent (simulating the human user) must be able to perform all workflows above using only:
-- Scripts in `scripts/`
-- Telegram bot commands
-- Documentation in `docs/` and `README.md`
-
-No chat history or undocumented steps should be required.
-
----
-
-## 9. Explicit Non-Goals (Milestone 1)
-
-The following are **out of scope** for Milestone 1:
-
-- autonomous task execution
-- complex planning or scheduling
-- agent self-improvement
-- learning across users
-- rich UI beyond Telegram
-- deep integrations (email, calendar, external systems)
-
-These may appear in future milestones, but are intentionally excluded now.
-
----
-
-## 10. Forward Directions (Non-Binding)
+## 7. Forward Directions (Non-Binding)
 
 Anticipated future directions include:
 - native chat and decision UIs
@@ -216,3 +155,4 @@ These are directional signals, not commitments.
 > Helionyx should make it easier for a human to understand what has happened, what decisions were made, why they were made, and what remains unresolved — even months later — without trusting any single model, interface, or session.
 
 That principle governs all future work.
+88
