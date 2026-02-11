@@ -43,15 +43,15 @@ async def test_extract_todo_from_message(event_store, extraction_service):
     message_id = await event_store.append(message_event)
     
     # Extract objects
-    extracted_ids = await extraction_service.extract_from_message(message_id)
+    extracted_items = await extraction_service.extract_from_message(message_id)
     
     # Should extract one todo
-    assert len(extracted_ids) > 0
+    assert len(extracted_items) > 0
     
-    # Verify the extracted event
-    extracted_event = await event_store.get_by_id(extracted_ids[0])
-    assert extracted_event.object_type == "todo"
-    assert "review" in extracted_event.object_data["title"].lower()
+    # Verify the extracted object
+    event_id, object_type, object_data = extracted_items[0]
+    assert object_type == "todo"
+    assert "review" in object_data["title"].lower()
 
 
 @pytest.mark.asyncio
@@ -65,12 +65,12 @@ async def test_extract_note_from_message(event_store, extraction_service):
     )
     message_id = await event_store.append(message_event)
     
-    extracted_ids = await extraction_service.extract_from_message(message_id)
+    extracted_items = await extraction_service.extract_from_message(message_id)
     
-    assert len(extracted_ids) > 0
-    extracted_event = await event_store.get_by_id(extracted_ids[0])
-    assert extracted_event.object_type == "note"
-    assert "documentation" in extracted_event.object_data["title"].lower()
+    assert len(extracted_items) > 0
+    event_id, object_type, object_data = extracted_items[0]
+    assert object_type == "note"
+    assert "documentation" in object_data["title"].lower()
 
 
 @pytest.mark.asyncio
@@ -84,12 +84,12 @@ async def test_extract_track_from_message(event_store, extraction_service):
     )
     message_id = await event_store.append(message_event)
     
-    extracted_ids = await extraction_service.extract_from_message(message_id)
+    extracted_items = await extraction_service.extract_from_message(message_id)
     
-    assert len(extracted_ids) > 0
-    extracted_event = await event_store.get_by_id(extracted_ids[0])
-    assert extracted_event.object_type == "track"
-    assert "migration" in extracted_event.object_data["title"].lower()
+    assert len(extracted_items) > 0
+    event_id, object_type, object_data = extracted_items[0]
+    assert object_type == "track"
+    assert "migration" in object_data["title"].lower()
 
 
 @pytest.mark.asyncio
@@ -103,20 +103,20 @@ async def test_extract_no_objects_from_plain_message(event_store, extraction_ser
     )
     message_id = await event_store.append(message_event)
     
-    extracted_ids = await extraction_service.extract_from_message(message_id)
+    extracted_items = await extraction_service.extract_from_message(message_id)
     
     # Should not extract anything from a plain greeting
-    assert len(extracted_ids) == 0
+    assert len(extracted_items) == 0
 
 
 @pytest.mark.asyncio
 async def test_extract_with_invalid_message_id(extraction_service):
     """Test extraction with non-existent message ID."""
     fake_id = uuid4()
-    extracted_ids = await extraction_service.extract_from_message(fake_id)
+    extracted_items = await extraction_service.extract_from_message(fake_id)
     
     # Should return empty list
-    assert extracted_ids == []
+    assert extracted_items == []
 
 
 @pytest.mark.asyncio
@@ -134,7 +134,7 @@ async def test_mock_llm_records_artifacts(event_store, extraction_service):
     events_before = await event_store.stream_events()
     
     # Extract objects
-    extracted_ids = await extraction_service.extract_from_message(message_id)
+    extracted_items = await extraction_service.extract_from_message(message_id)
     
     # Count events after extraction
     events_after = await event_store.stream_events()
@@ -172,13 +172,13 @@ async def test_extraction_priority_detection(event_store, extraction_service):
     )
     message_id = await event_store.append(message_event)
     
-    extracted_ids = await extraction_service.extract_from_message(message_id)
+    extracted_items = await extraction_service.extract_from_message(message_id)
     
-    assert len(extracted_ids) > 0
-    extracted_event = await event_store.get_by_id(extracted_ids[0])
+    assert len(extracted_items) > 0
+    event_id, object_type, object_data = extracted_items[0]
     
     # Check priority is elevated
-    assert extracted_event.object_data["priority"] == "urgent"
+    assert object_data["priority"] == "urgent"
 
 
 @pytest.mark.asyncio

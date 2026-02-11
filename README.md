@@ -182,8 +182,8 @@ You can also send regular messages and the bot will extract todos, notes, and tr
 
 ## Milestones
 
-- **Milestone 0** (Current): Architecture Baseline
-- **Milestone 1** (Planned): Core functionality with Telegram integration
+- **Milestone 0** (Complete): Architecture Baseline
+- **Milestone 1** (Complete): Core functionality with Telegram integration
 
 ## Contributing
 
