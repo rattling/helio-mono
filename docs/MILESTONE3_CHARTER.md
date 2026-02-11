@@ -115,6 +115,37 @@ Create `docs/DEPLOYMENT.md` covering:
 
 ------------------------------------------------------------------------
 
+### 2.6 Environment-Specific Telegram Bots
+
+Introduce separate Telegram bots for each environment to ensure proper isolation and testing.
+
+Requirements:
+
+-   Human operator creates 3 distinct bots via @BotFather:
+    -   `helionyx_dev_bot` (development)
+    -   `helionyx_staging_bot` (staging/testing)
+    -   `helionyx_bot` (production/live)
+-   Human operator updates environment-specific configuration:
+    -   `.env.dev` - dev bot token and chat ID
+    -   `.env.staging` - staging bot token and chat ID
+    -   `.env.live` - live bot token and chat ID
+-   Agents must use correct bot credentials for each environment
+-   Configuration loading already supports this (M2)
+
+**Benefits:**
+
+-   Development testing doesn't spam production bot
+-   Bot username clearly indicates environment
+-   Safe testing of notification changes
+-   True environment isolation
+-   Aligns with environment separation philosophy
+
+**Implementation Note:**
+
+Code already supports this via `Config.from_env(ENV)`. No code changes needed—only configuration setup by human operator.
+
+------------------------------------------------------------------------
+
 ## 3. Non-Goals
 
 Milestone 3 does NOT include:
@@ -163,6 +194,8 @@ Milestone 3 is accepted when:
 -   Service survives deployment without data loss
 -   CI pipeline catches lint/test failures
 -   Documentation allows a new developer to deploy successfully
+-   Each environment uses its designated Telegram bot (dev/staging/live)
+-   Agents correctly load environment-specific bot credentials
 
 If any of these fail, milestone is incomplete.
 
