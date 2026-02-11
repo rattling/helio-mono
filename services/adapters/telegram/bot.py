@@ -78,6 +78,10 @@ async def start_bot(bot_token: str, services: dict, cfg):
     # Create application
     application = create_application(bot_token, services, cfg)
     
+    # Initialize and start application
+    await application.initialize()
+    await application.start()
+    
     # Start notification scheduler as background task if enabled
     notifications_enabled = getattr(cfg, 'NOTIFICATIONS_ENABLED', True)
     if notifications_enabled and str(notifications_enabled).lower() in ('true', '1', 'yes'):
@@ -86,7 +90,22 @@ async def start_bot(bot_token: str, services: dict, cfg):
     
     # Start polling
     logger.info("Starting polling...")
-    await application.run_polling(
+    await application.updater.start_polling(
         allowed_updates=Update.ALL_TYPES,
         drop_pending_updates=True
     )
+    
+    # Keep running until interrupted
+    logger.info("Bot is running. Press Ctrl+C to stop.")
+    try:
+        import asyncio
+        # Keep the bot running
+        while True:
+            await asyncio.sleep(1)
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        logger.info("Stopping bot...")
+    finally:
+        # Cleanup
+        await application.updater.stop()
+        await application.stop()
+        await application.shutdown()
