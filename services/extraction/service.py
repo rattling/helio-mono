@@ -44,7 +44,7 @@ class ExtractionService:
         self,
         message_event_id: UUID,
         context: Optional[dict] = None
-    ) -> list[UUID]:
+    ) -> list[tuple[UUID, str, dict]]:
         """
         Extract objects from a message event using LLM.
         
@@ -53,7 +53,7 @@ class ExtractionService:
             context: Optional context for extraction (conversation history, etc.)
             
         Returns:
-            List of ObjectExtractedEvent IDs
+            List of tuples (event_id, object_type, object_data) for extracted objects
         """
         # Get the message event
         message_event = await self.event_store.get_by_id(message_event_id)
@@ -78,7 +78,7 @@ class ExtractionService:
         )
         
         # Validate and record each extracted object
-        extracted_ids = []
+        extracted_items = []
         for obj_data in result.objects:
             try:
                 # Validate object type and schema
@@ -95,12 +95,12 @@ class ExtractionService:
                             "response_artifact_id": str(result.response_artifact_id),
                         }
                     )
-                    extracted_ids.append(event_id)
+                    extracted_items.append((event_id, obj_data["type"], validated_obj.model_dump()))
             except Exception as e:
                 logger.warning(f"Failed to validate/record object {obj_data}: {e}")
                 continue
         
-        return extracted_ids
+        return extracted_items
 
     def _validate_object(
         self,

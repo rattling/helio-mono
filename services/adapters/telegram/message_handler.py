@@ -39,14 +39,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         
         # Trigger extraction (synchronous for M1)
-        extracted_ids = await extraction_service.extract_from_message(event_id)
+        extracted_items = await extraction_service.extract_from_message(event_id)
         
-        # Acknowledge with count
-        count = len(extracted_ids)
-        if count > 0:
-            await message.reply_text(
-                f"✅ Got it! Extracted {count} object(s) from your message."
-            )
+        # Acknowledge with details
+        if extracted_items:
+            lines = ["✅ Got it! Extracted:"]
+            for _, obj_type, obj_data in extracted_items:
+                if obj_type == "todo":
+                    priority = obj_data.get("priority", "medium")
+                    lines.append(f"  📋 Todo: {obj_data['title']} [{priority}]")
+                elif obj_type == "note":
+                    lines.append(f"  📝 Note: {obj_data['title']}")
+                elif obj_type == "track":
+                    lines.append(f"  📊 Track: {obj_data['title']}")
+            await message.reply_text("\n".join(lines))
         else:
             await message.reply_text(
                 "✅ Message recorded. No objects extracted."
