@@ -66,6 +66,10 @@ dmypy.json
 data/events/
 data/projections/
 
+# Environment-scoped runtime data
+data/dev/events/
+data/dev/projections/
+
 # OS
 .DS_Store
 Thumbs.db
