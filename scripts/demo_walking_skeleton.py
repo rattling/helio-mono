@@ -22,6 +22,7 @@ from shared.contracts import SourceType
 from services.event_store.file_store import FileEventStore
 from services.ingestion.service import IngestionService
 from services.extraction.service import ExtractionService
+from services.extraction.mock_llm import MockLLMService
 from services.query.service import QueryService
 
 
@@ -35,8 +36,9 @@ async def main():
     # Initialize services
     print("[ Initializing services... ]")
     event_store = FileEventStore("./data/events")
+    llm_service = MockLLMService(event_store)  # Use mock LLM for demo
     ingestion = IngestionService(event_store)
-    extraction = ExtractionService(event_store)
+    extraction = ExtractionService(event_store, llm_service)
     query = QueryService(event_store)
     print("✓ Services initialized")
     print()

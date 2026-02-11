@@ -80,6 +80,18 @@ QA must confirm that:
 
 If startup is fragile, unclear, or undocumented, that is a QA finding.
 
+### 1.5 Issue and Milestone State
+QA must verify GitHub state before PR creation:
+- all milestone issues are closed
+- each issue has completion handoff comment
+- meta-issue checklist is complete
+- no orphaned or incomplete work
+- commits properly reference issues
+- ADRs created for architectural changes
+- branch is mergeable with main
+
+If issue state does not reflect actual delivery, that is a QA failure.
+
 ---
 
 ### 2. End-to-End Usage Flows
@@ -115,13 +127,31 @@ QA checks that:
 
 ---
 
-### 6. Architectural Compliance (Lightweight)
-QA verifies that:
-- service boundaries are respected
-- contracts are honored
-- no accidental tight coupling is introduced
+### 6. Architectural Compliance
 
-QA flags drift; it does not redesign.
+QA must verify that the implementation has not drifted from architectural intent.
+
+**Required Checks**:
+- Service boundaries are respected (no cross-service internal access)
+- Contracts are honored (APIs, schemas, events)
+- No accidental tight coupling introduced
+- ADRs exist for non-trivial architectural changes
+- Contract changes are documented and versioned
+- Architecture diagrams still match implementation (if diagrams exist)
+
+**How to Check**:
+- Read `docs/ARCHITECTURE.md` (if exists)
+- Review any ADRs in `docs/ADR_*.md`
+- Inspect imports and dependencies
+- Check if services reach into each other's internals
+- Verify contracts in `shared/contracts/` match actual usage
+
+**If Drift Found**:
+- Document the drift in QA findings
+- Assess severity: blocker vs. concern
+- Flag for Architect review if significant
+
+**QA flags drift; it does not redesign.**
 
 ---
 
@@ -201,16 +231,77 @@ The distinction must be explicit.
 
 ---
 
-## Milestone QA Summary
+## Bug Fix Workflow
 
-Before milestone PR merge, QA produces a **Milestone QA Summary** covering:
+When QA finds bugs during validation, follow this workflow:
+
+### 1. Document Findings
+- List all bugs in QA findings section
+- For each bug, document:
+  - What was attempted
+  - Expected behavior
+  - Actual behavior
+  - Severity (blocker / concern / note)
+  - Steps to reproduce
+
+### 2. Create Bug Issues
+For each **blocking** bug:
+- Create a new GitHub issue using `ISSUE_TEMPLATE.md`
+- Title: "Bug: [concise description]"
+- Include reproduction steps
+- Tag with milestone
+- Assign to Developer for fix
+
+For **non-blocking** concerns, document in QA report only.
+
+### 3. Hand Off to Developer
+- QA does not fix bugs itself
+- Developer receives assigned issues
+- Developer fixes and closes with handoff comment
+- Developer commits fixes with "Fixes #N" references
+
+### 4. QA Recheck (Targeted)
+After Developer fixes:
+- QA runs **targeted recheck** on previously failing areas only
+- Does not repeat full milestone validation
+- Updates QA report with recheck results:
+  - "✅ Bug #N fixed and verified"
+  - "❌ Bug #N still present" (create new issue or comment)
+  - "⚠️ Bug #N fixed, but new issue found" (create separate issue)
+
+### 5. Iterate if Needed
+- If new bugs found during recheck: return to step 2
+- If fixes verified: proceed to PR creation
+
+**Critical**: QA must never silently fix bugs without issue tracking and proper commits.
+
+---
+
+## Milestone QA Summary and PR Creation
+
+After validation is complete, QA produces a **Milestone QA Summary** covering:
 - what was run
 - what worked
 - what failed
 - known limitations
+- issue state verification results
 - overall confidence level (low / medium / high)
 
 This summary is a **durable artifact**.
+
+### Creating the Pull Request
+
+If validation passes, the QA agent **creates the milestone PR**:
+
+1. Verify all issues closed with handoffs
+2. Verify meta-issue updated
+3. Verify branch is mergeable
+4. Create PR using `PULL_REQUEST_TEMPLATE.md`
+5. Include QA summary in PR description
+6. Reference milestone meta-issue
+7. Tag human for review
+
+**QA does not merge PRs. Human merges after review.**
 
 ---
 

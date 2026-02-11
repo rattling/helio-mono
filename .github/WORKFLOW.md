@@ -142,8 +142,10 @@ An issue is complete only when **all** of the following are done:
 - code committed and pushed
 - tests pass
 - docs/runbooks updated if affected
-- issue updated with a closing comment using:
+- issue closed in GitHub with handoff comment using:
   - `.github/agents/templates/ISSUE_HANDOFF_TEMPLATE.md`
+
+**The issue must be marked as closed (state=closed) in GitHub.**
 
 This closing comment is the **durable handoff artifact**.
 
@@ -152,7 +154,9 @@ This closing comment is the **durable handoff artifact**.
 ## 6. Parallel Agent Work
 
 ### 6.1 Branch Discipline
-- Each issue is worked on its own branch.
+- Each milestone is worked on a dedicated milestone branch (e.g., `milestone-1`, `milestone-2`).
+- All issues within a milestone are completed on that milestone branch.
+- The Architect creates the milestone branch at the start of milestone setup.
 - Agents assume other agents may be working concurrently.
 - Conflicts are resolved explicitly, never silently.
 
@@ -177,15 +181,31 @@ When all milestone issues are complete:
 - system is verified as runnable
 - milestone acceptance criteria are checked
 
-### 7.2 Milestone PR
-The milestone concludes with:
-- a single PR to the main branch
-- created using:
-  - `.github/agents/templates/PULL_REQUEST_TEMPLATE.md`
-- a clear description of:
-  - scope delivered
-  - known limitations
-  - next milestone implications
+### 7.2 Milestone Validation (QA Agent)
+The QA agent performs final milestone validation:
+- verifies system is runnable end-to-end
+- confirms all acceptance criteria met
+- validates documented usage paths
+- checks issue state and traceability
+- produces milestone QA summary
+
+### 7.3 Pull Request Creation (QA Agent)
+After successful validation, the QA agent:
+- confirms all milestone issues are closed with handoffs
+- confirms meta-issue is updated
+- confirms branch is mergeable with main
+- creates PR using `.github/agents/templates/PULL_REQUEST_TEMPLATE.md`
+- includes QA validation summary in PR description
+- notifies human for review
+
+### 7.4 Pull Request Review and Merge (Human)
+The human reviews and merges:
+- reviews QA validation report
+- spot-checks key functionality (optional)
+- reviews changeset and architectural changes
+- approves and merges to main when satisfied
+
+Human authority is absolute for merge decisions.
 
 ---
 

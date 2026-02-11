@@ -22,6 +22,8 @@ from shared.contracts.events import (
 )
 from shared.contracts.objects import (
     ExtractedObject,
+    ExtractionResult,
+    LLMServiceError,
     Note,
     ObjectType,
     Todo,
@@ -33,6 +35,7 @@ from shared.contracts.objects import (
 from shared.contracts.protocols import (
     EventStoreProtocol,
     ExtractionServiceProtocol,
+    LLMServiceProtocol,
     QueryServiceProtocol,
 )
 
@@ -55,8 +58,11 @@ __all__ = [
     "TrackStatus",
     "Track",
     "ExtractedObject",
+    "ExtractionResult",
+    "LLMServiceError",
     # Protocols
     "EventStoreProtocol",
     "ExtractionServiceProtocol",
+    "LLMServiceProtocol",
     "QueryServiceProtocol",
 ]

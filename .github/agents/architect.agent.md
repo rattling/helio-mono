@@ -134,11 +134,42 @@ Milestone 0 typically results in the **first PR** to the main branch.
 ### 7.2 Milestone Setup (All Milestones)
 
 At the start of each milestone, the Architect:
+- **creates the milestone branch** (e.g., `milestone-1`) from main
 - creates the **Milestone Meta-Issue**
 - decomposes milestone scope into issues
 - identifies which issues are architectural vs implementation
 - completes architectural issues before developer handoff
 - ensures the milestone preserves or extends a runnable spine
+
+**Branch Naming**: Use `milestone-N` format (e.g., `milestone-1`, `milestone-2`).
+
+**All milestone work happens on this branch** until QA creates the PR to main.
+
+#### Milestone Sizing Guidance
+
+**Target**: All milestone work should be completable within a single agent session.
+
+**Context Constraint**: Agent sessions have finite context windows (~128k tokens).  
+If a milestone requires more context than available, the agent may:
+- lose track of prior decisions
+- fail to maintain architectural coherence
+- be unable to complete the work
+
+**Sizing Heuristic**:
+- **Prefer 5-10 issues per milestone** as a rough guide
+- If a milestone naturally decomposes into >15 issues, consider splitting into two milestones
+- When in doubt, **err on the side of smaller milestones**
+
+**Trade-offs**:
+- Smaller milestones = more frequent integration, faster feedback cycles
+- Larger milestones = fewer PRs, but higher risk of context overflow
+
+**Judgment Call**: The Architect should use discretion based on:
+- complexity of the issues
+- amount of new architectural surface
+- degree of interdependence between issues
+
+If unsure, propose milestone boundaries to the human for review.
 
 ---
 

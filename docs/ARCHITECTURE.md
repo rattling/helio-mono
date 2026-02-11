@@ -148,6 +148,15 @@ graph TB
 - Confidence scoring (optional)
 - Can be triggered on-demand or via event stream
 
+**LLM Integration (M1+):**
+- Uses `LLMServiceProtocol` abstraction
+- OpenAI implementation via `OpenAILLMService`
+- All LLM interactions recorded as artifacts (prompts and responses)
+- Error handling with exponential backoff and graceful degradation
+- Rate limiting via token bucket algorithm
+- Cost tracking and daily limits
+- See `docs/ADR_M1_LLM_INTEGRATION.md` for detailed architecture
+
 ---
 
 #### Query Service
@@ -166,6 +175,14 @@ graph TB
 - Eventual consistency with event log
 - Periodic rebuild as needed
 
+**Persistence (M1+):**
+- Single SQLite database: `./data/projections/helionyx.db`
+- Schema includes todos, notes, tracks, metadata tables
+- Full projection rebuild from event log
+- Incremental updates for running system
+- See `docs/ADR_M1_SQLITE_PERSISTENCE.md` for detailed design
+- Schema definition: `services/query/schema.sql`
+
 ---
 
 ### Interface Adapters
@@ -180,6 +197,17 @@ Adapters contain no business logic, only:
 - Protocol translation
 - Authentication/authorization (future)
 - Error handling and user feedback
+
+**Telegram Bot (M1+)**:
+- Primary interactive interface for queries and notifications
+- Uses python-telegram-bot framework (v21+)
+- Stateless adapter pattern - no business logic in bot
+- Command handlers for queries (/todos, /notes, /tracks, /stats)
+- Message ingestion for conversational data
+- Background scheduler for push notifications (reminders, daily summaries)
+- Notification state tracked in projection database
+- Single-user configuration (one chat ID)
+- See `docs/ADR_M1_TELEGRAM_ARCHITECTURE.md` for detailed design
 
 ---
 

@@ -1,11 +1,15 @@
 """Interface protocols for service contracts."""
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from uuid import UUID
 
 from shared.contracts.events import BaseEvent, EventType
+
+if TYPE_CHECKING:
+    from shared.contracts.objects import ExtractionResult
 
 
 class EventStoreProtocol(ABC):
@@ -95,6 +99,31 @@ class ExtractionServiceProtocol(ABC):
 
         Returns:
             List of extracted objects as dicts
+        """
+        pass
+
+
+class LLMServiceProtocol(ABC):
+    """Contract for LLM-based extraction operations."""
+
+    @abstractmethod
+    async def extract_objects(
+        self,
+        message: str,
+        context: Optional[dict] = None
+    ) -> "ExtractionResult":
+        """
+        Extract structured objects from message using LLM.
+
+        Args:
+            message: Message text to analyze
+            context: Optional context (conversation history, user prefs)
+
+        Returns:
+            ExtractionResult with extracted objects and metadata
+
+        Raises:
+            LLMServiceError: On unrecoverable API errors
         """
         pass
 
