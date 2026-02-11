@@ -58,9 +58,12 @@ If an issue is too large, it must be split.
 
 ### 3.1 Required Project Documents
 Before implementation begins, the following must exist:
-- PROJECT_CHARTER.md
+- PROJECT_CHARTER.md (core vision, principles, invariants - milestone-agnostic)
+- Current milestone charter (e.g., MILESTONE2_CHARTER.md - goals, deliverables, scope)
 - PROJECT_INVARIANTS.md (if applicable)
 - ARCHITECTURE.md (baseline, may evolve)
+
+Historical milestone charters (MILESTONE0_CHARTER.md, MILESTONE1_CHARTER.md, etc.) are preserved for reference.
 
 ### 3.2 Architecture Baseline (Optional but Recommended)
 A project may begin with an explicit **Architecture Baseline milestone**, producing:
@@ -106,7 +109,19 @@ Every milestone must include:
    - limited in scope
    - layered onto the spine
 
-A milestone that does not preserve a runnable spine is invalid.
+4. **User Interaction Preservation**
+   - All existing user interaction paths continue to work
+   - New interfaces **add to**, not replace, existing entry points
+   - Core domain code remains directly callable
+   - Examples:
+     - Adding API doesn't break direct Python calls to services
+     - Adding UI doesn't break CLI/API access
+     - Service wrapper doesn't prevent direct module import
+   - README.md documents all active interaction methods
+   - Makefile provides convenient commands for key paths
+
+A milestone that does not preserve a runnable spine is invalid.  
+A milestone that breaks existing user interaction paths is invalid.
 
 ---
 

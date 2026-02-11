@@ -211,7 +211,7 @@ async def main():
         
         # Initialize services
         config = Config()
-        event_store = FileEventStore(data_dir=config.EVENTS_DIR)
+        event_store = FileEventStore(data_dir=config.EVENT_STORE_PATH)
         ingestion_service = IngestionService(event_store)
         
         # Initialize LLM service for extraction

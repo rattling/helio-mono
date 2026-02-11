@@ -1,15 +1,23 @@
-"""Configuration management for Helionyx."""
+"""Configuration management for Helionyx.
+
+Supports environment-specific configuration via ENV variable:
+- dev: Development environment (.env.dev)
+- staging: Staging environment (.env.staging)
+- live: Production environment (.env.live)
+
+Loading strategy:
+1. Load base .env file (if exists)
+2. Overlay environment-specific .env.{ENV} file (if exists)
+3. Environment variables override file values
+"""
 
 import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load .env file
-load_dotenv()
-
 
 class Config:
-    """Configuration loaded from environment variables."""
+    """Configuration loaded from environment variables with environment-specific overlays."""
     
     def __init__(self):
         # Event Store
@@ -47,15 +55,72 @@ class Config:
         
         # Logging
         self.LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
-        self.ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
+        
+        # Environment (set by from_env or defaults to dev)
+        self.ENV = os.getenv('ENV', 'dev')
     
     @classmethod
-    def from_env(cls):
-        """Create config from environment variables."""
+    def from_env(cls, env: str = None):
+        """Create config with environment-specific loading.
+        
+        Args:
+            env: Environment name ('dev', 'staging', 'live'). 
+                 If None, reads from ENV environment variable or defaults to 'dev'.
+        
+        Returns:
+            Config instance with environment-specific configuration loaded.
+        
+        Loading order (later overrides earlier):
+        1. Base .env file
+        2. Environment-specific .env.{env} file
+        3. System environment variables
+        """
+        # Determine environment
+        if env is None:
+            env = os.getenv('ENV', 'dev')
+        
+        # Validate environment
+        valid_envs = ['dev', 'staging', 'live']
+        if env not in valid_envs:
+            raise ValueError(f"Invalid environment: {env}. Must be one of {valid_envs}")
+        
+        # Set ENV before loading
+        os.environ['ENV'] = env
+        
+        # Load base .env file first
+        base_env_path = Path('.env')
+        if base_env_path.exists():
+            load_dotenv(base_env_path, override=False)
+        
+        # Load environment-specific file (overlays base)
+        env_file_path = Path(f'.env.{env}')
+        if env_file_path.exists():
+            load_dotenv(env_file_path, override=True)
+        
+        # Create and return config instance
         return cls()
     
+    def validate_required(self):
+        """Validate required configuration variables are present.
+        
+        Raises:
+            ValueError: If required variables are missing.
+        """
+        required = {
+            'EVENT_STORE_PATH': self.EVENT_STORE_PATH,
+            'PROJECTIONS_DB_PATH': self.PROJECTIONS_DB_PATH,
+        }
+        
+        missing = [key for key, value in required.items() if not value]
+        if missing:
+            raise ValueError(f"Missing required configuration: {', '.join(missing)}")
+    
     def validate_telegram(self):
-        """Validate Telegram configuration."""
+        """Validate Telegram configuration.
+        
+        Raises:
+            ValueError: If required Telegram variables are missing.
+        """
         if not self.TELEGRAM_BOT_TOKEN:
             raise ValueError("TELEGRAM_BOT_TOKEN not set")
         if not self.TELEGRAM_CHAT_ID:

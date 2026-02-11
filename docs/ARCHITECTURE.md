@@ -1,8 +1,8 @@
 # Helionyx Architecture
 
-**Version**: 0.1 (Milestone 0)  
-**Last Updated**: February 10, 2026  
-**Status**: Baseline
+**Version**: 0.2 (Milestone 2)  
+**Last Updated**: February 11, 2026  
+**Status**: Service Model Operational
 
 ## Overview
 
@@ -15,6 +15,7 @@ Helionyx is a personal decision and execution substrate built on an append-only 
 3. **Human authority** - LLMs are tools, not autonomous agents (within bounded surfaces)
 4. **Durable artifacts** - All reasoning and decisions are recorded
 5. **Service-oriented monorepo** - Independently testable and evolvable components
+6. **Environment-aware configuration** - Separate dev/staging/live configurations (M2+)
 
 ---
 
@@ -54,37 +55,84 @@ graph TB
 
 ---
 
+## Configuration Management (M2+)
+
+### Environment-Aware Configuration
+
+Helionyx supports three distinct environments with separate configurations:
+
+- **dev** - Development environment (verbose logging, mock LLM optional)
+- **staging** - Pre-production testing (production-like but isolated data)
+- **live** - Production environment (strict error handling, cost controls)
+
+**Configuration Loading Strategy:**
+1. Load base `.env` file (if exists)
+2. Overlay environment-specific `.env.{ENV}` file (if exists)
+3. Environment variables override file values
+
+**Usage:**
+```bash
+make run               # Default: dev
+make run ENV=staging   # Staging environment
+make run ENV=live      # Live environment
+```
+
+**Configuration Variables:**
+- Storage paths (event store, projections DB)
+- OpenAI API credentials and limits
+- Telegram bot credentials
+- Notification settings
+- Logging levels per environment
+
+See `.env.template` for complete configuration documentation.
+
+---
+
 ## Service Architecture
 
 ### Component Diagram
 
 ```mermaid
 graph TB
-    subgraph "Interface Layer"
-        CLI[CLI Adapter]
-        TG[Telegram Adapter]
-        API[HTTP API]
+    subgraph "Unified Service"
+        subgraph "Adapter Layer"
+            API[FastAPI HTTP Server]
+            TG[Telegram Bot]
+            CLI[CLI Scripts]
+        end
+        
+        subgraph "Domain Services"
+            ING[Ingestion Service]
+            EXT[Extraction Service]
+            QRY[Query Service]
+        end
+        
+        subgraph "Infrastructure"
+            EVT[(Event Store<br/>JSONL Files)]
+            PROJ[(Projections DB<br/>SQLite)]
+        end
     end
     
-    subgraph "Services"
-        ING[Ingestion Service]
-        EXT[Extraction Service]
-        QRY[Query Service]
+    subgraph "External Interfaces"
+        HTTP[HTTP Clients]
+        TGClient[Telegram Users]
+        Scripts[CLI Tools]
     end
     
-    subgraph "Storage Layer"
-        EVT[(Event Store<br/>JSONL Files)]
-        PROJ[(Projections DB<br/>SQLite)]
-    end
-    
-    subgraph "External"
+    subgraph "External Services"
         LLM[OpenAI API]
     end
     
-    CLI --> ING
-    TG --> ING
+    HTTP -->|REST API| API
+    TGClient -->|Bot Commands| TG
+    Scripts -->|Direct Calls| CLI
+    
     API --> ING
     API --> QRY
+    TG --> ING
+    TG --> QRY
+    CLI --> ING
+    CLI --> QRY
     
     ING --> EVT
     EVT --> EXT
@@ -95,7 +143,26 @@ graph TB
     
     style EVT fill:#f9f,stroke:#333,stroke-width:4px
     style PROJ fill:#bbf,stroke:#333,stroke-width:2px
+    style API fill:#afa,stroke:#333,stroke-width:2px
+    style TG fill:#afa,stroke:#333,stroke-width:2px
 ```
+
+### Service Runner Model (M2+)
+
+Helionyx operates as a **unified long-running service** that combines:
+- FastAPI HTTP server for API endpoints
+- Telegram bot adapter (optional, config-driven)
+- Background task management (scheduling, notifications)
+- Coordinated service lifecycle (startup, shutdown)
+
+**Key Features:**
+- Single process with asyncio-based concurrency
+- Environment-aware configuration (dev/staging/live)
+- Graceful startup and shutdown with resource cleanup
+- Health and readiness endpoints for monitoring
+- Integrated logging and error handling
+
+**Entry Point:** `services/api/runner.py` using `make run ENV=<env>`
 
 ### Service Responsibilities
 
@@ -187,7 +254,47 @@ graph TB
 
 ### Interface Adapters
 
-Thin translation layers between external systems and core services:
+Thin translation layers between external systems and core services. **Contain no business logic**.
+
+#### FastAPI HTTP API (M2+)
+
+**Responsibility**: RESTful adapter layer for HTTP access  
+**Technology**: FastAPI + Uvicorn  
+**Location**: `services/api/`
+
+**Endpoints:**
+- `GET /health` - Service health check
+- `GET /health/ready` - Readiness probe (DB connectivity)
+- `POST /api/v1/ingest/message` - Ingest a new message
+- `GET /api/v1/todos` - Query todos (with filters)
+- `GET /api/v1/notes` - Query notes (with search)
+- `GET /api/v1/tracks` - Query tracking items
+- `GET /api/v1/stats` - System statistics
+
+**Design Principles:**
+- Strictly adapter layer - no domain logic
+- Services injected via lifespan context manager
+- Pydantic models for request/response validation
+- Standard HTTP status codes and error handling
+- Environment-aware startup/shutdown
+
+**Lifecycle Management:**
+- FastAPI lifespan events manage service initialization
+- All services initialized once at startup
+- Database connections opened and closed cleanly
+- Telegram bot started as background asyncio task
+- Graceful shutdown on SIGTERM/SIGINT
+
+**Configuration:**
+- Environment-specific `.env.{dev|staging|live}` files
+- Loaded via `Config.from_env(ENV)` at startup
+- See `.env.template` for all configuration variables
+
+#### CLI Adapter
+
+**Responsibility**: Direct command-line interaction  
+**Technology**: Python scripts  
+**Location**: `scripts/`
 
 - **CLI Adapter**: Direct command-line interaction (development)
 - **HTTP API**: RESTful endpoints (future)

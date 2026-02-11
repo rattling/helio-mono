@@ -127,7 +127,61 @@ QA checks that:
 
 ---
 
-### 6. Architectural Compliance
+### 6. User Interaction Path Validation
+
+**Critical**: QA must verify all user interaction methods work after milestone changes.
+
+**Core Principle**: New interfaces **add to**, not replace, existing entry points.
+
+**Required Validation Per Milestone**:
+
+1. **Direct Python Access** (if applicable)
+   - Import and call domain services directly
+   - Example: `from services.ingestion.service import IngestionService`
+   - Core domain code must remain callable without framework overhead
+
+2. **CLI/Script Access**
+   - All scripts in `scripts/` must work
+   - Example: `.venv/bin/python scripts/run_telegram_bot.py`
+   - Command-line workflows must not break
+
+3. **API Access** (if exists)
+   - HTTP endpoints respond correctly
+   - Example: `curl http://localhost:8000/api/v1/todos`
+
+4. **Service Interface** (if exists)
+   - Unified service runner works
+   - Example: `make run ENV=dev`
+   - Service management commands function
+
+5. **Telegram Interface** (if exists)
+   - Bot responds to messages
+   - Commands work as documented
+
+6. **Makefile Commands**
+   - All documented `make` targets work
+   - Example: `make status`, `make logs`, `make test`
+   - README-documented commands must function
+
+**Validation Method**:
+- Test at least one flow per interaction method
+- Confirm README.md documents all active methods
+- Verify new additions don't break existing paths
+
+**If Interaction Path Broken**:
+- **BLOCKER**: Must be fixed before milestone merge
+- Document in QA findings
+- Create bug issue for Developer
+- Verify fix before PR approval
+
+**Example Failure Scenarios**:
+- Adding API makes direct service imports fail
+- New service wrapper prevents CLI script usage
+- Framework dependency breaks standalone module use
+
+---
+
+### 7. Architectural Compliance
 
 QA must verify that the implementation has not drifted from architectural intent.
 
