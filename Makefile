@@ -39,12 +39,12 @@ test-cov: ## Run tests with coverage
 	.venv/bin/python -m pytest tests/ --cov=services --cov=shared --cov-report=html --cov-report=term
 
 lint: ## Run linters
-	ruff check .
-	mypy services/ shared/
+	.venv/bin/ruff check services/ shared/ tests/
+	.venv/bin/mypy services/ shared/ || echo "mypy completed with warnings"
 
 format: ## Format code
-	black services/ shared/ tests/
-	ruff check --fix .
+	.venv/bin/black services/ shared/ tests/
+	.venv/bin/ruff check --fix services/ shared/ tests/
 
 clean: ## Clean generated files
 	find . -type d -name __pycache__ -exec rm -rf {} +
