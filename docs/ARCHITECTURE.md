@@ -1,8 +1,8 @@
 # Helionyx Architecture
 
-**Version**: 0.2 (Milestone 2)  
+**Version**: 0.3 (Milestone 3)  
 **Last Updated**: February 11, 2026  
-**Status**: Service Model Operational
+**Status**: Deployment-Ready
 
 ## Overview
 
@@ -85,6 +85,171 @@ make run ENV=live      # Live environment
 - Logging levels per environment
 
 See `.env.template` for complete configuration documentation.
+
+---
+
+## Deployment Architecture (M3+)
+
+### Deployment Model
+
+Helionyx is deployed as a **long-running systemd service on node1**, supporting multiple isolated environments on the same host. This pragmatic approach enables safe testing and gradual rollout without multi-node complexity.
+
+**Target Platform**: Linux server (node1) with systemd  
+**Deployment Method**: Make-based commands with shell script automation  
+**Service Management**: systemd unit files per environment
+
+### Same-Host Multi-Environment Strategy
+
+Three environments run simultaneously on node1 with complete isolation:
+
+```mermaid
+graph TB
+    subgraph "node1 (Single Host)"
+        subgraph "Dev Environment"
+            DEV_SVC[helionyx-dev.service<br/>Port 8000]
+            DEV_DATA[(./data/dev/)]
+            DEV_BOT[Dev Telegram Bot]
+        end
+        
+        subgraph "Staging Environment"
+            STG_SVC[helionyx-staging.service<br/>Port 8001]
+            STG_DATA[(./data/staging/)]
+            STG_BOT[Staging Telegram Bot]
+        end
+        
+        subgraph "Live Environment"
+            LIVE_SVC[helionyx.service<br/>Port 8002]
+            LIVE_DATA[(/var/lib/helionyx/live/)]
+            LIVE_BOT[Live Telegram Bot]
+        end
+    end
+    
+    DEV_SVC -->|Reads/Writes| DEV_DATA
+    STG_SVC -->|Reads/Writes| STG_DATA
+    LIVE_SVC -->|Reads/Writes| LIVE_DATA
+    
+    DEV_SVC -.->|Sends via| DEV_BOT
+    STG_SVC -.->|Sends via| STG_BOT
+    LIVE_SVC -.->|Sends via| LIVE_BOT
+```
+
+### Environment Isolation
+
+Each environment maintains complete isolation:
+
+| Aspect | Dev | Staging | Live |
+|--------|-----|---------|------|
+| **API Port** | 8000 | 8001 | 8002 |
+| **Data Path** | `./data/dev/` | `./data/staging/` | `/var/lib/helionyx/live/` |
+| **Service Name** | `helionyx-dev.service` | `helionyx-staging.service` | `helionyx.service` |
+| **Config File** | `.env.dev` | `.env.staging` | `.env.live` |
+| **Telegram Bot** | `helionyx_dev_bot` | `helionyx_staging_bot` | `helionyx_bot` |
+| **Log Level** | DEBUG | INFO | WARNING |
+| **LLM** | Mock optional | Real | Real |
+
+**Isolation Guarantees:**
+- No shared state between environments
+- No port conflicts
+- Independent service lifecycle
+- Separate Telegram notification channels
+- Environment-specific cost controls
+
+### Systemd Service Management
+
+Each environment runs as an independent systemd service:
+
+**Service Files:**
+- `/etc/systemd/system/helionyx-dev.service`
+- `/etc/systemd/system/helionyx-staging.service`
+- `/etc/systemd/system/helionyx.service`
+
+**Key Service Features:**
+- Auto-restart on failure
+- Boot-time startup (optional, per environment)
+- Centralized logging to `/var/log/helionyx-*.log`
+- Clean shutdown handling
+- User-level execution (non-root)
+
+**Service Control:**
+```bash
+# Via systemd directly
+sudo systemctl start helionyx-dev
+sudo systemctl status helionyx-dev
+sudo systemctl stop helionyx-dev
+
+# Via make commands (preferred)
+make deploy ENV=dev    # Deploy and restart
+make status ENV=dev    # Check status
+make logs ENV=dev      # View logs
+make restart ENV=dev   # Restart service
+make stop ENV=dev      # Stop service
+```
+
+### Deployment Workflow
+
+**Initial Setup** (first-time only):
+1. Clone repository to node1
+2. Create virtual environment and install dependencies
+3. Configure environment-specific `.env.{env}` files
+4. Set up Telegram bots (human task via @BotFather)
+5. Install systemd service files
+6. Enable and start services
+
+**Standard Deployment** (updates):
+1. `make deploy ENV=<env>` executes:
+   - Pull latest code from milestone branch
+   - Update dependencies if changed
+   - Preserve event log and projection data
+   - Restart systemd service
+   - Verify service health
+   - Rollback on failure
+
+**Deployment Properties:**
+- **Idempotent** - Safe to run repeatedly
+- **Atomic** - Service restarts cleanly
+- **Preserves state** - Event log never mutated
+- **Environment-aware** - Respects isolation boundaries
+- **Reversible** - Rollback supported on failure
+
+### Configuration-Driven Binding
+
+API server binding is configuration-driven (M3+):
+
+```python
+# services/api/runner.py
+uvicorn.run(
+    "services.api.main:app",
+    host=config.API_HOST,    # From API_HOST env var (default: 0.0.0.0)
+    port=config.API_PORT,    # From API_PORT env var (default: 8000)
+    ...
+)
+```
+
+This enables same-host deployment where each environment binds to its configured port.
+
+### Operational Considerations
+
+**Monitoring:**
+- Health check: `GET /health` on each environment's port
+- Logs: `make logs ENV=<env>` or `journalctl -u helionyx-<env>`
+- Status: `make status ENV=<env>` or `systemctl status helionyx-<env>`
+
+**Data Management:**
+- Event logs are append-only, never deployed
+- Projections can be rebuilt from events
+- Backups cover `.env` files and event logs (M4)
+
+**Deployment Discipline:**
+- All deployments are auditable (git commits)
+- Deployment preserves event log integrity
+- Staging environment validates changes before live
+- Rollback available if service fails health check
+
+**Limitations:**
+- Single host (no high availability)
+- No load balancing (personal use scale)
+- No containerization (pragmatic simplicity)
+- Future: can containerize or distribute if needed
 
 ---
 

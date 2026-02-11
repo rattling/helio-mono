@@ -24,7 +24,7 @@ class IngestionService:
     ) -> UUID:
         """
         Ingest a message from any source.
-        
+
         Args:
             content: The message content
             source: Source type (ChatGPT, Telegram, CLI)
@@ -32,7 +32,7 @@ class IngestionService:
             author: Optional author (user or assistant)
             conversation_id: Optional conversation grouping ID
             metadata: Optional additional metadata
-            
+
         Returns:
             Event ID of the ingested message event
         """
@@ -44,6 +44,6 @@ class IngestionService:
             conversation_id=conversation_id,
             metadata=metadata or {},
         )
-        
+
         event_id = await self.event_store.append(event)
         return event_id

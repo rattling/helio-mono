@@ -23,28 +23,28 @@ logger = logging.getLogger(__name__)
 class QueryService:
     """
     Service for building queryable projections from the event log.
-    
+
     For M1, uses SQLite for durable persistence.
     """
 
     def __init__(self, event_store: FileEventStore, db_path: Optional[Path] = None):
         self.event_store = event_store
-        
+
         # Default database path
         if db_path is None:
             db_path = Path("./data/projections/helionyx.db")
-        
+
         self.db_path = Path(db_path)
-        
+
         # Initialize database if needed
         initialize_database(self.db_path)
-        
+
         # Create persistent connection
         self.conn = create_connection(self.db_path)
-        
+
         # Verify schema version
         check_schema_version(self.conn, expected=1)
-        
+
         logger.info(f"Query service initialized with database: {self.db_path}")
 
     def close(self):
@@ -56,43 +56,41 @@ class QueryService:
     async def rebuild_projections(self):
         """Rebuild all projections from the event log."""
         logger.info("Starting projection rebuild...")
-        
+
         with transaction(self.conn):
             # 1. Clear all projection tables
             self.conn.execute("DELETE FROM todos")
             self.conn.execute("DELETE FROM notes")
             self.conn.execute("DELETE FROM tracks")
-            
+
             logger.info("Cleared existing projections")
-            
+
             # 2. Stream all object extraction events
-            events = await self.event_store.stream_events(
-                event_types=[EventType.OBJECT_EXTRACTED]
-            )
-            
+            events = await self.event_store.stream_events(event_types=[EventType.OBJECT_EXTRACTED])
+
             logger.info(f"Processing {len(events)} extraction events...")
-            
+
             # 3. Apply each event to appropriate table
             for event in events:
                 if isinstance(event, ObjectExtractedEvent):
                     await self._apply_extraction_event(event)
-            
+
             # 4. Update metadata
             now = datetime.utcnow().isoformat()
             self.conn.execute(
                 "INSERT OR REPLACE INTO projection_metadata (key, value, updated_at) "
                 "VALUES (?, ?, ?)",
-                ("last_rebuild_timestamp", now, now)
+                ("last_rebuild_timestamp", now, now),
             )
-            
+
             if events:
                 last_event_id = str(events[-1].event_id)
                 self.conn.execute(
                     "INSERT OR REPLACE INTO projection_metadata (key, value, updated_at) "
                     "VALUES (?, ?, ?)",
-                    ("last_event_id_processed", last_event_id, now)
+                    ("last_event_id_processed", last_event_id, now),
                 )
-        
+
         logger.info("Projection rebuild complete")
 
     async def _apply_extraction_event(self, event: ObjectExtractedEvent):
@@ -108,12 +106,12 @@ class QueryService:
         """Insert or update a todo in the database."""
         # Parse Todo object
         todo = Todo(**data)
-        
+
         # Convert to database format
         tags_json = json.dumps(todo.tags) if todo.tags else None
         due_date = todo.due_date.isoformat() if todo.due_date else None
         completed_at = todo.completed_at.isoformat() if todo.completed_at else None
-        
+
         await execute_with_retry(
             self.conn,
             """
@@ -135,17 +133,17 @@ class QueryService:
                 tags_json,
                 str(todo.source_event_id),
                 datetime.utcnow().isoformat(),
-            )
+            ),
         )
 
     async def _upsert_note(self, data: dict):
         """Insert or update a note in the database."""
         # Parse Note object
         note = Note(**data)
-        
+
         # Convert to database format
         tags_json = json.dumps(note.tags) if note.tags else None
-        
+
         await execute_with_retry(
             self.conn,
             """
@@ -162,18 +160,18 @@ class QueryService:
                 tags_json,
                 str(note.source_event_id),
                 datetime.utcnow().isoformat(),
-            )
+            ),
         )
 
     async def _upsert_track(self, data: dict):
         """Insert or update a track in the database."""
         # Parse Track object
         track = Track(**data)
-        
+
         # Convert to database format
         tags_json = json.dumps(track.tags) if track.tags else None
         last_updated = track.last_updated.isoformat() if track.last_updated else None
-        
+
         await execute_with_retry(
             self.conn,
             """
@@ -194,7 +192,7 @@ class QueryService:
                 str(track.source_event_id),
                 track.check_in_frequency,
                 datetime.utcnow().isoformat(),
-            )
+            ),
         )
 
     async def get_todos(
@@ -204,33 +202,33 @@ class QueryService:
     ) -> list[dict]:
         """
         Query todos with optional filters.
-        
+
         Args:
             status: Optional status filter
             tags: Optional tag filters
-            
+
         Returns:
             List of matching todos
         """
         query = "SELECT * FROM todos WHERE 1=1"
         params = []
-        
+
         # Filter by status
         if status:
             query += " AND status = ?"
             params.append(status)
-        
+
         # Filter by tags (simple substring match in JSON)
         if tags:
             for tag in tags:
                 query += " AND tags LIKE ?"
                 params.append(f'%"{tag}"%')
-        
+
         query += " ORDER BY created_at DESC"
-        
+
         cursor = await execute_with_retry(self.conn, query, tuple(params))
         rows = cursor.fetchall()
-        
+
         # Convert Row objects to dicts
         return [dict(row) for row in rows]
 
@@ -241,34 +239,34 @@ class QueryService:
     ) -> list[dict]:
         """
         Query notes with optional filters.
-        
+
         Args:
             tags: Optional tag filters
             search: Optional text search
-            
+
         Returns:
             List of matching notes
         """
         query = "SELECT * FROM notes WHERE 1=1"
         params = []
-        
+
         # Text search
         if search:
             query += " AND (title LIKE ? OR content LIKE ?)"
             search_pattern = f"%{search}%"
             params.extend([search_pattern, search_pattern])
-        
+
         # Filter by tags
         if tags:
             for tag in tags:
                 query += " AND tags LIKE ?"
                 params.append(f'%"{tag}"%')
-        
+
         query += " ORDER BY created_at DESC"
-        
+
         cursor = await execute_with_retry(self.conn, query, tuple(params))
         rows = cursor.fetchall()
-        
+
         return [dict(row) for row in rows]
 
     async def get_tracks(
@@ -277,26 +275,26 @@ class QueryService:
     ) -> list[dict]:
         """
         Query tracking items with optional filters.
-        
+
         Args:
             status: Optional status filter
-            
+
         Returns:
             List of matching tracks
         """
         query = "SELECT * FROM tracks WHERE 1=1"
         params = []
-        
+
         # Filter by status
         if status:
             query += " AND status = ?"
             params.append(status)
-        
+
         query += " ORDER BY created_at DESC"
-        
+
         cursor = await execute_with_retry(self.conn, query, tuple(params))
         rows = cursor.fetchall()
-        
+
         return [dict(row) for row in rows]
 
     def get_stats(self) -> dict:
@@ -306,24 +304,23 @@ class QueryService:
             "UNION ALL SELECT 'notes', COUNT(*) FROM notes "
             "UNION ALL SELECT 'tracks', COUNT(*) FROM tracks"
         )
-        
+
         rows = cursor.fetchall()
         stats = {row[0]: row[1] for row in rows}
         stats["total_objects"] = sum(stats.values())
-        
+
         # Get last rebuild time
         cursor = self.conn.execute(
-            "SELECT value FROM projection_metadata WHERE key = ?",
-            ("last_rebuild_timestamp",)
+            "SELECT value FROM projection_metadata WHERE key = ?", ("last_rebuild_timestamp",)
         )
         row = cursor.fetchone()
         if row and row[0]:
             stats["last_rebuild"] = row[0]
         else:
             stats["last_rebuild"] = "Never"
-        
+
         # Get event count (approximate - from event store)
         # This would need event_store integration, stubbed for now
         stats["total_events"] = "N/A"
-        
+
         return stats

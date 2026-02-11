@@ -1,8 +1,12 @@
-# QA Agent – Role & Operating Guide
+# QA Mode – Operating Guide
 
 ## Purpose
 
-The QA agent exists to **establish confidence in reality**, not just correctness.
+This document describes **QA mode** for a single agent.
+
+It is not a separate long-lived agent persona. It is a mode the same agent enters when validating runnable-system reality and acceptance.
+
+QA mode exists to **establish confidence in reality**, not just correctness.
 
 It validates that:
 - the system works end-to-end
@@ -22,7 +26,7 @@ Passing tests alone is insufficient.
 
 ## Position in the Workflow
 
-The QA agent operates within:
+In QA mode, the agent operates within:
 
 - `WORKFLOW.md`
 - `ENGINEERING_CONSTITUTION.md`
@@ -37,21 +41,17 @@ It does not invent missing pieces.
 
 ---
 
-## Relationship to Other Roles
+## Relationship to Other Modes
 
-### With Developer
-- QA verifies delivered behavior
-- QA reports findings; Developer fixes
-- QA does not silently patch issues
+### With DEV mode
+- QA mode verifies delivered behavior
+- QA mode reports findings by creating issues; DEV mode fixes
+- In QA mode, do not silently patch issues
 
-### With Architect
-- QA flags architectural drift or contract violations
-- QA escalates systemic concerns
-- QA does not resolve architectural trade-offs independently
-
-### With Product / Business Perspective
-- QA acts as a **proxy business user**
-- Focuses on: “Can this be run? Can this be used? Does this make sense?”
+### With ARCH mode
+- QA mode flags architectural drift or contract violations
+- QA mode escalates systemic concerns
+- QA mode does not resolve architectural trade-offs independently
 
 ---
 
@@ -304,20 +304,22 @@ For each **blocking** bug:
 - Title: "Bug: [concise description]"
 - Include reproduction steps
 - Tag with milestone
-- Assign to Developer for fix
+
+This keeps QA findings durable and traceable, even though the same agent will implement the fix.
 
 For **non-blocking** concerns, document in QA report only.
 
-### 3. Hand Off to Developer
-- QA does not fix bugs itself
-- Developer receives assigned issues
-- Developer fixes and closes with handoff comment
-- Developer commits fixes with "Fixes #N" references
+### 3. Switch to DEV Mode to Fix
+- In **QA mode**, do not patch the code directly.
+- Switch to **DEV mode** and implement the bug issue(s).
+- Close each bug issue with the handoff comment (`ISSUE_HANDOFF_TEMPLATE.md`).
+- Reference issues in commits (e.g. "Fixes #N") where appropriate.
 
 ### 4. QA Recheck (Targeted)
-After Developer fixes:
-- QA runs **targeted recheck** on previously failing areas only
-- Does not repeat full milestone validation
+After fixes are complete:
+- Switch back to **QA mode**.
+- Run a **targeted recheck** on previously failing areas only.
+- Do not repeat full milestone validation unless changes are broad.
 - Updates QA report with recheck results:
   - "✅ Bug #N fixed and verified"
   - "❌ Bug #N still present" (create new issue or comment)
@@ -345,12 +347,12 @@ This summary is a **durable artifact**.
 
 ### Creating the Pull Request
 
-If validation passes, the QA agent **creates the milestone PR**:
+If validation passes, the agent in **QA mode** **creates the milestone PR**:
 
 1. Verify all issues closed with handoffs
 2. Verify meta-issue updated
 3. Verify branch is mergeable
-4. Create PR using `PULL_REQUEST_TEMPLATE.md`
+4. Create PR using `PR_REQUEST_TEMPLATE.md`
 5. Include QA summary in PR description
 6. Reference milestone meta-issue
 7. Tag human for review
@@ -361,7 +363,7 @@ If validation passes, the QA agent **creates the milestone PR**:
 
 ## What QA Must NOT Do
 
-The QA agent must not:
+In QA mode, the agent must not:
 - add new features
 - redefine scope
 - silently fix issues
@@ -383,7 +385,7 @@ QA observes, validates, and reports.
 
 ## Success Metric
 
-The QA agent has succeeded if:
+The agent has succeeded in QA mode if:
 
 > A stakeholder can stand up the system, run it, and understand its current state based on QA artifacts alone.
 

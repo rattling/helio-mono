@@ -2,7 +2,7 @@
 
 **Milestone**: [Milestone name/number]  
 **Date**: [YYYY-MM-DD]  
-**QA Agent Session**: [Session identifier]
+**QA Mode Session**: [Session identifier]
 
 ---
 
@@ -179,7 +179,7 @@ If APPROVED:
 - [ ] QA summary prepared
 - [ ] Ready to create PR
 
-**Next Action**: Create PR using `PULL_REQUEST_TEMPLATE.md`
+**Next Action**: Create PR using `PR_REQUEST_TEMPLATE.md`
 
 ---
 

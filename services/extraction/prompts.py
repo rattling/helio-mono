@@ -72,11 +72,11 @@ Return JSON array of extracted objects following the schema.
 def build_prompts(message: str, context: dict | None = None) -> tuple[str, str]:
     """
     Build system and user prompts for extraction.
-    
+
     Args:
         message: The message text to analyze
         context: Optional context dict with conversation history or metadata
-        
+
     Returns:
         Tuple of (system_prompt, user_prompt)
     """
@@ -84,23 +84,20 @@ def build_prompts(message: str, context: dict | None = None) -> tuple[str, str]:
     context_section = ""
     if context:
         context_lines = []
-        
+
         if "conversation_history" in context:
             history = context["conversation_history"]
             context_lines.append("Previous conversation:")
             for msg in history[-3:]:  # Last 3 messages for context
                 context_lines.append(f"- {msg}")
-        
+
         if "user_preferences" in context:
             prefs = context["user_preferences"]
             context_lines.append(f"User preferences: {prefs}")
-        
+
         if context_lines:
             context_section = f"Context:\n" + "\n".join(context_lines)
-    
-    user_prompt = USER_PROMPT_TEMPLATE.format(
-        message=message,
-        context_section=context_section
-    )
-    
+
+    user_prompt = USER_PROMPT_TEMPLATE.format(message=message, context_section=context_section)
+
     return SYSTEM_PROMPT, user_prompt

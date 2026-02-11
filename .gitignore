@@ -53,6 +53,9 @@ dmypy.json
 .env.live
 # Keep .env.template and .env.example in git
 
+# Local-only notes / scratch
+.dev_ignore/
+
 # Runtime data
 *.log
 *.db
@@ -62,6 +65,10 @@ dmypy.json
 # Event store data (for development)
 data/events/
 data/projections/
+
+# Environment-scoped runtime data
+data/dev/events/
+data/dev/projections/
 
 # OS
 .DS_Store

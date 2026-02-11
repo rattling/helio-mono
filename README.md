@@ -4,7 +4,7 @@ Personal decision and execution substrate built on an append-only event log foun
 
 ## Project Status
 
-**Current Milestone**: Milestone 2 - Service Infrastructure Foundation  
+**Current Milestone**: Milestone 3 - Deployment & CI Discipline  
 **Status**: 🔄 In Progress
 
 ## Quick Start
@@ -67,6 +67,44 @@ curl http://localhost:8000/health
 # Check readiness
 curl http://localhost:8000/health/ready
 ```
+
+## Configuration
+
+Helionyx supports environment-specific configuration via `.env` files.
+
+### Configuration Files
+
+Three environment-specific example files are provided:
+
+- **`.env.dev.example`** - Development environment (port 8000, verbose logging, local paths)
+- **`.env.staging.example`** - Staging environment (port 8001, moderate logging, isolated data)
+- **`.env.live.example`** - Production environment (port 8002, minimal logging, production paths)
+
+### Setup
+
+```bash
+# For development
+cp .env.dev.example .env.dev
+# Edit .env.dev and fill in your credentials (OPENAI_API_KEY, TELEGRAM_BOT_TOKEN, etc.)
+
+# For staging
+cp .env.staging.example .env.staging
+# Edit .env.staging with staging-specific values
+
+# For production
+cp .env.live.example .env.live
+# Edit .env.live with production values
+```
+
+### Key Configuration Points
+
+- **API Ports**: Each environment must use a unique port (8000/8001/8002) for same-host deployment
+- **Data Paths**: Environments must have isolated event stores and projection databases
+- **Telegram Bots**: Each environment should use a separate Telegram bot (create via @BotFather)
+- **Cost Limits**: Adjust LLM cost limits per environment (lower for dev, higher for live)
+- **Logging Levels**: Use DEBUG for dev, INFO for staging, WARNING for live
+
+See [`.env.template`](.env.template) for complete documentation of all configuration options.
 
 ## Project Structure
 
@@ -201,13 +239,20 @@ Without an OpenAI API key, the system uses a mock LLM service with keyword-based
 1. Create a bot via [@BotFather](https://t.me/botfather) on Telegram
 2. Get your bot token
 3. Start a conversation with your bot
-4. Send `/start` to get your chat ID (logged in console)
-5. Add credentials to `.env`:
+4. Send `/start` to the bot
+5. Get your chat ID:
+   - Preferred: check the service/bot logs for a line like `Chat ID: 123456789` after sending `/start`
+   - Fallback: call the Telegram Bot API and read `message.chat.id`:
+     ```bash
+     curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getUpdates" | jq '.result[-1].message.chat.id'
+     ```
+     (If you don’t have `jq`, just open the JSON and look for `\"chat\": { \"id\": ... }`.)
+6. Add credentials to `.env`:
    ```bash
    TELEGRAM_BOT_TOKEN=your_bot_token_here
    TELEGRAM_CHAT_ID=your_chat_id_here
    ```
-6. Run the bot: `make telegram`
+7. Run the bot: `make run` (or `make telegram` if you’re using the legacy standalone target)
 
 ### Available Commands
 

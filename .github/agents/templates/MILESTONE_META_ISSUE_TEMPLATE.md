@@ -10,6 +10,12 @@
 ## Non-goals
 - <explicit exclusions>
 
+## Current Focus
+- Current issue: #<issue-number>
+- Current mode: ARCH / DEV / QA
+
+Update this whenever focus changes so a rehydrated agent can immediately find “where we are”.
+
 ## Issues
 - [ ] #<issue-1>
 - [ ] #<issue-2>
@@ -21,3 +27,6 @@
 
 ## Notes
 - <dependencies, risks, sequencing concerns>
+
+## Progress Notes (optional)
+- <date>: finished #<issue>, next #<issue>

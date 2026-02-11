@@ -1,0 +1,32 @@
+[Unit]
+Description=Helionyx Personal Substrate (Production)
+After=network.target
+
+[Service]
+Type=simple
+User=john
+Group=john
+WorkingDirectory=/home/john/repos/helio-mono
+
+# Load environment-specific configuration
+EnvironmentFile=/home/john/repos/helio-mono/.env.live
+Environment="ENV=live"
+
+# Run the service
+ExecStart=/home/john/repos/helio-mono/.venv/bin/python services/api/runner.py
+
+# Restart policy
+Restart=on-failure
+RestartSec=10s
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=helionyx
+
+# Security (optional hardening)
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -15,7 +15,7 @@ from services.ingestion.service import IngestionService
 @pytest.fixture
 def tmp_event_store(tmp_path):
     """Create a temporary event store for testing.
-    
+
     Uses pytest's tmp_path fixture for automatic cleanup.
     """
     store = FileEventStore(data_dir=str(tmp_path / "events"))
@@ -25,7 +25,7 @@ def tmp_event_store(tmp_path):
 @pytest.fixture
 async def event_store(tmp_path):
     """Create a temporary async event store for testing.
-    
+
     Uses pytest's tmp_path fixture for automatic cleanup.
     """
     store = FileEventStore(data_dir=str(tmp_path / "events"))
@@ -35,7 +35,7 @@ async def event_store(tmp_path):
 @pytest.fixture
 def temp_db(tmp_path):
     """Create temporary SQLite database for tests.
-    
+
     Automatically cleaned up by pytest's tmp_path.
     """
     db_path = tmp_path / "test.db"
@@ -45,7 +45,7 @@ def temp_db(tmp_path):
 @pytest.fixture
 def temp_event_store(tmp_path):
     """Create temporary event store for tests.
-    
+
     Non-async version for synchronous tests.
     """
     store = FileEventStore(data_dir=str(tmp_path / "events"))
@@ -99,14 +99,14 @@ def mock_telegram_context():
 def sample_todo():
     """Sample todo object for testing."""
     return {
-        'object_id': 'todo-123',
-        'title': 'Test todo',
-        'description': 'This is a test',
-        'status': 'pending',
-        'priority': 'high',
-        'due_date': '2026-02-15T10:00:00Z',
-        'created_at': '2026-02-10T09:00:00Z',
-        'tags': '["work", "urgent"]'
+        "object_id": "todo-123",
+        "title": "Test todo",
+        "description": "This is a test",
+        "status": "pending",
+        "priority": "high",
+        "due_date": "2026-02-15T10:00:00Z",
+        "created_at": "2026-02-10T09:00:00Z",
+        "tags": '["work", "urgent"]',
     }
 
 
@@ -114,11 +114,11 @@ def sample_todo():
 def sample_note():
     """Sample note object for testing."""
     return {
-        'object_id': 'note-456',
-        'title': 'Test note',
-        'content': 'This is a test note content',
-        'created_at': '2026-02-10T09:00:00Z',
-        'tags': '["ideas"]'
+        "object_id": "note-456",
+        "title": "Test note",
+        "content": "This is a test note content",
+        "created_at": "2026-02-10T09:00:00Z",
+        "tags": '["ideas"]',
     }
 
 
@@ -126,12 +126,12 @@ def sample_note():
 def sample_track():
     """Sample track object for testing."""
     return {
-        'object_id': 'track-789',
-        'name': 'Test tracking item',
-        'category': 'health',
-        'status': 'active',
-        'value': 75.5,
-        'unit': 'kg',
-        'created_at': '2026-02-10T09:00:00Z',
-        'tags': '["fitness"]'
+        "object_id": "track-789",
+        "name": "Test tracking item",
+        "category": "health",
+        "status": "active",
+        "value": 75.5,
+        "unit": "kg",
+        "created_at": "2026-02-10T09:00:00Z",
+        "tags": '["fitness"]',
     }
