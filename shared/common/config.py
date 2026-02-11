@@ -125,8 +125,3 @@ class Config:
             raise ValueError("TELEGRAM_BOT_TOKEN not set")
         if not self.TELEGRAM_CHAT_ID:
             raise ValueError("TELEGRAM_CHAT_ID not set")
-
-
-# Backwards compatibility: Load config on module import
-# New code should use Config.from_env(env) explicitly
-load_dotenv()
