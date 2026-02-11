@@ -84,9 +84,15 @@ async def start_bot(bot_token: str, services: dict, cfg):
     
     # Start notification scheduler as background task if enabled
     notifications_enabled = getattr(cfg, 'NOTIFICATIONS_ENABLED', True)
-    if notifications_enabled and str(notifications_enabled).lower() in ('true', '1', 'yes'):
+    notifications_flag = str(notifications_enabled).lower() in ('true', '1', 'yes')
+    chat_id_configured = bool(getattr(cfg, 'TELEGRAM_CHAT_ID', None))
+    if notifications_flag and chat_id_configured:
         application.create_task(scheduler.notification_scheduler(application))
         logger.info("Notification scheduler enabled")
+    elif notifications_flag and not chat_id_configured:
+        logger.warning("Notification scheduler disabled (TELEGRAM_CHAT_ID not set)")
+    else:
+        logger.info("Notification scheduler disabled")
     
     # Start polling
     logger.info("Starting polling...")

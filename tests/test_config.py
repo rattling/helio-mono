@@ -81,7 +81,7 @@ class TestEnvironmentConfig:
             config.validate_required()
     
     def test_validate_telegram(self, monkeypatch):
-        """Test validate_telegram checks for Telegram configuration."""
+        """Test validate_telegram checks for Telegram bot configuration."""
         # Clear any existing env vars
         monkeypatch.delenv('TELEGRAM_BOT_TOKEN', raising=False)
         monkeypatch.delenv('TELEGRAM_CHAT_ID', raising=False)
@@ -94,13 +94,16 @@ class TestEnvironmentConfig:
         
         monkeypatch.setenv('TELEGRAM_BOT_TOKEN', 'test_token')
         config = Config()
+        # Should not raise now (chat id is optional for bot startup)
+        config.validate_telegram()
+
+        # Notifications require chat id
         with pytest.raises(ValueError, match="TELEGRAM_CHAT_ID"):
-            config.validate_telegram()
-        
+            config.validate_telegram_notifications()
+
         monkeypatch.setenv('TELEGRAM_CHAT_ID', '12345')
         config = Config()
-        # Should not raise now
-        config.validate_telegram()
+        config.validate_telegram_notifications()
     
     def test_config_defaults(self, monkeypatch):
         """Test that Config has sensible defaults."""

@@ -29,12 +29,14 @@ I can help you:
 • Send you reminders and daily summaries
 
 Try /help to see what I can do.
+
+Your chat id is: {chat_id}
     """
     
     await update.message.reply_text(message.strip())
     
     # Log chat_id for configuration
-    logger.info(f"User {user.id} ({user.username}) started bot. Chat ID: {chat_id}")
+    logger.warning(f"User {user.id} ({user.username}) started bot. Chat ID: {chat_id}")
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):

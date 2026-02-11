@@ -13,7 +13,8 @@ Loading strategy:
 
 import os
 from pathlib import Path
-from dotenv import load_dotenv
+from typing import Optional
+from dotenv import dotenv_values, load_dotenv
 
 
 class Config:
@@ -64,7 +65,7 @@ class Config:
         self.ENV = os.getenv('ENV', 'dev')
     
     @classmethod
-    def from_env(cls, env: str = None):
+    def from_env(cls, env: Optional[str] = None):
         """Create config with environment-specific loading.
         
         Args:
@@ -91,15 +92,27 @@ class Config:
         # Set ENV before loading
         os.environ['ENV'] = env
         
-        # Load base .env file first
+        # Load base .env file first.
+        # OS environment variables must always win over file values.
         base_env_path = Path('.env')
-        if base_env_path.exists():
-            load_dotenv(base_env_path, override=False)
-        
-        # Load environment-specific file (overlays base)
+        base_values = dotenv_values(base_env_path) if base_env_path.exists() else {}
+
+        set_from_base: set[str] = set()
+        for key, value in base_values.items():
+            if value is None:
+                continue
+            if key not in os.environ:
+                os.environ[key] = value
+                set_from_base.add(key)
+
+        # Load environment-specific file (overlays base file values, but not OS env vars)
         env_file_path = Path(f'.env.{env}')
-        if env_file_path.exists():
-            load_dotenv(env_file_path, override=True)
+        env_values = dotenv_values(env_file_path) if env_file_path.exists() else {}
+        for key, value in env_values.items():
+            if value is None:
+                continue
+            if key not in os.environ or key in set_from_base:
+                os.environ[key] = value
         
         # Create and return config instance
         return cls()
@@ -127,5 +140,16 @@ class Config:
         """
         if not self.TELEGRAM_BOT_TOKEN:
             raise ValueError("TELEGRAM_BOT_TOKEN not set")
+
+    def validate_telegram_notifications(self):
+        """Validate Telegram notification configuration.
+
+        Use this when the system needs to send proactive messages (reminders/summaries)
+        that require a configured chat ID.
+
+        Raises:
+            ValueError: If required Telegram variables are missing.
+        """
+        self.validate_telegram()
         if not self.TELEGRAM_CHAT_ID:
             raise ValueError("TELEGRAM_CHAT_ID not set")

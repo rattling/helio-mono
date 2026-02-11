@@ -75,7 +75,10 @@ async def check_and_send_reminders(bot):
             
             # Format and send reminder
             message = format_reminder(todo)
-            chat_id = config.TELEGRAM_CHAT_ID
+            chat_id = getattr(config, 'TELEGRAM_CHAT_ID', None)
+            if not chat_id:
+                logger.info("Skipping reminder send (TELEGRAM_CHAT_ID not set)")
+                return
             
             await send_with_retry(
                 bot,
@@ -119,7 +122,10 @@ async def check_and_send_daily_summary(bot):
         message = format_daily_summary(stats, todos)
         
         # Send
-        chat_id = config.TELEGRAM_CHAT_ID
+        chat_id = getattr(config, 'TELEGRAM_CHAT_ID', None)
+        if not chat_id:
+            logger.info("Skipping daily summary send (TELEGRAM_CHAT_ID not set)")
+            return
         await send_with_retry(
             bot,
             chat_id=int(chat_id),

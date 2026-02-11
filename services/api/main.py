@@ -79,18 +79,23 @@ async def lifespan(app: FastAPI):
     services['query'] = query_service
     
     # Start Telegram bot if configured
-    if config.TELEGRAM_BOT_TOKEN and config.TELEGRAM_CHAT_ID:
+    if config.TELEGRAM_BOT_TOKEN:
         logger.info("Starting Telegram bot...")
+        if not config.TELEGRAM_CHAT_ID:
+            logger.info("Telegram chat id not configured; reminders/summaries will be disabled until TELEGRAM_CHAT_ID is set")
         try:
             from services.adapters.telegram.bot import start_bot
             telegram_task = asyncio.create_task(
                 start_bot(config.TELEGRAM_BOT_TOKEN, services, config)
             )
-            logger.info(f"Telegram bot started (chat: {config.TELEGRAM_CHAT_ID})")
+            if config.TELEGRAM_CHAT_ID:
+                logger.info(f"Telegram bot started (chat: {config.TELEGRAM_CHAT_ID})")
+            else:
+                logger.info("Telegram bot started")
         except Exception as e:
             logger.error(f"Failed to start Telegram bot: {e}", exc_info=True)
     else:
-        logger.info("Telegram bot disabled (no credentials)")
+        logger.info("Telegram bot disabled (no bot token)")
     
     logger.info("=== Service Ready ===")
     

@@ -11,6 +11,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from shared.common.config import Config
+from shared.common.logging import setup_logging
 from services.event_store.file_store import FileEventStore
 from services.ingestion.service import IngestionService
 from services.extraction.service import ExtractionService
@@ -18,17 +19,6 @@ from services.extraction.openai_client import OpenAILLMService
 from services.extraction.mock_llm import MockLLMService
 from services.query.service import QueryService
 from services.adapters.telegram.bot import start_bot
-
-
-def setup_logging(level: str = "INFO"):
-    """Configure logging."""
-    logging.basicConfig(
-        level=getattr(logging, level.upper()),
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.StreamHandler(sys.stdout)
-        ]
-    )
 
 
 async def main():
@@ -45,7 +35,7 @@ async def main():
         config.validate_telegram()
     except ValueError as e:
         logger.error(f"Configuration error: {e}")
-        logger.error("Please set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env")
+        logger.error("Please set TELEGRAM_BOT_TOKEN in .env")
         sys.exit(1)
     
     logger.info("Initializing services...")
@@ -86,8 +76,13 @@ async def main():
     
     # Start bot
     logger.info(f"Starting Telegram bot...")
-    logger.info(f"Chat ID: {config.TELEGRAM_CHAT_ID}")
-    logger.info(f"Notifications: {config.NOTIFICATIONS_ENABLED}")
+    if config.TELEGRAM_CHAT_ID:
+        logger.info(f"Chat ID (configured): {config.TELEGRAM_CHAT_ID}")
+    else:
+        logger.warning("TELEGRAM_CHAT_ID not set; reminders/summaries will be disabled until configured")
+        logger.warning("To get your chat id: send /start to the bot, then run:")
+        logger.warning("  curl -s \"https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getUpdates\" | jq '.result[-1].message.chat.id'")
+    logger.info(f"Notifications enabled flag: {config.NOTIFICATIONS_ENABLED}")
     
     try:
         await start_bot(config.TELEGRAM_BOT_TOKEN, services, config)
