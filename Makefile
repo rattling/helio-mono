@@ -1,4 +1,4 @@
-.PHONY: help setup install test lint format clean run demo telegram rebuild import-chatgpt view-events status
+.PHONY: help setup install test lint format clean run demo telegram rebuild import-chatgpt view-events status deploy restart logs stop
 
 # Default environment if not specified
 ENV ?= dev
@@ -7,9 +7,16 @@ help: ## Show this help message
 	@echo 'Usage: make [target] [ENV=dev|staging|live]'
 	@echo ''
 	@echo 'Service Commands:'
-	@echo '  make run [ENV=dev]       - Run Helionyx service (default: dev)'
+	@echo '  make run [ENV=dev]       - Run Helionyx service locally (default: dev)'
 	@echo '  make run ENV=staging     - Run service in staging mode'
 	@echo '  make run ENV=live        - Run service in live mode'
+	@echo ''
+	@echo 'Deployment Commands (node1):'
+	@echo '  make deploy ENV=<env>    - Deploy to node1 (ENV required: dev, staging, or live)'
+	@echo '  make status [ENV=dev]    - Check deployment status (default: dev)'
+	@echo '  make restart ENV=<env>   - Restart deployed service (ENV required)'
+	@echo '  make logs ENV=<env>      - View service logs (ENV required)'
+	@echo '  make stop ENV=<env>      - Stop deployed service (ENV required)'
 	@echo ''
 	@echo 'Other Commands:'
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -95,3 +102,37 @@ status: ## Check system status and event log
 		echo "Event log directory not yet created"; \
 	fi
 	@echo ""
+
+# Deployment commands (for node1 deployment)
+
+deploy: ## Deploy to node1 (requires ENV=dev|staging|live)
+	@if [ -z "$(ENV)" ]; then \
+		echo "Error: ENV parameter required"; \
+		echo "Usage: make deploy ENV=dev|staging|live"; \
+		exit 1; \
+	fi
+	@./scripts/deploy/deploy.sh $(ENV)
+
+restart: ## Restart deployed service (requires ENV=dev|staging|live)
+	@if [ -z "$(ENV)" ]; then \
+		echo "Error: ENV parameter required"; \
+		echo "Usage: make restart ENV=dev|staging|live"; \
+		exit 1; \
+	fi
+	@./scripts/deploy/restart.sh $(ENV)
+
+logs: ## View service logs (requires ENV=dev|staging|live)
+	@if [ -z "$(ENV)" ]; then \
+		echo "Error: ENV parameter required"; \
+		echo "Usage: make logs ENV=dev|staging|live"; \
+		exit 1; \
+	fi
+	@./scripts/deploy/logs.sh $(ENV)
+
+stop: ## Stop deployed service (requires ENV=dev|staging|live)
+	@if [ -z "$(ENV)" ]; then \
+		echo "Error: ENV parameter required"; \
+		echo "Usage: make stop ENV=dev|staging|live"; \
+		exit 1; \
+	fi
+	@./scripts/deploy/stop.sh $(ENV)
