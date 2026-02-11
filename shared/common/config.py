@@ -53,6 +53,10 @@ class Config:
         self.REMINDER_WINDOW_END = int(os.getenv('REMINDER_WINDOW_END', '21'))
         self.REMINDER_ADVANCE_HOURS = int(os.getenv('REMINDER_ADVANCE_HOURS', '24'))
         
+        # API Server
+        self.API_HOST = os.getenv('API_HOST', '0.0.0.0')
+        self.API_PORT = int(os.getenv('API_PORT', '8000'))
+        
         # Logging
         self.LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
         

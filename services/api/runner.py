@@ -34,8 +34,8 @@ def main():
     # Lifespan events will handle service initialization and Telegram bot
     uvicorn.run(
         "services.api.main:app",
-        host="0.0.0.0",
-        port=8000,
+        host=config.API_HOST,
+        port=config.API_PORT,
         log_level=config.LOG_LEVEL.lower(),
         reload=False  # Reload disabled for production stability
     )
