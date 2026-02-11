@@ -54,7 +54,37 @@ Requirements:
 
 ------------------------------------------------------------------------
 
-### 2.2 Deployment Scripts
+### 2.2 Same-Host Multi-Environment Support
+
+Support running dev, staging, and live environments on the same host (`node1`).
+
+**Requirements:**
+
+-   Each environment must have:
+    -   **Distinct API port** (e.g., 8000 dev, 8001 staging, 8002 live)
+    -   **Separate data directories** (event store and projections DB)
+    -   **Unique systemd service name** (helionyx-dev, helionyx-staging, helionyx)
+    -   **Environment-specific Telegram bot** (per section 2.6)
+    -   **Independent configuration** (`.env.dev`, `.env.staging`, `.env.live`)
+
+-   Runner must read `API_HOST` and `API_PORT` from config
+-   Data paths must be fully isolated (no shared state between envs)
+-   Services must not conflict (ports, sockets, file locks)
+
+**Configuration Additions:**
+
+-   Add `API_HOST` to Config (default: `0.0.0.0`)
+-   Add `API_PORT` to Config (default: `8000`)
+-   Update `.env.template` with same-host deployment examples
+-   Update `services/api/runner.py` to use config-driven host/port
+
+**Rationale:**
+
+Single-host deployment is pragmatic for personal use and early stages. Full isolation enables safe testing and gradual rollout without requiring multi-node infrastructure.
+
+------------------------------------------------------------------------
+
+### 2.3 Deployment Scripts
 
 Create deployment scripts in `scripts/deploy/`:
 
@@ -72,7 +102,7 @@ Scripts must:
 
 ------------------------------------------------------------------------
 
-### 2.3 Service Management
+### 2.4 Service Management
 
 Deploy must:
 
@@ -81,9 +111,22 @@ Deploy must:
 -   Provide clean stop/start/restart
 -   Capture logs to persistent location
 
+**Service Naming Convention:**
+
+-   `helionyx-dev.service` (dev environment)
+-   `helionyx-staging.service` (staging environment)
+-   `helionyx.service` (live/production environment)
+
+Each service must:
+
+-   Use appropriate `.env.{env}` file
+-   Bind to correct port from config
+-   Write logs to environment-specific location
+-   Run under appropriate user
+
 ------------------------------------------------------------------------
 
-### 2.4 CI/CD Pipeline
+### 2.5 CI/CD Pipeline
 
 Introduce CI pipeline (GitHub Actions or equivalent).
 
@@ -103,7 +146,7 @@ CI must pass before merge to main.
 
 ------------------------------------------------------------------------
 
-### 2.5 Deployment Documentation
+### 2.6 Deployment Documentation
 
 Create `docs/DEPLOYMENT.md` covering:
 
@@ -115,7 +158,7 @@ Create `docs/DEPLOYMENT.md` covering:
 
 ------------------------------------------------------------------------
 
-### 2.6 Environment-Specific Telegram Bots
+### 2.7 Environment-Specific Telegram Bots
 
 Introduce separate Telegram bots for each environment to ensure proper isolation and testing.
 
@@ -192,10 +235,13 @@ Milestone 3 is accepted when:
 -   A developer can deploy to node1 with one command
 -   Deployment is idempotent (safe to repeat)
 -   Service survives deployment without data loss
--   CI pipeline catches lint/test failures
--   Documentation allows a new developer to deploy successfully
+-   **Multiple environments run simultaneously on node1** without conflict
+-   Each environment has **distinct port, data paths, and systemd service**
 -   Each environment uses its designated Telegram bot (dev/staging/live)
 -   Agents correctly load environment-specific bot credentials
+-   `make deploy ENV=X` correctly deploys to appropriate environment
+-   CI pipeline catches lint/test failures
+-   Documentation allows a new developer to deploy successfully
 
 If any of these fail, milestone is incomplete.
 
