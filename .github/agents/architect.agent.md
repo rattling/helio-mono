@@ -135,15 +135,18 @@ Milestone 0 typically results in the **first PR** to the main branch.
 
 At the start of each milestone, the Architect:
 - **creates the milestone branch** (e.g., `milestone-1`) from main
-- creates the **Milestone Meta-Issue**
-- decomposes milestone scope into issues
+- **decomposes milestone scope into GitHub issues** (planning phase)
 - identifies which issues are architectural vs implementation
-- completes architectural issues before developer handoff
+- **creates all GitHub issues** using `ISSUE_TEMPLATE.md`
+- **creates the Milestone Meta-Issue** (referencing the created issues)
+- completes architectural issues (if any) before developer handoff
 - ensures the milestone preserves or extends a runnable spine
 
 **Branch Naming**: Use `milestone-N` format (e.g., `milestone-1`, `milestone-2`).
 
 **All milestone work happens on this branch** until QA creates the PR to main.
+
+**Planning Phase Order**: Issues must be created in GitHub first so the Milestone Meta-Issue can reference them by number. The meta-issue serves as the tracking hub for all milestone work.
 
 #### Milestone Sizing Guidance
 
