@@ -5,6 +5,7 @@ from services.adapters.telegram.formatters import (
     format_todos_list,
     format_notes_list,
     format_tracks_list,
+    format_tasks_list,
     format_due_date,
 )
 
@@ -103,3 +104,36 @@ def test_format_due_date_invalid():
     """Test formatting invalid due date."""
     result = format_due_date("invalid")
     assert result == "invalid"
+
+
+def test_format_tasks_list_empty():
+    """Test formatting empty task list."""
+    result = format_tasks_list([])
+    assert result == "No tasks found."
+
+
+def test_format_tasks_list_with_tasks():
+    """Test formatting task list with items."""
+    tasks = [
+        {
+            "task_id": "12345678-1234-1234-1234-1234567890ab",
+            "title": "Ship milestone",
+            "priority": "p1",
+            "status": "open",
+            "is_stale": False,
+        },
+        {
+            "task_id": "abcdefab-cdef-cdef-cdef-abcdefabcdef",
+            "title": "Review queue",
+            "priority": "p0",
+            "status": "blocked",
+            "is_stale": True,
+        },
+    ]
+
+    result = format_tasks_list(tasks)
+
+    assert "Your Tasks" in result
+    assert "Ship milestone" in result
+    assert "Review queue" in result
+    assert "⚠️" in result

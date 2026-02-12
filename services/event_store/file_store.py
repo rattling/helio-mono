@@ -169,6 +169,7 @@ class FileEventStore:
         """Deserialize event data back to event object."""
         from shared.contracts import (
             ArtifactRecordedEvent,
+            DecisionRecordedEvent,
             MessageIngestedEvent,
             ObjectExtractedEvent,
         )
@@ -182,6 +183,8 @@ class FileEventStore:
             return ArtifactRecordedEvent(**event_data)
         elif event_type == EventType.OBJECT_EXTRACTED.value:
             return ObjectExtractedEvent(**event_data)
+        elif event_type == EventType.DECISION_RECORDED.value:
+            return DecisionRecordedEvent(**event_data)
         else:
             # Fall back to base event
             return BaseEvent(**event_data)

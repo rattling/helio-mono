@@ -66,6 +66,38 @@ CREATE INDEX IF NOT EXISTS idx_tracks_status ON tracks(status);
 CREATE INDEX IF NOT EXISTS idx_tracks_created_at ON tracks(created_at);
 
 -- =============================================================================
+-- TASKS TABLE (Milestone 5)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS tasks (
+    task_id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    body TEXT,
+    status TEXT NOT NULL CHECK(status IN ('open', 'blocked', 'in_progress', 'done', 'cancelled', 'snoozed')),
+    priority TEXT NOT NULL CHECK(priority IN ('p0', 'p1', 'p2', 'p3')),
+    due_at TEXT,
+    do_not_start_before TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    completed_at TEXT,
+    source TEXT NOT NULL,
+    source_ref TEXT NOT NULL,
+    dedup_group_id TEXT,
+    labels TEXT,
+    project TEXT,
+    blocked_by TEXT,
+    agent_notes TEXT,
+    explanations TEXT
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_source_ref ON tasks(source, source_ref);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority);
+CREATE INDEX IF NOT EXISTS idx_tasks_dedup_group_id ON tasks(dedup_group_id) WHERE dedup_group_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_tasks_due_at ON tasks(due_at) WHERE due_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_tasks_updated_at ON tasks(updated_at);
+
+-- =============================================================================
 -- PROJECTION METADATA TABLE
 -- =============================================================================
 

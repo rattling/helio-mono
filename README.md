@@ -264,9 +264,25 @@ Without an OpenAI API key, the system uses a mock LLM service with keyword-based
 - `/todos [status]` - List todos (optional: pending, completed, etc.)
 - `/notes [search]` - List notes (optional: search term)
 - `/tracks` - List tracking items
+- `/tasks [status]` - List canonical tasks (open/blocked/in_progress/done/cancelled/snoozed)
+- `/task_show <task_id>` - Show task details
+- `/task_done <task_id>` - Mark task done
+- `/task_snooze <task_id> <iso-ts>` - Snooze task until timestamp
+- `/task_priority <task_id> <p0|p1|p2|p3>` - Update task priority
 - `/stats` - System statistics
 
 You can also send regular messages and the bot will extract todos, notes, and tracks automatically!
+
+## Task API (Milestone 5)
+
+- `POST /api/v1/tasks/ingest` - Idempotent ingest via `(source, source_ref)`
+- `GET /api/v1/tasks` - List tasks (optional `status` filter)
+- `GET /api/v1/tasks/{task_id}` - Get one task
+- `PATCH /api/v1/tasks/{task_id}` - Patch mutable task fields
+- `POST /api/v1/tasks/{task_id}/complete` - Mark task done
+- `POST /api/v1/tasks/{task_id}/snooze` - Snooze task until timestamp
+- `POST /api/v1/tasks/{task_id}/link` - Link blocking task dependencies
+- `GET /api/v1/tasks/review/queue` - Deterministic review queue with passive stale detection
 
 ## Documentation
 

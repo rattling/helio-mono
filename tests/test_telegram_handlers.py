@@ -38,6 +38,14 @@ def mock_query_service():
     return service
 
 
+@pytest.fixture
+def mock_task_service():
+    """Create a mock task service."""
+    service = AsyncMock()
+    handlers.task_service = service
+    return service
+
+
 @pytest.mark.asyncio
 async def test_start_command(mock_update, mock_context):
     """Test /start command."""
@@ -116,3 +124,27 @@ async def test_stats_command(mock_update, mock_context, mock_query_service):
     call_args = mock_update.message.reply_text.call_args[0][0]
     assert "Statistics" in call_args
     assert "5" in call_args  # todos count
+
+
+@pytest.mark.asyncio
+async def test_tasks_command_invalid_status(mock_update, mock_context, mock_task_service):
+    """Test /tasks rejects invalid status filters."""
+    mock_context.args = ["not_a_status"]
+
+    await handlers.tasks_command(mock_update, mock_context)
+
+    call_args = mock_update.message.reply_text.call_args[0][0]
+    assert "Invalid status" in call_args
+
+
+@pytest.mark.asyncio
+async def test_task_priority_command(mock_update, mock_context, mock_task_service):
+    """Test /task_priority updates task priority."""
+    mock_context.args = ["task-123", "p0"]
+    mock_task_service.patch_task.return_value = {"task_id": "task-123", "priority": "p0"}
+
+    await handlers.task_priority_command(mock_update, mock_context)
+
+    mock_task_service.patch_task.assert_called_once()
+    call_args = mock_update.message.reply_text.call_args[0][0]
+    assert "priority set" in call_args
