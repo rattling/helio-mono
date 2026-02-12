@@ -112,7 +112,7 @@ def test_replay_report_computes_metrics_and_gates(tmp_path):
 
     _append_events(store, events)
 
-    report = asyncio.run(build_report(str(tmp_path / "events")))
+    report = asyncio.run(build_report(str(tmp_path / "events"), rollback_verified=True))
 
     assert report["metrics"]["acceptance_uplift_vs_baseline"] == 0.5
     assert report["metrics"]["duplicate_reminder_rate"] == 0.0
@@ -121,6 +121,8 @@ def test_replay_report_computes_metrics_and_gates(tmp_path):
     assert report["rollout_gates"]["acceptance_uplift_non_negative"]["status"] == "pass"
     assert report["rollout_gates"]["duplicate_reminder_rate_below_5pct"]["status"] == "pass"
     assert report["rollout_gates"]["ordering_shift_rate_below_40pct"]["status"] == "fail"
+    assert report["stage_b_readiness"]["checks"]["rollback_verified"]["status"] == "pass"
+    assert report["stage_b_readiness"]["ready"] is False
     assert report["rollout_ready"] is False
 
 
@@ -140,4 +142,5 @@ def test_replay_report_handles_insufficient_data(tmp_path):
     assert (
         report["rollout_gates"]["acceptance_uplift_non_negative"]["status"] == "insufficient_data"
     )
+    assert report["stage_b_readiness"]["checks"]["rollback_verified"]["status"] == "fail"
     assert report["rollout_ready"] is False

@@ -25,6 +25,12 @@ Run replay evaluation report:
 .venv/bin/python scripts/evaluate_attention_replay.py --out data/projections/attention_replay_report.json
 ```
 
+Run Stage B readiness check (readiness only; no exploration enablement):
+
+```bash
+.venv/bin/python scripts/evaluate_attention_replay.py --rollback-verified --out data/projections/attention_replay_report.json
+```
+
 Inspect report:
 
 ```bash
@@ -59,6 +65,16 @@ Run replay report and verify gates:
 - `gate_shadow_data_present`
 
 All gates must be `true` before any production influence is considered.
+
+### Stage B Readiness (Bandit Not Enabled)
+
+- Inspect `stage_b_readiness` in the replay report
+- Confirm checks pass for:
+	- interaction volume
+	- acceptance/noise non-regression
+	- calibration quality
+	- rollback verification
+- Keep exploration disabled until readiness is explicitly true
 
 ## Dry-Run Rollback Procedure
 

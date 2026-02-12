@@ -45,7 +45,7 @@ def _candidate_field(candidate: object, key: str, default=None):
     return default
 
 
-async def build_report(events_dir: str) -> dict:
+async def build_report(events_dir: str, rollback_verified: bool = False) -> dict:
     store = FileEventStore(data_dir=events_dir)
     events = await store.stream_events()
 
@@ -53,6 +53,8 @@ async def build_report(events_dir: str) -> dict:
     applied = [e for e in events if e.event_type == EventType.SUGGESTION_APPLIED]
     rejected = [e for e in events if e.event_type == EventType.SUGGESTION_REJECTED]
     reminders = [e for e in events if e.event_type == EventType.REMINDER_SENT]
+    reminders_dismissed = [e for e in events if e.event_type == EventType.REMINDER_DISMISSED]
+    reminders_snoozed = [e for e in events if e.event_type == EventType.REMINDER_SNOOZED]
     model_scores = [e for e in events if e.event_type == EventType.MODEL_SCORE_RECORDED]
     attention_scoring = [e for e in events if e.event_type == EventType.ATTENTION_SCORING_COMPUTED]
 
@@ -177,6 +179,66 @@ async def build_report(events_dir: str) -> dict:
     evaluated_gate_passes = [gate["passed"] for gate in gates.values() if gate["passed"] is not None]
     rollout_ready = bool(evaluated_gate_passes) and all(evaluated_gate_passes)
 
+    interaction_volume = (
+        len(shown)
+        + len(applied)
+        + len(rejected)
+        + len(reminders)
+        + len(reminders_dismissed)
+        + len(reminders_snoozed)
+    )
+    stage_b_thresholds = {
+        "min_interaction_volume": 50,
+        "max_duplicate_reminder_rate": 0.05,
+        "min_confidence_above_threshold_rate": 0.60,
+    }
+    stage_b_checks = {
+        "interaction_volume": {
+            "status": "pass"
+            if interaction_volume >= stage_b_thresholds["min_interaction_volume"]
+            else "fail",
+            "value": interaction_volume,
+            "threshold": f">= {stage_b_thresholds['min_interaction_volume']}",
+        },
+        "acceptance_uplift_non_negative": {
+            "status": "insufficient_data"
+            if acceptance_uplift_vs_baseline is None
+            else ("pass" if acceptance_uplift_vs_baseline >= 0.0 else "fail"),
+            "value": acceptance_uplift_vs_baseline,
+            "threshold": ">= 0.0",
+        },
+        "duplicate_reminder_non_regression": {
+            "status": "insufficient_data"
+            if duplicate_reminder_rate is None
+            else (
+                "pass"
+                if duplicate_reminder_rate <= stage_b_thresholds["max_duplicate_reminder_rate"]
+                else "fail"
+            ),
+            "value": duplicate_reminder_rate,
+            "threshold": f"<= {stage_b_thresholds['max_duplicate_reminder_rate']}",
+        },
+        "calibration_quality": {
+            "status": "insufficient_data"
+            if confidence_above_threshold_rate is None
+            else (
+                "pass"
+                if confidence_above_threshold_rate
+                >= stage_b_thresholds["min_confidence_above_threshold_rate"]
+                else "fail"
+            ),
+            "value": confidence_above_threshold_rate,
+            "threshold": f">= {stage_b_thresholds['min_confidence_above_threshold_rate']}",
+        },
+        "rollback_verified": {
+            "status": "pass" if rollback_verified else "fail",
+            "value": rollback_verified,
+            "threshold": "must be true",
+        },
+    }
+
+    stage_b_ready = all(check["status"] == "pass" for check in stage_b_checks.values())
+
     report = {
         "generated_at": datetime.utcnow().isoformat(),
         "events_dir": events_dir,
@@ -186,7 +248,10 @@ async def build_report(events_dir: str) -> dict:
             "suggestions_applied": len(applied),
             "suggestions_rejected": len(rejected),
             "reminders_sent": len(reminders),
+            "reminders_dismissed": len(reminders_dismissed),
+            "reminders_snoozed": len(reminders_snoozed),
             "model_scores_logged": len(model_scores),
+            "interaction_volume": interaction_volume,
         },
         "metrics": {
             "suggestion_acceptance_rate": acceptance_rate,
@@ -225,6 +290,12 @@ async def build_report(events_dir: str) -> dict:
             "confidence_above_threshold_rate": ">= 0.60",
             "confidence_threshold": confidence_threshold,
         },
+        "stage_b_readiness": {
+            "ready": stage_b_ready,
+            "checks": stage_b_checks,
+            "thresholds": stage_b_thresholds,
+            "note": "Readiness report only; contextual bandit exploration remains disabled.",
+        },
     }
 
     report["rollout_ready"] = rollout_ready
@@ -243,12 +314,17 @@ async def main() -> int:
         default="./data/projections/attention_replay_report.json",
         help="Output JSON file path",
     )
+    parser.add_argument(
+        "--rollback-verified",
+        action="store_true",
+        help="Mark rollback verification as complete for Stage B readiness evaluation",
+    )
     args = parser.parse_args()
 
     cfg = Config.from_env()
     events_dir = args.events_dir or cfg.EVENT_STORE_PATH
 
-    report = await build_report(events_dir)
+    report = await build_report(events_dir, rollback_verified=args.rollback_verified)
 
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
