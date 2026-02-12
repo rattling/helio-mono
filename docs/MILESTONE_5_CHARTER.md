@@ -1,5 +1,7 @@
 # Milestone 5 --- Task Core + Agent-First Semantics
 
+**QA Report**: [M5_QA_REPORT.md](M5_QA_REPORT.md)
+
 ## Objective
 
 Establish a durable, idempotent, agent-operable task system that
