@@ -214,3 +214,69 @@ class TestAttentionAPI:
             assert all(item["personalization_policy"] == "bounded_in_bucket" for item in items)
         finally:
             ShadowRanker.score = original_method
+
+    def test_attention_personalization_mode_deterministic_rollback(self, monkeypatch, tmp_path):
+        event_store_path = tmp_path / "events"
+        event_store_path.mkdir()
+        db_path = tmp_path / "projections" / "attention-mode-rollback.db"
+        db_path.parent.mkdir(parents=True)
+
+        monkeypatch.setenv("EVENT_STORE_PATH", str(event_store_path))
+        monkeypatch.setenv("PROJECTIONS_DB_PATH", str(db_path))
+        monkeypatch.setenv("ENV", "dev")
+        monkeypatch.setenv("ATTENTION_PERSONALIZATION_MODE", "bounded")
+        monkeypatch.setenv("SHADOW_RANKER_CONFIDENCE_THRESHOLD", "0.6")
+
+        _seed_task(
+            {
+                "title": "Rollback candidate A",
+                "source": "api",
+                "source_ref": "attn-mode-001",
+                "priority": "p1",
+                "due_at": "2026-03-20T09:00:00",
+            }
+        )
+        _seed_task(
+            {
+                "title": "Rollback candidate B",
+                "source": "api",
+                "source_ref": "attn-mode-002",
+                "priority": "p1",
+            }
+        )
+
+        from services.learning.ranker import ShadowRanker, ShadowRankerResult
+
+        original_method = ShadowRanker.score
+
+        def _score(self, features):
+            if features.get("has_due") == 0.0:
+                return ShadowRankerResult(score=0.95, confidence=0.95, explanation="prefer B")
+            return ShadowRankerResult(score=0.10, confidence=0.95, explanation="deprioritize A")
+
+        ShadowRanker.score = _score
+        try:
+            bounded = client.get("/attention/today")
+            assert bounded.status_code == 200
+            bounded_items = bounded.json()["top_actionable"]
+            assert any(item["personalization_applied"] is True for item in bounded_items)
+            assert all(
+                item["personalization_policy"] == "bounded_in_bucket" for item in bounded_items
+            )
+
+            # One-command rollback path via mode switch.
+            monkeypatch.setenv("ATTENTION_PERSONALIZATION_MODE", "deterministic")
+            monkeypatch.setenv("SHADOW_RANKER_ENABLED", "true")
+            monkeypatch.setenv("ATTENTION_BOUNDED_PERSONALIZATION_ENABLED", "true")
+
+            deterministic = client.get("/attention/today")
+            assert deterministic.status_code == 200
+            deterministic_items = deterministic.json()["top_actionable"]
+            assert all(
+                item["personalization_policy"] == "deterministic_only"
+                for item in deterministic_items
+            )
+            assert all(item["personalization_applied"] is False for item in deterministic_items)
+            assert all(item["model_score"] is None for item in deterministic_items)
+        finally:
+            ShadowRanker.score = original_method

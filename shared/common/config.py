@@ -59,19 +59,41 @@ class Config:
         self.REMINDER_ADVANCE_HOURS = int(os.getenv("REMINDER_ADVANCE_HOURS", "24"))
         self.ATTENTION_URGENT_THRESHOLD = float(os.getenv("ATTENTION_URGENT_THRESHOLD", "60"))
 
-        # Learning / shadow ranking (M6)
-        self.SHADOW_RANKER_ENABLED = os.getenv("SHADOW_RANKER_ENABLED", "true").lower() in (
+        # Learning / personalization controls (M7)
+        shadow_enabled_raw = os.getenv("SHADOW_RANKER_ENABLED", "true").lower() in (
             "1",
             "true",
             "yes",
             "on",
         )
+        bounded_enabled_raw = os.getenv(
+            "ATTENTION_BOUNDED_PERSONALIZATION_ENABLED", "false"
+        ).lower() in ("1", "true", "yes", "on")
+
+        mode_env = os.getenv("ATTENTION_PERSONALIZATION_MODE")
+        valid_modes = {"deterministic", "shadow", "bounded"}
+        if mode_env is not None:
+            mode = mode_env.strip().lower()
+            if mode not in valid_modes:
+                raise ValueError(
+                    "Invalid ATTENTION_PERSONALIZATION_MODE: "
+                    f"{mode}. Must be one of {sorted(valid_modes)}"
+                )
+        else:
+            # Backward-compatible derivation when mode isn't explicitly set.
+            if bounded_enabled_raw:
+                mode = "bounded"
+            elif shadow_enabled_raw:
+                mode = "shadow"
+            else:
+                mode = "deterministic"
+
+        self.ATTENTION_PERSONALIZATION_MODE = mode
+        self.SHADOW_RANKER_ENABLED = mode in ("shadow", "bounded")
+        self.ATTENTION_BOUNDED_PERSONALIZATION_ENABLED = mode == "bounded"
         self.SHADOW_RANKER_CONFIDENCE_THRESHOLD = float(
             os.getenv("SHADOW_RANKER_CONFIDENCE_THRESHOLD", "0.6")
         )
-        self.ATTENTION_BOUNDED_PERSONALIZATION_ENABLED = os.getenv(
-            "ATTENTION_BOUNDED_PERSONALIZATION_ENABLED", "false"
-        ).lower() in ("1", "true", "yes", "on")
 
         # API Server
         self.API_HOST = os.getenv("API_HOST", "0.0.0.0")

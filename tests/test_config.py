@@ -132,3 +132,41 @@ class TestEnvironmentConfig:
         assert config is not None
         assert hasattr(config, "EVENT_STORE_PATH")
         assert hasattr(config, "ENV")
+
+    def test_personalization_mode_validation(self, monkeypatch):
+        monkeypatch.setenv("ATTENTION_PERSONALIZATION_MODE", "invalid")
+        with pytest.raises(ValueError, match="Invalid ATTENTION_PERSONALIZATION_MODE"):
+            Config()
+
+    def test_personalization_mode_derivation_backwards_compatible(self, monkeypatch):
+        monkeypatch.delenv("ATTENTION_PERSONALIZATION_MODE", raising=False)
+
+        monkeypatch.setenv("SHADOW_RANKER_ENABLED", "false")
+        monkeypatch.setenv("ATTENTION_BOUNDED_PERSONALIZATION_ENABLED", "false")
+        cfg = Config()
+        assert cfg.ATTENTION_PERSONALIZATION_MODE == "deterministic"
+        assert cfg.SHADOW_RANKER_ENABLED is False
+        assert cfg.ATTENTION_BOUNDED_PERSONALIZATION_ENABLED is False
+
+        monkeypatch.setenv("SHADOW_RANKER_ENABLED", "true")
+        monkeypatch.setenv("ATTENTION_BOUNDED_PERSONALIZATION_ENABLED", "false")
+        cfg = Config()
+        assert cfg.ATTENTION_PERSONALIZATION_MODE == "shadow"
+        assert cfg.SHADOW_RANKER_ENABLED is True
+        assert cfg.ATTENTION_BOUNDED_PERSONALIZATION_ENABLED is False
+
+        monkeypatch.setenv("ATTENTION_BOUNDED_PERSONALIZATION_ENABLED", "true")
+        cfg = Config()
+        assert cfg.ATTENTION_PERSONALIZATION_MODE == "bounded"
+        assert cfg.SHADOW_RANKER_ENABLED is True
+        assert cfg.ATTENTION_BOUNDED_PERSONALIZATION_ENABLED is True
+
+    def test_personalization_mode_overrides_legacy_flags(self, monkeypatch):
+        monkeypatch.setenv("ATTENTION_PERSONALIZATION_MODE", "deterministic")
+        monkeypatch.setenv("SHADOW_RANKER_ENABLED", "true")
+        monkeypatch.setenv("ATTENTION_BOUNDED_PERSONALIZATION_ENABLED", "true")
+
+        cfg = Config()
+        assert cfg.ATTENTION_PERSONALIZATION_MODE == "deterministic"
+        assert cfg.SHADOW_RANKER_ENABLED is False
+        assert cfg.ATTENTION_BOUNDED_PERSONALIZATION_ENABLED is False
