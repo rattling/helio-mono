@@ -57,6 +57,7 @@ class AttentionCandidate(BaseModel):
     model_score: Optional[float] = None
     model_confidence: Optional[float] = None
     learned_explanation: Optional[str] = None
+    ranking_explanation: Optional[str] = None
     personalization_applied: bool = False
     personalization_policy: str = "deterministic_only"
 

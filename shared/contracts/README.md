@@ -25,6 +25,7 @@ Event schemas for the append-only event log. All system activity is recorded as 
 Attention queue contracts include typed candidate metadata for bounded personalization:
 - `deterministic_bucket_id` + `deterministic_bucket_rank`
 - `model_score` + `model_confidence` (optional)
+- `ranking_explanation` with deterministic + learned contribution visibility
 - `personalization_applied` + `personalization_policy`
 - deterministic vs learned explanation fields
 

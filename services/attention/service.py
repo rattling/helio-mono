@@ -147,6 +147,8 @@ class AttentionService:
             )
 
         if not self.enable_bounded_personalization:
+            for candidate in deterministic:
+                candidate["ranking_explanation"] = self._build_ranking_explanation(candidate)
             return deterministic
 
         grouped: dict[int, list[dict[str, Any]]] = {}
@@ -156,6 +158,9 @@ class AttentionService:
         merged: list[dict[str, Any]] = []
         for rank in sorted(grouped):
             merged.extend(self._reorder_bucket_with_model(grouped[rank]))
+
+        for candidate in merged:
+            candidate["ranking_explanation"] = self._build_ranking_explanation(candidate)
 
         return merged
 
@@ -199,6 +204,24 @@ class AttentionService:
 
         return updated
 
+    def _build_ranking_explanation(self, candidate: dict[str, Any]) -> str:
+        bucket = candidate.get("deterministic_bucket_id", "ready_normal")
+        deterministic = candidate.get("deterministic_explanation") or "deterministic baseline"
+
+        if not self.enable_bounded_personalization:
+            return f"deterministic-only ({bucket}): {deterministic}"
+
+        learned = candidate.get("learned_explanation") or "no learned contribution"
+        confidence = candidate.get("model_confidence")
+        confidence_text = "n/a" if confidence is None else f"{confidence:.2f}"
+        applied = candidate.get("personalization_applied") is True
+        decision = "applied" if applied else "not_applied"
+
+        return (
+            f"bounded_in_bucket ({bucket}) decision={decision}; "
+            f"deterministic={deterministic}; learned={learned}; confidence={confidence_text}"
+        )
+
     async def _record_queue(self, queue_name: str, items: list[dict[str, Any]]) -> None:
         event = AttentionScoringComputedEvent(
             queue_name=queue_name,
@@ -213,6 +236,7 @@ class AttentionService:
                     model_score=item.get("model_score"),
                     model_confidence=item.get("model_confidence"),
                     learned_explanation=item.get("learned_explanation"),
+                    ranking_explanation=item.get("ranking_explanation"),
                     personalization_applied=item.get("personalization_applied", False),
                     personalization_policy=item.get("personalization_policy", "deterministic_only"),
                     shadow_score=item.get("shadow_score"),
@@ -310,6 +334,10 @@ class AttentionService:
             "model_score": None,
             "model_confidence": None,
             "learned_explanation": None,
+            "ranking_explanation": (
+                f"deterministic-only ({deterministic_bucket_id}): "
+                f"{'; '.join(components) if components else 'baseline'}"
+            ),
             "personalization_applied": False,
             "personalization_policy": "deterministic_only",
         }

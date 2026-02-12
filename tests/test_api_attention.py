@@ -50,6 +50,8 @@ class TestAttentionAPI:
         assert "urgency_explanation" in payload["top_actionable"][0]
         assert "deterministic_bucket_id" in payload["top_actionable"][0]
         assert "deterministic_bucket_rank" in payload["top_actionable"][0]
+        assert "ranking_explanation" in payload["top_actionable"][0]
+        assert "deterministic-only" in payload["top_actionable"][0]["ranking_explanation"]
         assert "personalization_applied" in payload["top_actionable"][0]
         assert payload["top_actionable"][0]["personalization_applied"] is False
 
@@ -152,6 +154,11 @@ class TestAttentionAPI:
 
             assert any(item["personalization_applied"] is True for item in items)
             assert all(item["personalization_policy"] == "bounded_in_bucket" for item in items)
+            assert any(
+                "deterministic=" in item["ranking_explanation"]
+                and "learned=" in item["ranking_explanation"]
+                for item in items
+            )
         finally:
             ShadowRanker.score = original_method
 
