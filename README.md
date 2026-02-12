@@ -4,7 +4,7 @@ Personal decision and execution substrate built on an append-only event log foun
 
 ## Project Status
 
-**Current Milestone**: Milestone 3 - Deployment & CI Discipline  
+**Current Milestone**: Milestone 5 - Task Core + Agent-First Semantics  
 **Status**: 🔄 In Progress
 
 ## Quick Start
