@@ -1,15 +1,25 @@
 """Command handlers for Telegram bot."""
 
 import logging
+from datetime import datetime
+
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from .formatters import format_todos_list, format_notes_list, format_tracks_list
+from shared.contracts import TaskPatchRequest, TaskPriority, TaskSnoozeRequest
+
+from .formatters import format_todos_list, format_notes_list, format_tracks_list, format_tasks_list
 
 logger = logging.getLogger(__name__)
 
 # Service instances (injected from bot.py)
 query_service = None
+task_service = None
+
+LEGACY_TODO_STATUS_MAP = {
+    "pending": "open",
+    "completed": "done",
+}
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -43,55 +53,66 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Display available commands."""
 
     help_text = """
-📚 *Available Commands*
+📚 Available Commands
 
-*Queries*
-• `/todos [status]` \\- List your todos
-  Example: `/todos pending`
-  
-• `/notes [search]` \\- List your notes
-  Example: `/notes meeting`
-  
-• `/tracks` \\- List tracking items
+Queries
+• /todos [status] - Legacy alias for tasks
+• /notes [search] - List your notes
+• /tracks - List tracking items
+• /tasks [status] - List tasks
+• /task_show <task_id> - Show one task
+• /task_done <task_id> - Mark task done
+• /task_snooze <task_id> <iso-ts> - Snooze task
+• /task_priority <task_id> <p0|p1|p2|p3> - Update priority
+• /stats - System statistics
 
-• `/stats` \\- System statistics
+Information
+• /help - Show this message
+• /start - Welcome message
 
-*Information*
-• `/help` \\- Show this message
-• `/start` \\- Welcome message
-
-💡 Tip: You can also just send me messages and I'll extract todos, notes, and tracks automatically\\!
+Tip: You can also send plain messages and Helionyx will extract objects automatically.
     """
 
-    await update.message.reply_text(help_text.strip(), parse_mode="MarkdownV2")
+    await update.message.reply_text(help_text.strip())
 
 
 async def todos_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """List todos with optional status filter."""
+    """Legacy alias for canonical task listing."""
 
     # Parse optional status argument
     status = context.args[0] if context.args else None
 
-    # Validate status
-    valid_statuses = ["pending", "in_progress", "completed", "cancelled"]
-    if status and status not in valid_statuses:
+    task_status = LEGACY_TODO_STATUS_MAP.get(status, status)
+
+    # Validate status against canonical task statuses (plus legacy aliases)
+    valid_statuses = [
+        "pending",
+        "completed",
+        "open",
+        "blocked",
+        "in_progress",
+        "done",
+        "cancelled",
+        "snoozed",
+    ]
+    if status and task_status not in valid_statuses:
         await update.message.reply_text(
             f"❌ Invalid status: {status}\n" f"Valid options: {', '.join(valid_statuses)}"
         )
         return
 
     try:
-        # Query service
-        todos = await query_service.get_todos(status=status)
+        tasks = await task_service.list_tasks(status=task_status)
 
-        # Format response
-        if not todos:
+        if not tasks:
             status_text = f" ({status})" if status else ""
-            await update.message.reply_text(f"No todos found{status_text}.")
+            await update.message.reply_text(f"No tasks found{status_text}.")
             return
 
-        # Format and send
-        formatted = format_todos_list(todos)
+        await update.message.reply_text(
+            "ℹ️ /todos is a legacy alias. Showing canonical tasks.",
+        )
+        formatted = format_tasks_list(tasks)
         await update.message.reply_text(formatted, parse_mode="Markdown")
 
     except Exception as e:
@@ -170,3 +191,121 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logger.error(f"Error in stats_command: {e}", exc_info=True)
         await update.message.reply_text("❌ Sorry, something went wrong. Please try again.")
+
+
+async def tasks_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """List tasks with optional status filter."""
+    status = context.args[0] if context.args else None
+    valid_statuses = ["open", "blocked", "in_progress", "done", "cancelled", "snoozed"]
+
+    if status and status not in valid_statuses:
+        await update.message.reply_text(
+            f"❌ Invalid status: {status}\nValid options: {', '.join(valid_statuses)}"
+        )
+        return
+
+    try:
+        tasks = await task_service.list_tasks(status=status)
+        if not tasks:
+            suffix = f" ({status})" if status else ""
+            await update.message.reply_text(f"No tasks found{suffix}.")
+            return
+
+        await update.message.reply_text(format_tasks_list(tasks), parse_mode="Markdown")
+    except Exception as e:
+        logger.error(f"Error in tasks_command: {e}", exc_info=True)
+        await update.message.reply_text("❌ Sorry, something went wrong. Please try again.")
+
+
+async def task_show_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show details for a single task."""
+    if not context.args:
+        await update.message.reply_text("Usage: /task_show <task_id>")
+        return
+
+    task_id = context.args[0]
+    task = await task_service.get_task(task_id)
+    if not task:
+        await update.message.reply_text("Task not found.")
+        return
+
+    message = (
+        "🧩 *Task*\n"
+        f"• ID: `{task['task_id']}`\n"
+        f"• Title: {task['title']}\n"
+        f"• Status: {task['status']}\n"
+        f"• Priority: {task['priority']}\n"
+        f"• Project: {task.get('project') or '-'}\n"
+        f"• Due: {task.get('due_at') or '-'}"
+    )
+    await update.message.reply_text(message, parse_mode="Markdown")
+
+
+async def task_done_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Mark a task as done."""
+    if not context.args:
+        await update.message.reply_text("Usage: /task_done <task_id>")
+        return
+
+    task_id = context.args[0]
+    task = await task_service.complete_task(task_id, rationale="Marked done via Telegram")
+    if not task:
+        await update.message.reply_text("Task not found.")
+        return
+
+    await update.message.reply_text(f"✅ Task `{task_id}` marked done.", parse_mode="Markdown")
+
+
+async def task_snooze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Snooze a task until a timestamp."""
+    if len(context.args) < 2:
+        await update.message.reply_text("Usage: /task_snooze <task_id> <YYYY-MM-DDTHH:MM:SS>")
+        return
+
+    task_id = context.args[0]
+    until_raw = context.args[1]
+    try:
+        until = datetime.fromisoformat(until_raw)
+    except ValueError:
+        await update.message.reply_text(
+            "Invalid timestamp. Use ISO format, e.g. 2026-02-15T09:00:00"
+        )
+        return
+
+    task = await task_service.snooze_task(
+        task_id,
+        TaskSnoozeRequest(until=until, rationale="Snoozed via Telegram"),
+    )
+    if not task:
+        await update.message.reply_text("Task not found.")
+        return
+
+    await update.message.reply_text(
+        f"⏸ Task `{task_id}` snoozed until `{until_raw}`.", parse_mode="Markdown"
+    )
+
+
+async def task_priority_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Update task priority."""
+    if len(context.args) < 2:
+        await update.message.reply_text("Usage: /task_priority <task_id> <p0|p1|p2|p3>")
+        return
+
+    task_id = context.args[0]
+    priority_raw = context.args[1].lower()
+
+    try:
+        priority = TaskPriority(priority_raw)
+    except ValueError:
+        await update.message.reply_text("Invalid priority. Use one of: p0, p1, p2, p3")
+        return
+
+    task = await task_service.patch_task(task_id, TaskPatchRequest(priority=priority))
+    if not task:
+        await update.message.reply_text("Task not found.")
+        return
+
+    await update.message.reply_text(
+        f"🔁 Task `{task_id}` priority set to `{priority.value}`.",
+        parse_mode="Markdown",
+    )

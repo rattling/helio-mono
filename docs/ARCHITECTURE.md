@@ -438,6 +438,14 @@ Thin translation layers between external systems and core services. **Contain no
 - `GET /api/v1/todos` - Query todos (with filters)
 - `GET /api/v1/notes` - Query notes (with search)
 - `GET /api/v1/tracks` - Query tracking items
+- `POST /api/v1/tasks/ingest` - Idempotent task ingest
+- `GET /api/v1/tasks` - Query canonical tasks
+- `GET /api/v1/tasks/{task_id}` - Fetch task by id
+- `PATCH /api/v1/tasks/{task_id}` - Update mutable fields
+- `POST /api/v1/tasks/{task_id}/complete` - Mark task complete
+- `POST /api/v1/tasks/{task_id}/snooze` - Snooze task
+- `POST /api/v1/tasks/{task_id}/link` - Link dependencies
+- `GET /api/v1/tasks/review/queue` - Deterministic review queue
 - `GET /api/v1/stats` - System statistics
 
 **Design Principles:**
@@ -478,7 +486,9 @@ Adapters contain no business logic, only:
 - Primary interactive interface for queries and notifications
 - Uses python-telegram-bot framework (v21+)
 - Stateless adapter pattern - no business logic in bot
-- Command handlers for queries (/todos, /notes, /tracks, /stats)
+- Command handlers for queries and task lifecycle operations
+- Query commands: `/todos`, `/notes`, `/tracks`, `/tasks`, `/stats`
+- Task mutation commands: `/task_show`, `/task_done`, `/task_snooze`, `/task_priority`
 - Message ingestion for conversational data
 - Background scheduler for push notifications (reminders, daily summaries)
 - Notification state tracked in projection database
@@ -505,7 +515,7 @@ All events extend `BaseEvent`:
 - `MESSAGE_INGESTED` - Raw user or assistant message
 - `ARTIFACT_RECORDED` - LLM prompt, response, or summary
 - `OBJECT_EXTRACTED` - Structured todo, note, or track
-- `DECISION_RECORDED` - Decision record (future)
+- `DECISION_RECORDED` - Decision/audit record (used for M5 task lifecycle replay)
 
 See `shared/contracts/events.py` for full schemas.
 

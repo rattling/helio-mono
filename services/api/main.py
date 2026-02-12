@@ -18,7 +18,8 @@ from services.extraction.service import ExtractionService
 from services.extraction.openai_client import OpenAILLMService
 from services.extraction.mock_llm import MockLLMService
 from services.query.service import QueryService
-from services.api.routes import health, ingestion, query, extraction
+from services.task.service import TaskService
+from services.api.routes import health, ingestion, query, extraction, tasks
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,7 @@ async def lifespan(app: FastAPI):
     ingestion_service = IngestionService(event_store)
     extraction_service = ExtractionService(event_store, llm_service)
     query_service = QueryService(event_store, db_path=config.PROJECTIONS_DB_PATH)
+    task_service = TaskService(event_store=event_store, query_service=query_service)
     logger.info(f"Projections DB: {config.PROJECTIONS_DB_PATH}")
 
     # Rebuild projections on startup
@@ -79,6 +81,7 @@ async def lifespan(app: FastAPI):
     services["ingestion"] = ingestion_service
     services["extraction"] = extraction_service
     services["query"] = query_service
+    services["task"] = task_service
 
     # Start Telegram bot if configured
     if config.TELEGRAM_BOT_TOKEN:
@@ -142,6 +145,7 @@ app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(ingestion.router, prefix="/api/v1/ingest", tags=["ingestion"])
 app.include_router(extraction.router, prefix="/api/v1/extract", tags=["extraction"])
 app.include_router(query.router, prefix="/api/v1", tags=["query"])
+app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["tasks"])
 
 
 @app.get("/")

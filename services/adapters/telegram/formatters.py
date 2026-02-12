@@ -112,6 +112,31 @@ def format_due_date(due_date_str: Optional[str]) -> Optional[str]:
         return due_date_str
 
 
+def format_tasks_list(tasks: list[dict]) -> str:
+    """Format task list for Telegram display."""
+
+    if not tasks:
+        return "No tasks found."
+
+    lines = [f"🧩 *Your Tasks* ({len(tasks)})\n"]
+    priority_icons = {"p0": "🔴", "p1": "🟠", "p2": "🟡", "p3": "🟢"}
+
+    for task in tasks[:20]:
+        task_id = task.get("task_id", "")
+        short_id = task_id[:8] if task_id else "unknown"
+        title = task.get("title", "Untitled")
+        status = task.get("status", "open")
+        priority = task.get("priority", "p2")
+        priority_icon = priority_icons.get(priority, "⚪")
+        stale_icon = " ⚠️" if task.get("is_stale") else ""
+        lines.append(f"• `{short_id}` {priority_icon} *{title}* ({status}){stale_icon}")
+
+    if len(tasks) > 20:
+        lines.append(f"\n_... and {len(tasks) - 20} more_")
+
+    return "\n".join(lines)
+
+
 def format_reminder(todo: dict) -> str:
     """Format reminder notification."""
 
