@@ -18,7 +18,7 @@ from services.extraction.service import ExtractionService
 from services.extraction.openai_client import OpenAILLMService
 from services.extraction.mock_llm import MockLLMService
 from services.query.service import QueryService
-from services.api.routes import health, ingestion, query
+from services.api.routes import health, ingestion, query, extraction
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +39,8 @@ async def lifespan(app: FastAPI):
     config = Config.from_env()
     logger.info(f"Environment: {config.ENV}")
     logger.info(f"Log level: {config.LOG_LEVEL}")
+
+    logging.getLogger("helionyx.audit").info("config_loaded env=%s", config.ENV)
 
     # Initialize event store
     event_store = FileEventStore(data_dir=config.EVENT_STORE_PATH)
@@ -91,10 +93,11 @@ async def lifespan(app: FastAPI):
             telegram_task = asyncio.create_task(
                 start_bot(config.TELEGRAM_BOT_TOKEN, services, config)
             )
+            logger.info("Telegram bot started")
             if config.TELEGRAM_CHAT_ID:
-                logger.info(f"Telegram bot started (chat: {config.TELEGRAM_CHAT_ID})")
-            else:
-                logger.info("Telegram bot started")
+                logging.getLogger("helionyx.audit").info(
+                    "telegram_chat_configured env=%s", config.ENV
+                )
         except Exception as e:
             logger.error(f"Failed to start Telegram bot: {e}", exc_info=True)
     else:
@@ -137,6 +140,7 @@ app = FastAPI(
 # Register routes
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(ingestion.router, prefix="/api/v1/ingest", tags=["ingestion"])
+app.include_router(extraction.router, prefix="/api/v1/extract", tags=["extraction"])
 app.include_router(query.router, prefix="/api/v1", tags=["query"])
 
 

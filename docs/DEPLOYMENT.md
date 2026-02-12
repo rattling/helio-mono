@@ -109,12 +109,14 @@ Edit each file with environment-specific settings:
 
 **`.env.dev`** (development):
 ```bash
-ENV=dev
 LOG_LEVEL=DEBUG
 API_HOST=0.0.0.0
 API_PORT=8000
-EVENT_STORE_PATH=./data/dev/events
-PROJECTIONS_DB_PATH=./data/dev/projections/helionyx.db
+EVENT_STORE_PATH=/var/lib/helionyx/dev/events
+PROJECTIONS_DB_PATH=/var/lib/helionyx/dev/projections/helionyx.db
+
+# Optional (used by backup/restore scripts)
+BACKUP_ROOT=/var/lib/helionyx/backups
 
 # OpenAI (can use mock for dev)
 OPENAI_API_KEY=your_openai_key_here
@@ -130,12 +132,14 @@ LLM_DAILY_COST_LIMIT_USD=5.0
 
 **`.env.staging`** (staging):
 ```bash
-ENV=staging
 LOG_LEVEL=INFO
 API_HOST=0.0.0.0
 API_PORT=8001
-EVENT_STORE_PATH=./data/staging/events
-PROJECTIONS_DB_PATH=./data/staging/projections/helionyx.db
+EVENT_STORE_PATH=/var/lib/helionyx/staging/events
+PROJECTIONS_DB_PATH=/var/lib/helionyx/staging/projections/helionyx.db
+
+# Optional (used by backup/restore scripts)
+BACKUP_ROOT=/var/lib/helionyx/backups
 
 # OpenAI (real API)
 OPENAI_API_KEY=your_openai_key_here
@@ -151,12 +155,14 @@ LLM_DAILY_COST_LIMIT_USD=10.0
 
 **`.env.live`** (production):
 ```bash
-ENV=live
 LOG_LEVEL=WARNING
 API_HOST=0.0.0.0
 API_PORT=8002
 EVENT_STORE_PATH=/var/lib/helionyx/live/events
 PROJECTIONS_DB_PATH=/var/lib/helionyx/live/projections/helionyx.db
+
+# Optional (used by backup/restore scripts)
+BACKUP_ROOT=/var/lib/helionyx/backups
 
 # OpenAI (real API)
 OPENAI_API_KEY=your_openai_key_here
@@ -175,18 +181,22 @@ LLM_DAILY_COST_LIMIT_USD=50.0
 ### 5. Create Data Directories
 
 ```bash
-# Dev environment
-mkdir -p ./data/dev/events
-mkdir -p ./data/dev/projections
+# Dev environment (requires sudo)
+sudo mkdir -p /var/lib/helionyx/dev/events
+sudo mkdir -p /var/lib/helionyx/dev/projections
 
-# Staging environment
-mkdir -p ./data/staging/events
-mkdir -p ./data/staging/projections
+# Staging environment (requires sudo)
+sudo mkdir -p /var/lib/helionyx/staging/events
+sudo mkdir -p /var/lib/helionyx/staging/projections
 
 # Live environment (requires sudo)
 sudo mkdir -p /var/lib/helionyx/live/events
 sudo mkdir -p /var/lib/helionyx/live/projections
 sudo chown -R $USER:$USER /var/lib/helionyx
+
+# Optional: backups root (if using BACKUP_ROOT)
+sudo mkdir -p /var/lib/helionyx/backups
+sudo chown -R $USER:$USER /var/lib/helionyx/backups
 ```
 
 ### 6. Install systemd Services

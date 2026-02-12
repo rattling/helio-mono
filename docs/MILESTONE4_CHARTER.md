@@ -104,11 +104,11 @@ Introduce minimal but real security posture:
 
 ### 2.4 Encryption at Rest (Where Practical)
 
-Optional but recommended:
+Encryption at rest is strongly recommended for any host running `live`.
 
--   Event log encryption
--   SQLite database encryption (SQLCipher or equivalent)
--   Environment-specific encryption keys
+Status (node1): **Implemented at the host/storage layer**.
+- Helionyx data paths under `/var/lib/helionyx/...` are stored on an encrypted volume (dm-crypt/LUKS).
+- Application-level encryption (e.g. SQLCipher) remains optional/deferred; the primary guarantee is provided by the host.
 
 If implemented:
 -   Must not block normal operation

@@ -191,6 +191,9 @@ make lint
 # Format code
 make format
 
+# Run the same lint/format checks as CI
+make precommit
+
 # Run tests
 make test
 

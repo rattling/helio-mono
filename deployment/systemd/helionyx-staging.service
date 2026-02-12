@@ -1,6 +1,7 @@
 [Unit]
 Description=Helionyx Personal Substrate (Staging)
 After=network.target
+RequiresMountsFor=/var/lib/helionyx
 
 [Service]
 Type=simple

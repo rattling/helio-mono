@@ -135,19 +135,44 @@ class OpenAILLMService(LLMServiceProtocol):
                         # Direct array format
                         objects = parsed
                     elif isinstance(parsed, dict):
-                        # Wrapped in object - try common keys
-                        objects = (
-                            parsed.get("extracted_items")
-                            or parsed.get("objects")
+                        # Preferred format (since response_format forces a JSON object)
+                        # {"objects": [ ... ]}
+                        candidate = (
+                            parsed.get("objects")
+                            or parsed.get("extracted_items")
                             or parsed.get("items")
-                            or list(parsed.values())[0]
-                            if parsed
-                            else []
                         )
-                        if not isinstance(objects, list):
-                            objects = [objects] if objects else []
+
+                        if isinstance(candidate, list):
+                            objects = candidate
+                        elif isinstance(candidate, dict):
+                            objects = [candidate]
+                        elif candidate is not None:
+                            objects = []
+                        else:
+                            # Some models may still return a single object like:
+                            # {"type": "todo", "title": "...", ...}
+                            # Treat that as one extracted object.
+                            if "type" in parsed and "title" in parsed:
+                                objects = [parsed]
+                            # Or a wrapper like {"result": [ ... ]} / {"result": { ... }}
+                            elif len(parsed) == 1:
+                                only_value = next(iter(parsed.values()))
+                                if isinstance(only_value, list):
+                                    objects = only_value
+                                elif isinstance(only_value, dict):
+                                    objects = [only_value]
+                                else:
+                                    objects = []
+                            else:
+                                objects = []
                     else:
                         objects = []
+
+                    # Final sanity filter: keep dict objects only
+                    if not isinstance(objects, list):
+                        objects = []
+                    objects = [obj for obj in objects if isinstance(obj, dict)]
 
                 except json.JSONDecodeError as e:
                     logger.warning(f"Failed to parse LLM response as JSON: {e}")

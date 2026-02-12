@@ -17,6 +17,21 @@ Each service:
 - Logs to systemd journal
 - Can be enabled for auto-start on boot
 
+## Log Rotation / Retention (journald)
+
+Helionyx logs go to `journald` by default. `journald` retention is configured
+globally. This repo ships a minimal baseline config snippet:
+
+- `deployment/systemd/journald.conf.d/helionyx.conf`
+
+Install it (optional but recommended for bounded disk usage):
+
+```bash
+sudo mkdir -p /etc/systemd/journald.conf.d
+sudo cp deployment/systemd/journald.conf.d/helionyx.conf /etc/systemd/journald.conf.d/
+sudo systemctl restart systemd-journald
+```
+
 ## Prerequisites
 
 Before installing a service:
