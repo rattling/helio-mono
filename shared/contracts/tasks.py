@@ -36,6 +36,11 @@ class TaskPriority(str, Enum):
     P3 = "p3"
 
 
+class SuggestionType(str, Enum):
+    DEPENDENCY = "dependency"
+    SPLIT = "split"
+
+
 class TaskExplanation(BaseModel):
     ts: datetime = Field(default_factory=datetime.utcnow)
     actor: str
@@ -133,4 +138,26 @@ class TaskSnoozeRequest(BaseModel):
 
 class TaskLinkRequest(BaseModel):
     blocked_by: list[UUID] = Field(default_factory=list)
+    rationale: Optional[str] = None
+
+
+class TaskSuggestion(BaseModel):
+    suggestion_id: str
+    task_id: UUID
+    suggestion_type: SuggestionType
+    rationale: str
+    payload: dict
+
+
+class TaskApplySuggestionRequest(BaseModel):
+    suggestion_id: str
+    suggestion_type: SuggestionType
+    payload: dict
+    edited_payload: Optional[dict] = None
+    rationale: Optional[str] = None
+
+
+class TaskRejectSuggestionRequest(BaseModel):
+    suggestion_id: str
+    suggestion_type: SuggestionType
     rationale: Optional[str] = None

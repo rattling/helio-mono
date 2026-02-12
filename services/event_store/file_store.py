@@ -168,10 +168,20 @@ class FileEventStore:
     def _deserialize_event(self, event_data: dict) -> BaseEvent:
         """Deserialize event data back to event object."""
         from shared.contracts import (
+            AttentionScoringComputedEvent,
             ArtifactRecordedEvent,
             DecisionRecordedEvent,
+            FeatureSnapshotRecordedEvent,
             MessageIngestedEvent,
+            ModelScoreRecordedEvent,
             ObjectExtractedEvent,
+            ReminderDismissedEvent,
+            ReminderSentEvent,
+            ReminderSnoozedEvent,
+            SuggestionAppliedEvent,
+            SuggestionEditedEvent,
+            SuggestionRejectedEvent,
+            SuggestionShownEvent,
         )
 
         event_type = event_data.get("event_type")
@@ -185,6 +195,26 @@ class FileEventStore:
             return ObjectExtractedEvent(**event_data)
         elif event_type == EventType.DECISION_RECORDED.value:
             return DecisionRecordedEvent(**event_data)
+        elif event_type == EventType.ATTENTION_SCORING_COMPUTED.value:
+            return AttentionScoringComputedEvent(**event_data)
+        elif event_type == EventType.SUGGESTION_SHOWN.value:
+            return SuggestionShownEvent(**event_data)
+        elif event_type == EventType.SUGGESTION_APPLIED.value:
+            return SuggestionAppliedEvent(**event_data)
+        elif event_type == EventType.SUGGESTION_REJECTED.value:
+            return SuggestionRejectedEvent(**event_data)
+        elif event_type == EventType.SUGGESTION_EDITED.value:
+            return SuggestionEditedEvent(**event_data)
+        elif event_type == EventType.REMINDER_SENT.value:
+            return ReminderSentEvent(**event_data)
+        elif event_type == EventType.REMINDER_DISMISSED.value:
+            return ReminderDismissedEvent(**event_data)
+        elif event_type == EventType.REMINDER_SNOOZED.value:
+            return ReminderSnoozedEvent(**event_data)
+        elif event_type == EventType.FEATURE_SNAPSHOT_RECORDED.value:
+            return FeatureSnapshotRecordedEvent(**event_data)
+        elif event_type == EventType.MODEL_SCORE_RECORDED.value:
+            return ModelScoreRecordedEvent(**event_data)
         else:
             # Fall back to base event
             return BaseEvent(**event_data)

@@ -11,14 +11,24 @@ Contract changes require explicit coordination and versioning.
 """
 
 from shared.contracts.events import (
+    AttentionScoringComputedEvent,
     ArtifactRecordedEvent,
     ArtifactType,
     BaseEvent,
     DecisionRecordedEvent,
     EventType,
+    FeatureSnapshotRecordedEvent,
     MessageIngestedEvent,
+    ModelScoreRecordedEvent,
     ObjectExtractedEvent,
+    ReminderDismissedEvent,
+    ReminderSentEvent,
+    ReminderSnoozedEvent,
     SourceType,
+    SuggestionAppliedEvent,
+    SuggestionEditedEvent,
+    SuggestionRejectedEvent,
+    SuggestionShownEvent,
 )
 from shared.contracts.objects import (
     ExtractedObject,
@@ -39,15 +49,19 @@ from shared.contracts.protocols import (
     QueryServiceProtocol,
 )
 from shared.contracts.tasks import (
+    SuggestionType,
     TASK_LABEL_NEEDS_REVIEW,
     Task,
+    TaskApplySuggestionRequest,
     TaskExplanation,
     TaskIngestRequest,
     TaskIngestResult,
     TaskLinkRequest,
     TaskPatchRequest,
     TaskPriority,
+    TaskRejectSuggestionRequest,
     TaskSnoozeRequest,
+    TaskSuggestion,
     TaskStatus,
 )
 
@@ -61,6 +75,16 @@ __all__ = [
     "ArtifactRecordedEvent",
     "ObjectExtractedEvent",
     "DecisionRecordedEvent",
+    "AttentionScoringComputedEvent",
+    "SuggestionShownEvent",
+    "SuggestionAppliedEvent",
+    "SuggestionRejectedEvent",
+    "SuggestionEditedEvent",
+    "ReminderSentEvent",
+    "ReminderDismissedEvent",
+    "ReminderSnoozedEvent",
+    "FeatureSnapshotRecordedEvent",
+    "ModelScoreRecordedEvent",
     # Objects
     "ObjectType",
     "TodoStatus",
@@ -79,6 +103,7 @@ __all__ = [
     "QueryServiceProtocol",
     # Tasks (M5)
     "TASK_LABEL_NEEDS_REVIEW",
+    "SuggestionType",
     "TaskStatus",
     "TaskPriority",
     "TaskExplanation",
@@ -88,4 +113,7 @@ __all__ = [
     "TaskPatchRequest",
     "TaskSnoozeRequest",
     "TaskLinkRequest",
+    "TaskSuggestion",
+    "TaskApplySuggestionRequest",
+    "TaskRejectSuggestionRequest",
 ]

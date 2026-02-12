@@ -157,3 +157,116 @@ class TestTaskEndpoints:
 
         response = client.get("/api/v1/tasks/00000000-0000-0000-0000-000000000000")
         assert response.status_code == 404
+
+    def test_suggest_dependencies_and_apply(self, monkeypatch, tmp_path):
+        event_store_path = tmp_path / "events"
+        event_store_path.mkdir()
+        db_path = tmp_path / "projections" / "tasks-suggest.db"
+        db_path.parent.mkdir(parents=True)
+
+        monkeypatch.setenv("EVENT_STORE_PATH", str(event_store_path))
+        monkeypatch.setenv("PROJECTIONS_DB_PATH", str(db_path))
+        monkeypatch.setenv("ENV", "dev")
+
+        parent = client.post(
+            "/api/v1/tasks/ingest",
+            json={
+                "title": "Parent dependency",
+                "source": "api",
+                "source_ref": "suggest-parent-001",
+                "project": "proj-a",
+                "labels": ["ops"],
+                "priority": "p1",
+            },
+        )
+        child = client.post(
+            "/api/v1/tasks/ingest",
+            json={
+                "title": "Child task",
+                "source": "api",
+                "source_ref": "suggest-child-001",
+                "project": "proj-a",
+                "labels": ["ops"],
+                "priority": "p2",
+            },
+        )
+        parent_id = parent.json()["task_id"]
+        child_id = child.json()["task_id"]
+
+        suggest = client.post(f"/api/v1/tasks/{child_id}/suggest-dependencies")
+        assert suggest.status_code == 200
+        suggestions = suggest.json()
+        assert suggestions
+        suggestion = suggestions[0]
+        assert suggestion["suggestion_type"] == "dependency"
+
+        apply_response = client.post(
+            f"/api/v1/tasks/{child_id}/apply-suggestion",
+            json={
+                "suggestion_id": suggestion["suggestion_id"],
+                "suggestion_type": "dependency",
+                "payload": suggestion["payload"],
+                "rationale": "Looks right",
+            },
+        )
+        assert apply_response.status_code == 200
+        updated = apply_response.json()["task"]
+        assert updated["status"] == "blocked"
+        assert parent_id in updated["blocked_by"]
+
+    def test_suggest_split_apply_and_reject(self, monkeypatch, tmp_path):
+        event_store_path = tmp_path / "events"
+        event_store_path.mkdir()
+        db_path = tmp_path / "projections" / "tasks-split.db"
+        db_path.parent.mkdir(parents=True)
+
+        monkeypatch.setenv("EVENT_STORE_PATH", str(event_store_path))
+        monkeypatch.setenv("PROJECTIONS_DB_PATH", str(db_path))
+        monkeypatch.setenv("ENV", "dev")
+
+        base = client.post(
+            "/api/v1/tasks/ingest",
+            json={
+                "title": "Plan migration",
+                "source": "api",
+                "source_ref": "split-task-001",
+                "project": "proj-m6",
+            },
+        )
+        task_id = base.json()["task_id"]
+
+        suggest = client.post(f"/api/v1/tasks/{task_id}/suggest-split")
+        assert suggest.status_code == 200
+        split_suggestion = suggest.json()[0]
+        assert split_suggestion["suggestion_type"] == "split"
+
+        edited_payload = {
+            "subtasks": split_suggestion["payload"]["subtasks"][:2],
+            "project": "proj-m6",
+        }
+
+        apply_response = client.post(
+            f"/api/v1/tasks/{task_id}/apply-suggestion",
+            json={
+                "suggestion_id": split_suggestion["suggestion_id"],
+                "suggestion_type": "split",
+                "payload": split_suggestion["payload"],
+                "edited_payload": edited_payload,
+                "rationale": "Use only two steps",
+            },
+        )
+        assert apply_response.status_code == 200
+        body = apply_response.json()
+        assert body["applied"] is True
+        assert len(body["created_task_ids"]) == 2
+
+        reject_response = client.post(
+            f"/api/v1/tasks/{task_id}/reject-suggestion",
+            json={
+                "suggestion_id": split_suggestion["suggestion_id"],
+                "suggestion_type": "split",
+                "rationale": "No longer needed",
+            },
+        )
+        assert reject_response.status_code == 200
+        assert reject_response.json()["rejected"] is True

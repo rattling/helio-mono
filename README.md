@@ -4,7 +4,7 @@ Personal decision and execution substrate built on an append-only event log foun
 
 ## Project Status
 
-**Current Milestone**: Milestone 5 - Task Core + Agent-First Semantics  
+**Current Milestone**: Milestone 6 - Attention + Planning Assistant  
 **Status**: 🔄 In Progress
 
 ## Quick Start
@@ -181,6 +181,9 @@ make telegram
 
 # Rebuild projections from event log
 make rebuild
+
+# Generate Milestone 6 attention replay metrics report
+.venv/bin/python scripts/evaluate_attention_replay.py --out data/projections/attention_replay_report.json
 
 # Check system status
 make status

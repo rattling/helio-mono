@@ -9,18 +9,28 @@ from uuid import UUID
 
 from shared.contracts import (
     DecisionRecordedEvent,
+    FeatureSnapshotRecordedEvent,
+    SuggestionAppliedEvent,
+    SuggestionEditedEvent,
+    SuggestionRejectedEvent,
+    SuggestionShownEvent,
+    SuggestionType,
     SourceType,
     Task,
+    TaskApplySuggestionRequest,
     TaskExplanation,
     TaskIngestRequest,
     TaskIngestResult,
     TaskLinkRequest,
     TaskPatchRequest,
     TaskPriority,
+    TaskRejectSuggestionRequest,
     TaskSnoozeRequest,
+    TaskSuggestion,
     TaskStatus,
     TASK_LABEL_NEEDS_REVIEW,
 )
+from services.learning import build_task_features
 from services.event_store.file_store import FileEventStore
 from services.query.service import QueryService
 
@@ -242,6 +252,186 @@ class TaskService:
     async def get_review_queue(self, limit: int = 50) -> list[dict]:
         return await self.query_service.get_review_queue(limit=limit)
 
+    async def suggest_dependencies(self, task_id: str, limit: int = 5) -> list[dict]:
+        task = await self.query_service.get_task_by_id(task_id)
+        if not task:
+            return []
+
+        candidates = []
+        all_tasks = await self.query_service.get_tasks()
+        task_labels = set(task.get("labels") or [])
+        task_project = task.get("project")
+
+        for other in all_tasks:
+            other_id = other.get("task_id")
+            if other_id == task_id:
+                continue
+            if other.get("status") in (TaskStatus.DONE.value, TaskStatus.CANCELLED.value):
+                continue
+            if self._would_create_cycle(task_id, other_id):
+                continue
+
+            score = 0
+            rationale_bits: list[str] = []
+
+            if task_project and task_project == other.get("project"):
+                score += 3
+                rationale_bits.append("same project")
+
+            other_labels = set(other.get("labels") or [])
+            overlap = task_labels.intersection(other_labels)
+            if overlap:
+                score += 2
+                rationale_bits.append(f"shared labels: {', '.join(sorted(overlap))}")
+
+            if other.get("priority") in (TaskPriority.P0.value, TaskPriority.P1.value):
+                score += 1
+                rationale_bits.append("high-priority dependency")
+
+            if score <= 0:
+                continue
+
+            payload = {"blocked_by": [other_id]}
+            suggestion_id = self._make_suggestion_id(
+                task_id, SuggestionType.DEPENDENCY.value, payload
+            )
+            suggestion = TaskSuggestion(
+                suggestion_id=suggestion_id,
+                task_id=UUID(task_id),
+                suggestion_type=SuggestionType.DEPENDENCY,
+                rationale="; ".join(rationale_bits) or "Potential prerequisite task",
+                payload=payload,
+            )
+            candidates.append((score, suggestion))
+
+        ordered = [
+            entry[1] for entry in sorted(candidates, key=lambda item: item[0], reverse=True)[:limit]
+        ]
+        for candidate in ordered:
+            await self._record_suggestion_shown(task_id, candidate)
+        return [item.model_dump(mode="json") for item in ordered]
+
+    async def suggest_split(self, task_id: str) -> list[dict]:
+        task = await self.query_service.get_task_by_id(task_id)
+        if not task:
+            return []
+
+        title = task.get("title", "Task")
+        body = task.get("body") or ""
+        project = task.get("project")
+
+        split_steps = [
+            {
+                "title": f"Clarify scope: {title}",
+                "body": "Define success criteria and constraints.",
+            },
+            {
+                "title": f"Execute core work: {title}",
+                "body": body or "Implement the main execution step.",
+            },
+            {
+                "title": f"Verify and close: {title}",
+                "body": "Validate outcome, document, and mark done.",
+            },
+        ]
+        payload = {"subtasks": split_steps, "project": project}
+        suggestion = TaskSuggestion(
+            suggestion_id=self._make_suggestion_id(task_id, SuggestionType.SPLIT.value, payload),
+            task_id=UUID(task_id),
+            suggestion_type=SuggestionType.SPLIT,
+            rationale="Task appears broad; split into clarify/execute/verify steps",
+            payload=payload,
+        )
+
+        await self._record_suggestion_shown(task_id, suggestion)
+        return [suggestion.model_dump(mode="json")]
+
+    async def apply_suggestion(self, task_id: str, request: TaskApplySuggestionRequest) -> dict:
+        existing = await self.query_service.get_task_by_id(task_id)
+        if not existing:
+            return {"applied": False, "reason": "task_not_found"}
+
+        payload = request.edited_payload or request.payload
+        if request.edited_payload and request.edited_payload != request.payload:
+            await self.event_store.append(
+                SuggestionEditedEvent(
+                    task_id=task_id,
+                    suggestion_id=request.suggestion_id,
+                    suggestion_type=request.suggestion_type.value,
+                    original_payload=request.payload,
+                    edited_payload=request.edited_payload,
+                    rationale=request.rationale,
+                    metadata={"service": "task_service"},
+                )
+            )
+
+        created_task_ids: list[str] = []
+        updated_task: Optional[dict] = None
+
+        if request.suggestion_type == SuggestionType.DEPENDENCY:
+            blocked_by = payload.get("blocked_by") or []
+            link_request = TaskLinkRequest(blocked_by=[UUID(dep_id) for dep_id in blocked_by])
+            updated_task = await self.link_task(task_id, link_request)
+        elif request.suggestion_type == SuggestionType.SPLIT:
+            subtasks = payload.get("subtasks") or []
+            for index, subtask in enumerate(subtasks):
+                source_ref = f"suggestion:{request.suggestion_id}:split:{index}"
+                ingest_result = await self.ingest_task(
+                    TaskIngestRequest(
+                        title=subtask.get("title") or f"Subtask {index + 1}",
+                        body=subtask.get("body"),
+                        source=SourceType.API,
+                        source_ref=source_ref,
+                        priority=TaskPriority(existing.get("priority", TaskPriority.P2.value)),
+                        labels=list(
+                            dict.fromkeys((existing.get("labels") or []) + ["generated_split"])
+                        ),
+                        project=payload.get("project") or existing.get("project"),
+                    )
+                )
+                created_task_ids.append(str(ingest_result.task_id))
+            updated_task = await self.patch_task(
+                task_id,
+                TaskPatchRequest(
+                    labels=list(dict.fromkeys((existing.get("labels") or []) + ["split_parent"]))
+                ),
+            )
+        else:
+            return {"applied": False, "reason": "unsupported_suggestion_type"}
+
+        await self.event_store.append(
+            SuggestionAppliedEvent(
+                task_id=task_id,
+                suggestion_id=request.suggestion_id,
+                suggestion_type=request.suggestion_type.value,
+                applied_payload=payload,
+                rationale=request.rationale,
+                metadata={"service": "task_service"},
+            )
+        )
+
+        return {
+            "applied": True,
+            "task": updated_task,
+            "created_task_ids": created_task_ids,
+        }
+
+    async def reject_suggestion(self, task_id: str, request: TaskRejectSuggestionRequest) -> dict:
+        existing = await self.query_service.get_task_by_id(task_id)
+        if not existing:
+            return {"rejected": False, "reason": "task_not_found"}
+
+        await self.event_store.append(
+            SuggestionRejectedEvent(
+                task_id=task_id,
+                suggestion_id=request.suggestion_id,
+                suggestion_type=request.suggestion_type.value,
+                rationale=request.rationale,
+                metadata={"service": "task_service"},
+            )
+        )
+        return {"rejected": True}
+
     async def _record_decision(
         self,
         action: str,
@@ -271,3 +461,65 @@ class TaskService:
         normalized_project = " ".join((project or "").lower().split())
         key = f"{normalized_title}|{normalized_body}|{normalized_project}"
         return hashlib.sha1(key.encode("utf-8")).hexdigest()[:16]
+
+    def _make_suggestion_id(self, task_id: str, suggestion_type: str, payload: dict) -> str:
+        key = f"{task_id}|{suggestion_type}|{payload}"
+        return hashlib.sha1(key.encode("utf-8")).hexdigest()[:16]
+
+    def _would_create_cycle(self, task_id: str, dependency_id: str) -> bool:
+        graph: dict[str, set[str]] = {}
+        rows = self.query_service.conn.execute("SELECT task_id, blocked_by FROM tasks").fetchall()
+        for row in rows:
+            blocked_raw = row["blocked_by"]
+            blocked_ids: set[str] = set()
+            if blocked_raw:
+                try:
+                    import json
+
+                    blocked_ids = set(json.loads(blocked_raw))
+                except Exception:
+                    blocked_ids = set()
+            graph[row["task_id"]] = blocked_ids
+
+        graph.setdefault(task_id, set()).add(dependency_id)
+
+        visited: set[str] = set()
+        stack: set[str] = set()
+
+        def visit(node: str) -> bool:
+            if node in stack:
+                return True
+            if node in visited:
+                return False
+            visited.add(node)
+            stack.add(node)
+            for neighbor in graph.get(node, set()):
+                if visit(neighbor):
+                    return True
+            stack.remove(node)
+            return False
+
+        return visit(task_id)
+
+    async def _record_suggestion_shown(self, task_id: str, suggestion: TaskSuggestion) -> None:
+        await self.event_store.append(
+            SuggestionShownEvent(
+                task_id=task_id,
+                suggestion_id=suggestion.suggestion_id,
+                suggestion_type=suggestion.suggestion_type.value,
+                suggestion_payload=suggestion.payload,
+                rationale=suggestion.rationale,
+                metadata={"service": "task_service"},
+            )
+        )
+        task = await self.query_service.get_task_by_id(task_id)
+        if task:
+            await self.event_store.append(
+                FeatureSnapshotRecordedEvent(
+                    candidate_id=suggestion.suggestion_id,
+                    candidate_type=f"suggestion_{suggestion.suggestion_type.value}",
+                    features=build_task_features(task),
+                    context={"task_id": task_id},
+                    metadata={"service": "task_service"},
+                )
+            )

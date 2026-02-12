@@ -8,10 +8,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from shared.common.config import Config
 from shared.contracts import (
+    TaskApplySuggestionRequest,
     TaskIngestRequest,
     TaskIngestResult,
     TaskLinkRequest,
     TaskPatchRequest,
+    TaskRejectSuggestionRequest,
     TaskSnoozeRequest,
 )
 from services.event_store.file_store import FileEventStore
@@ -121,3 +123,56 @@ async def link_task(
     if not task:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
     return task
+
+
+@router.post("/{task_id}/suggest-dependencies", response_model=list[dict])
+async def suggest_dependencies(
+    task_id: str,
+    limit: int = Query(5, ge=1, le=20),
+    task_service: TaskService = Depends(get_task_service),
+) -> list[dict]:
+    """Return dependency suggestions for a task (advisory only)."""
+    task = await task_service.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    return await task_service.suggest_dependencies(task_id, limit=limit)
+
+
+@router.post("/{task_id}/suggest-split", response_model=list[dict])
+async def suggest_split(
+    task_id: str,
+    task_service: TaskService = Depends(get_task_service),
+) -> list[dict]:
+    """Return task split suggestions (advisory only)."""
+    task = await task_service.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    return await task_service.suggest_split(task_id)
+
+
+@router.post("/{task_id}/apply-suggestion", response_model=dict)
+async def apply_suggestion(
+    task_id: str,
+    request: TaskApplySuggestionRequest,
+    task_service: TaskService = Depends(get_task_service),
+) -> dict:
+    """Apply a suggestion explicitly (no auto-apply)."""
+    result = await task_service.apply_suggestion(task_id, request)
+    if not result.get("applied") and result.get("reason") == "task_not_found":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    if not result.get("applied"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=result.get("reason"))
+    return result
+
+
+@router.post("/{task_id}/reject-suggestion", response_model=dict)
+async def reject_suggestion(
+    task_id: str,
+    request: TaskRejectSuggestionRequest,
+    task_service: TaskService = Depends(get_task_service),
+) -> dict:
+    """Record explicit suggestion rejection feedback."""
+    result = await task_service.reject_suggestion(task_id, request)
+    if not result.get("rejected") and result.get("reason") == "task_not_found":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    return result

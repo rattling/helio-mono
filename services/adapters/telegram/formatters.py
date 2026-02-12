@@ -191,3 +191,86 @@ def format_daily_summary(stats: dict, todos: list[dict]) -> str:
             message += f"\n• ... and {len(overdue) - 3} more"
 
     return message.strip()
+
+
+def format_task_urgent_reminder(item: dict) -> str:
+    """Format urgent task reminder from attention candidate item."""
+    due = format_due_date(item.get("due_at").isoformat() if item.get("due_at") else None)
+    title = item.get("title", "Untitled task")
+    score = item.get("urgency_score", 0)
+    explanation = item.get("urgency_explanation", "")
+    due_line = f"📅 Due: {due}\n" if due else ""
+    return (
+        "🔔 *Urgent Task Reminder*\n\n"
+        f"*{title}*\n"
+        f"{due_line}"
+        f"Urgency score: {score}\n"
+        f"Why: {explanation}"
+    ).strip()
+
+
+def format_attention_daily_digest(payload: dict) -> str:
+    """Format M6 daily digest payload for Telegram."""
+    top_actionable = payload.get("top_actionable") or []
+    due_72h = payload.get("due_next_72h") or []
+    stale = payload.get("stale_cleanup_candidate")
+
+    lines = ["🧠 *Daily Attention Digest*\n"]
+    lines.append("*Top 5 actionable*")
+    if not top_actionable:
+        lines.append("• None")
+    else:
+        for item in top_actionable[:5]:
+            lines.append(
+                f"• `{str(item.get('task_id', ''))[:8]}` {item.get('title', 'Untitled')} "
+                f"(score {item.get('urgency_score', 0)})"
+            )
+
+    lines.append("\n*Due in next 72h*")
+    if not due_72h:
+        lines.append("• None")
+    else:
+        for item in due_72h[:5]:
+            due = format_due_date(item.get("due_at").isoformat() if item.get("due_at") else None)
+            lines.append(f"• {item.get('title', 'Untitled')} ({due or 'due soon'})")
+
+    lines.append("\n*Stale cleanup candidate*")
+    if stale:
+        lines.append(f"• {stale.get('title', 'Untitled')} ({stale.get('urgency_explanation', '')})")
+    else:
+        lines.append("• None")
+
+    return "\n".join(lines)
+
+
+def format_attention_weekly_digest(payload: dict) -> str:
+    """Format M6 weekly digest payload for Telegram."""
+    due_this_week = payload.get("due_this_week") or []
+    high_priority_without_due = payload.get("high_priority_without_due") or []
+    blocked_summary = payload.get("blocked_summary") or []
+
+    lines = ["🗓 *Weekly Attention Lookahead*\n"]
+
+    lines.append("*Due this week*")
+    if not due_this_week:
+        lines.append("• None")
+    else:
+        for item in due_this_week[:10]:
+            due = format_due_date(item.get("due_at").isoformat() if item.get("due_at") else None)
+            lines.append(f"• {item.get('title', 'Untitled')} ({due or 'this week'})")
+
+    lines.append("\n*High priority without due date*")
+    if not high_priority_without_due:
+        lines.append("• None")
+    else:
+        for item in high_priority_without_due[:10]:
+            lines.append(f"• {item.get('title', 'Untitled')} ({item.get('priority', 'p2')})")
+
+    lines.append("\n*Blocked summary*")
+    if not blocked_summary:
+        lines.append("• None")
+    else:
+        for item in blocked_summary[:10]:
+            lines.append(f"• {item.get('title', 'Untitled')} (blocked)")
+
+    return "\n".join(lines)

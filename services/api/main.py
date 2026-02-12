@@ -19,7 +19,7 @@ from services.extraction.openai_client import OpenAILLMService
 from services.extraction.mock_llm import MockLLMService
 from services.query.service import QueryService
 from services.task.service import TaskService
-from services.api.routes import health, ingestion, query, extraction, tasks
+from services.api.routes import attention, health, ingestion, query, extraction, tasks
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +146,7 @@ app.include_router(ingestion.router, prefix="/api/v1/ingest", tags=["ingestion"]
 app.include_router(extraction.router, prefix="/api/v1/extract", tags=["extraction"])
 app.include_router(query.router, prefix="/api/v1", tags=["query"])
 app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["tasks"])
+app.include_router(attention.router, prefix="/attention", tags=["attention"])
 
 
 @app.get("/")
