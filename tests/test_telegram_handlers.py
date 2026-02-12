@@ -69,29 +69,29 @@ async def test_help_command(mock_update, mock_context):
 
 
 @pytest.mark.asyncio
-async def test_todos_command_empty(mock_update, mock_context, mock_query_service):
-    """Test /todos command with no todos."""
-    mock_query_service.get_todos.return_value = []
+async def test_todos_command_empty(mock_update, mock_context, mock_task_service):
+    """Test /todos command with no tasks."""
+    mock_task_service.list_tasks.return_value = []
 
     await handlers.todos_command(mock_update, mock_context)
 
     mock_update.message.reply_text.assert_called_once()
     call_args = mock_update.message.reply_text.call_args[0][0]
-    assert "No todos found" in call_args
+    assert "No tasks found" in call_args
 
 
 @pytest.mark.asyncio
-async def test_todos_command_with_filter(mock_update, mock_context, mock_query_service):
-    """Test /todos command with status filter."""
+async def test_todos_command_with_filter(mock_update, mock_context, mock_task_service):
+    """Test /todos command maps legacy status filter to task status."""
     mock_context.args = ["pending"]
-    mock_query_service.get_todos.return_value = [
-        {"title": "Test todo", "status": "pending", "priority": "medium"}
+    mock_task_service.list_tasks.return_value = [
+        {"task_id": "task-1", "title": "Test task", "status": "open", "priority": "p2"}
     ]
 
     await handlers.todos_command(mock_update, mock_context)
 
-    mock_query_service.get_todos.assert_called_once_with(status="pending")
-    mock_update.message.reply_text.assert_called_once()
+    mock_task_service.list_tasks.assert_called_once_with(status="open")
+    assert mock_update.message.reply_text.call_count == 2
 
 
 @pytest.mark.asyncio

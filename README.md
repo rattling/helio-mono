@@ -261,7 +261,7 @@ Without an OpenAI API key, the system uses a mock LLM service with keyword-based
 
 - `/start` - Welcome message
 - `/help` - List available commands
-- `/todos [status]` - List todos (optional: pending, completed, etc.)
+- `/todos [status]` - Legacy alias for canonical tasks
 - `/notes [search]` - List notes (optional: search term)
 - `/tracks` - List tracking items
 - `/tasks [status]` - List canonical tasks (open/blocked/in_progress/done/cancelled/snoozed)

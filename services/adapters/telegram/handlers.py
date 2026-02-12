@@ -16,6 +16,11 @@ logger = logging.getLogger(__name__)
 query_service = None
 task_service = None
 
+LEGACY_TODO_STATUS_MAP = {
+    "pending": "open",
+    "completed": "done",
+}
+
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Welcome message and setup verification."""
@@ -51,7 +56,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 📚 Available Commands
 
 Queries
-• /todos [status] - List your todos
+• /todos [status] - Legacy alias for tasks
 • /notes [search] - List your notes
 • /tracks - List tracking items
 • /tasks [status] - List tasks
@@ -72,31 +77,42 @@ Tip: You can also send plain messages and Helionyx will extract objects automati
 
 
 async def todos_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """List todos with optional status filter."""
+    """Legacy alias for canonical task listing."""
 
     # Parse optional status argument
     status = context.args[0] if context.args else None
 
-    # Validate status
-    valid_statuses = ["pending", "in_progress", "completed", "cancelled"]
-    if status and status not in valid_statuses:
+    task_status = LEGACY_TODO_STATUS_MAP.get(status, status)
+
+    # Validate status against canonical task statuses (plus legacy aliases)
+    valid_statuses = [
+        "pending",
+        "completed",
+        "open",
+        "blocked",
+        "in_progress",
+        "done",
+        "cancelled",
+        "snoozed",
+    ]
+    if status and task_status not in valid_statuses:
         await update.message.reply_text(
             f"❌ Invalid status: {status}\n" f"Valid options: {', '.join(valid_statuses)}"
         )
         return
 
     try:
-        # Query service
-        todos = await query_service.get_todos(status=status)
+        tasks = await task_service.list_tasks(status=task_status)
 
-        # Format response
-        if not todos:
+        if not tasks:
             status_text = f" ({status})" if status else ""
-            await update.message.reply_text(f"No todos found{status_text}.")
+            await update.message.reply_text(f"No tasks found{status_text}.")
             return
 
-        # Format and send
-        formatted = format_todos_list(todos)
+        await update.message.reply_text(
+            "ℹ️ /todos is a legacy alias. Showing canonical tasks.",
+        )
+        formatted = format_tasks_list(tasks)
         await update.message.reply_text(formatted, parse_mode="Markdown")
 
     except Exception as e:
