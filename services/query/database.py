@@ -4,7 +4,7 @@ import sqlite3
 import logging
 import asyncio
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Optional
 from contextlib import contextmanager
 
@@ -269,5 +269,43 @@ def mark_daily_summary_sent(conn: sqlite3.Connection) -> None:
     conn.execute(
         "INSERT INTO notification_log (notification_type, sent_at) " "VALUES (?, ?)",
         ("daily_summary", datetime.utcnow().isoformat()),
+    )
+    conn.commit()
+
+
+def was_notification_sent_recently(
+    conn: sqlite3.Connection,
+    notification_type: str,
+    object_id: str | None = None,
+    within_hours: int = 24,
+    metadata_contains: str | None = None,
+) -> bool:
+    """Check whether a notification was sent within a recent time window."""
+    cutoff = (datetime.utcnow() - timedelta(hours=within_hours)).isoformat()
+    query = "SELECT 1 FROM notification_log WHERE notification_type = ? AND sent_at >= ?"
+    params: list[str] = [notification_type, cutoff]
+
+    if object_id:
+        query += " AND object_id = ?"
+        params.append(object_id)
+    if metadata_contains:
+        query += " AND metadata LIKE ?"
+        params.append(f"%{metadata_contains}%")
+
+    cursor = conn.execute(query, tuple(params))
+    return cursor.fetchone() is not None
+
+
+def log_notification(
+    conn: sqlite3.Connection,
+    notification_type: str,
+    object_id: str | None = None,
+    metadata: str | None = None,
+) -> None:
+    """Log notification delivery to durable notification log."""
+    conn.execute(
+        "INSERT INTO notification_log (notification_type, object_id, sent_at, metadata) "
+        "VALUES (?, ?, ?, ?)",
+        (notification_type, object_id, datetime.utcnow().isoformat(), metadata),
     )
     conn.commit()

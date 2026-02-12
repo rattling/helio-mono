@@ -1,18 +1,25 @@
-"""Notification scheduler for reminders and daily summaries."""
+"""Notification scheduler for Milestone 6 attention digests and reminders."""
 
 import logging
 import asyncio
-from datetime import datetime, timedelta
-from typing import Optional
+import json
+from datetime import datetime
 
-from .formatters import format_reminder, format_daily_summary
+from .formatters import (
+    format_attention_daily_digest,
+    format_attention_weekly_digest,
+    format_task_urgent_reminder,
+)
 from .errors import send_with_retry
 from services.query import database
+from services.attention import AttentionService
+from shared.contracts import ReminderSentEvent
 
 logger = logging.getLogger(__name__)
 
 # Service instances and config (injected from bot.py)
 query_service = None
+event_store = None
 config = None
 db_conn = None
 
@@ -24,11 +31,9 @@ async def notification_scheduler(application):
 
     while True:
         try:
-            # Check reminders
-            await check_and_send_reminders(application.bot)
-
-            # Check daily summary
-            await check_and_send_daily_summary(application.bot)
+            await check_and_send_daily_digest(application.bot)
+            await check_and_send_weekly_digest(application.bot)
+            await check_and_send_urgent_reminders(application.bot)
 
         except Exception as e:
             logger.error(f"Error in notification scheduler: {e}", exc_info=True)
@@ -37,8 +42,17 @@ async def notification_scheduler(application):
         await asyncio.sleep(60)
 
 
-async def check_and_send_reminders(bot):
-    """Check for due todos and send reminders."""
+def _attention_service() -> AttentionService:
+    return AttentionService(
+        event_store=event_store,
+        query_service=query_service,
+        enable_shadow_ranker=getattr(config, "SHADOW_RANKER_ENABLED", True),
+        shadow_confidence_threshold=getattr(config, "SHADOW_RANKER_CONFIDENCE_THRESHOLD", 0.6),
+    )
+
+
+async def check_and_send_urgent_reminders(bot):
+    """Check urgent attention items and send deduplicated reminders."""
 
     now = datetime.now()
     hour = now.hour
@@ -51,86 +65,124 @@ async def check_and_send_reminders(bot):
         return
 
     try:
-        # Get todos due soon (next 24 hours)
-        advance_hours = getattr(config, "REMINDER_ADVANCE_HOURS", 24)
-        future = now + timedelta(hours=advance_hours)
-
-        todos = await query_service.get_todos(status="pending")
-
-        # Filter to due soon
-        due_soon = []
-        for t in todos:
-            if t.get("due_date"):
-                try:
-                    due_date = datetime.fromisoformat(t["due_date"].replace("Z", "+00:00"))
-                    if due_date <= future and due_date >= now:
-                        due_soon.append(t)
-                except (ValueError, AttributeError):
-                    pass
-
-        for todo in due_soon:
-            # Check if already reminded today
-            if db_conn and database.was_reminded_today(db_conn, todo["object_id"]):
+        threshold = float(getattr(config, "ATTENTION_URGENT_THRESHOLD", 60.0))
+        today = await _attention_service().get_today_attention(limit=20)
+        for item in today.get("top_actionable", []):
+            if float(item.get("urgency_score", 0.0)) < threshold:
                 continue
 
-            # Format and send reminder
-            message = format_reminder(todo)
+            task_id = str(item.get("task_id"))
+            fingerprint = f"urgent:{task_id}:{item.get('urgency_score')}"
+            if db_conn and database.was_notification_sent_recently(
+                db_conn,
+                notification_type="task_urgent_reminder",
+                object_id=task_id,
+                within_hours=12,
+                metadata_contains=fingerprint,
+            ):
+                continue
+
+            message = format_task_urgent_reminder(item)
             chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
             if not chat_id:
                 logger.info("Skipping reminder send (TELEGRAM_CHAT_ID not set)")
                 return
 
             await send_with_retry(bot, chat_id=int(chat_id), text=message, parse_mode="Markdown")
-
-            # Mark as reminded
             if db_conn:
-                database.mark_reminder_sent(db_conn, todo["object_id"])
+                database.log_notification(
+                    db_conn,
+                    notification_type="task_urgent_reminder",
+                    object_id=task_id,
+                    metadata=json.dumps({"fingerprint": fingerprint}),
+                )
+            if event_store:
+                await event_store.append(
+                    ReminderSentEvent(
+                        reminder_type="task_urgent_reminder",
+                        object_id=task_id,
+                        fingerprint=fingerprint,
+                        metadata={"urgency_score": item.get("urgency_score")},
+                    )
+                )
 
-            logger.info(f"Sent reminder for todo: {todo['title']}")
+            logger.info(f"Sent urgent task reminder: {item.get('title', task_id)}")
 
     except Exception as e:
-        logger.error(f"Error checking reminders: {e}", exc_info=True)
+        logger.error(f"Error checking urgent reminders: {e}", exc_info=True)
 
 
-async def check_and_send_daily_summary(bot):
-    """Send daily summary at configured time."""
+async def check_and_send_daily_digest(bot):
+    """Send daily digest at configured time."""
 
     now = datetime.now()
 
-    # Check if it's summary time (default: 8 PM)
+    # Check if it's digest time (default: 8 PM)
     summary_hour = getattr(config, "DAILY_SUMMARY_HOUR", 20)
 
     if now.hour != summary_hour or now.minute > 5:
         # Only send during the configured hour, first 5 minutes
         return
 
-    # Check if already sent today
-    if db_conn and database.was_daily_summary_sent_today(db_conn):
+    if db_conn and database.was_notification_sent_recently(
+        db_conn, notification_type="task_daily_digest", within_hours=24
+    ):
         return
 
     try:
-        # Get stats and pending todos
-        stats = query_service.get_stats()
-        todos = await query_service.get_todos(status="pending")
-
-        # Format summary
-        message = format_daily_summary(stats, todos)
+        payload = await _attention_service().get_today_attention(limit=5)
+        message = format_attention_daily_digest(payload)
 
         # Send
         chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
         if not chat_id:
-            logger.info("Skipping daily summary send (TELEGRAM_CHAT_ID not set)")
+            logger.info("Skipping daily digest send (TELEGRAM_CHAT_ID not set)")
             return
         await send_with_retry(bot, chat_id=int(chat_id), text=message, parse_mode="Markdown")
 
-        # Mark as sent
         if db_conn:
-            database.mark_daily_summary_sent(db_conn)
+            database.log_notification(db_conn, notification_type="task_daily_digest")
+        if event_store:
+            await event_store.append(ReminderSentEvent(reminder_type="task_daily_digest"))
 
-        logger.info("Sent daily summary")
+        logger.info("Sent daily attention digest")
 
         # Sleep extra to avoid sending multiple times in same hour
         await asyncio.sleep(300)  # 5 minute cooldown
 
     except Exception as e:
-        logger.error(f"Error sending daily summary: {e}", exc_info=True)
+        logger.error(f"Error sending daily digest: {e}", exc_info=True)
+
+
+async def check_and_send_weekly_digest(bot):
+    """Send weekly digest at configured day/hour."""
+    now = datetime.now()
+    weekly_day = int(getattr(config, "WEEKLY_SUMMARY_DAY", 0))
+    weekly_hour = int(getattr(config, "WEEKLY_SUMMARY_HOUR", 9))
+
+    if now.weekday() != weekly_day or now.hour != weekly_hour or now.minute > 5:
+        return
+
+    if db_conn and database.was_notification_sent_recently(
+        db_conn, notification_type="task_weekly_digest", within_hours=24 * 7
+    ):
+        return
+
+    try:
+        payload = await _attention_service().get_week_attention()
+        message = format_attention_weekly_digest(payload)
+        chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
+        if not chat_id:
+            logger.info("Skipping weekly digest send (TELEGRAM_CHAT_ID not set)")
+            return
+
+        await send_with_retry(bot, chat_id=int(chat_id), text=message, parse_mode="Markdown")
+        if db_conn:
+            database.log_notification(db_conn, notification_type="task_weekly_digest")
+        if event_store:
+            await event_store.append(ReminderSentEvent(reminder_type="task_weekly_digest"))
+
+        logger.info("Sent weekly attention digest")
+        await asyncio.sleep(300)
+    except Exception as e:
+        logger.error(f"Error sending weekly digest: {e}", exc_info=True)

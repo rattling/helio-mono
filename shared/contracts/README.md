@@ -16,6 +16,11 @@ Event schemas for the append-only event log. All system activity is recorded as 
 - `ArtifactRecordedEvent` - LLM prompts, responses, summaries
 - `ObjectExtractedEvent` - Structured objects extracted from messages
 - `DecisionRecordedEvent` - Decision records (future milestone)
+- `AttentionScoringComputedEvent` - Attention queue scoring snapshots (M6)
+- `SuggestionShown/Applied/Rejected/EditedEvent` - Planning suggestion lifecycle (M6)
+- `ReminderSent/Dismissed/SnoozedEvent` - Reminder lifecycle feedback (M6)
+- `FeatureSnapshotRecordedEvent` - Deterministic feature snapshots for replay (M6)
+- `ModelScoreRecordedEvent` - Shadow-model outputs for audit/eval (M6)
 
 ### Objects (`objects.py`)
 Schemas for structured objects extracted from conversations.
@@ -47,6 +52,11 @@ Contract changes follow semantic versioning:
 - Backwards-compatible additions: patch/minor version
 - Breaking changes: major version
 - Version included in event metadata
+
+Milestone 6 additions are backward-compatible:
+- New event types are additive and optional for consumers
+- Existing event fields and task contracts are unchanged
+- Consumers not aware of M6 events can safely ignore them
 
 ### 3. Immutable Events
 Events are immutable once written. Corrections occur via new events.

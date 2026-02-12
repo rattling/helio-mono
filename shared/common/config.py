@@ -52,9 +52,23 @@ class Config:
         self.TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
         self.NOTIFICATIONS_ENABLED = os.getenv("NOTIFICATIONS_ENABLED", "true")
         self.DAILY_SUMMARY_HOUR = int(os.getenv("DAILY_SUMMARY_HOUR", "20"))
+        self.WEEKLY_SUMMARY_DAY = int(os.getenv("WEEKLY_SUMMARY_DAY", "0"))
+        self.WEEKLY_SUMMARY_HOUR = int(os.getenv("WEEKLY_SUMMARY_HOUR", "9"))
         self.REMINDER_WINDOW_START = int(os.getenv("REMINDER_WINDOW_START", "8"))
         self.REMINDER_WINDOW_END = int(os.getenv("REMINDER_WINDOW_END", "21"))
         self.REMINDER_ADVANCE_HOURS = int(os.getenv("REMINDER_ADVANCE_HOURS", "24"))
+        self.ATTENTION_URGENT_THRESHOLD = float(os.getenv("ATTENTION_URGENT_THRESHOLD", "60"))
+
+        # Learning / shadow ranking (M6)
+        self.SHADOW_RANKER_ENABLED = os.getenv("SHADOW_RANKER_ENABLED", "true").lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
+        self.SHADOW_RANKER_CONFIDENCE_THRESHOLD = float(
+            os.getenv("SHADOW_RANKER_CONFIDENCE_THRESHOLD", "0.6")
+        )
 
         # API Server
         self.API_HOST = os.getenv("API_HOST", "0.0.0.0")

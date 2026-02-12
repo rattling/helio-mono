@@ -21,6 +21,18 @@ class EventType(str, Enum):
     # Decision events (for future milestones)
     DECISION_RECORDED = "decision_recorded"
 
+    # Milestone 6 attention + planning + learning events
+    ATTENTION_SCORING_COMPUTED = "attention_scoring_computed"
+    SUGGESTION_SHOWN = "suggestion_shown"
+    SUGGESTION_APPLIED = "suggestion_applied"
+    SUGGESTION_REJECTED = "suggestion_rejected"
+    SUGGESTION_EDITED = "suggestion_edited"
+    REMINDER_SENT = "reminder_sent"
+    REMINDER_DISMISSED = "reminder_dismissed"
+    REMINDER_SNOOZED = "reminder_snoozed"
+    FEATURE_SNAPSHOT_RECORDED = "feature_snapshot_recorded"
+    MODEL_SCORE_RECORDED = "model_score_recorded"
+
 
 class SourceType(str, Enum):
     """Input source types."""
@@ -87,3 +99,112 @@ class DecisionRecordedEvent(BaseEvent):
     event_type: EventType = EventType.DECISION_RECORDED
     decision_data: dict[str, Any]
     rationale: Optional[str] = None
+
+
+class AttentionScoringComputedEvent(BaseEvent):
+    """Event recording deterministic attention queue scoring output."""
+
+    event_type: EventType = EventType.ATTENTION_SCORING_COMPUTED
+    queue_name: str
+    candidates: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class SuggestionShownEvent(BaseEvent):
+    """Event recording suggestion candidates shown to user/operator."""
+
+    event_type: EventType = EventType.SUGGESTION_SHOWN
+    task_id: str
+    suggestion_id: str
+    suggestion_type: str
+    suggestion_payload: dict[str, Any] = Field(default_factory=dict)
+    rationale: Optional[str] = None
+
+
+class SuggestionAppliedEvent(BaseEvent):
+    """Event recording explicit user application of a suggestion."""
+
+    event_type: EventType = EventType.SUGGESTION_APPLIED
+    task_id: str
+    suggestion_id: str
+    suggestion_type: str
+    applied_payload: dict[str, Any] = Field(default_factory=dict)
+    rationale: Optional[str] = None
+
+
+class SuggestionRejectedEvent(BaseEvent):
+    """Event recording explicit user rejection of a suggestion."""
+
+    event_type: EventType = EventType.SUGGESTION_REJECTED
+    task_id: str
+    suggestion_id: str
+    suggestion_type: str
+    rationale: Optional[str] = None
+
+
+class SuggestionEditedEvent(BaseEvent):
+    """Event recording user edits before suggestion apply."""
+
+    event_type: EventType = EventType.SUGGESTION_EDITED
+    task_id: str
+    suggestion_id: str
+    suggestion_type: str
+    original_payload: dict[str, Any] = Field(default_factory=dict)
+    edited_payload: dict[str, Any] = Field(default_factory=dict)
+    rationale: Optional[str] = None
+
+
+class ReminderSentEvent(BaseEvent):
+    """Event recording reminder/digest delivery."""
+
+    event_type: EventType = EventType.REMINDER_SENT
+    reminder_type: str
+    object_id: Optional[str] = None
+    fingerprint: Optional[str] = None
+    delivery_channel: str = "telegram"
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ReminderDismissedEvent(BaseEvent):
+    """Event recording explicit reminder dismissal feedback."""
+
+    event_type: EventType = EventType.REMINDER_DISMISSED
+    reminder_type: str
+    object_id: Optional[str] = None
+    fingerprint: Optional[str] = None
+    rationale: Optional[str] = None
+
+
+class ReminderSnoozedEvent(BaseEvent):
+    """Event recording explicit reminder snooze feedback."""
+
+    event_type: EventType = EventType.REMINDER_SNOOZED
+    reminder_type: str
+    object_id: Optional[str] = None
+    fingerprint: Optional[str] = None
+    until: Optional[datetime] = None
+    rationale: Optional[str] = None
+
+
+class FeatureSnapshotRecordedEvent(BaseEvent):
+    """Event recording deterministic feature snapshot for replay/evaluation."""
+
+    event_type: EventType = EventType.FEATURE_SNAPSHOT_RECORDED
+    candidate_id: str
+    candidate_type: str
+    feature_version: str = "m6-v1"
+    features: dict[str, Any] = Field(default_factory=dict)
+    context: dict[str, Any] = Field(default_factory=dict)
+
+
+class ModelScoreRecordedEvent(BaseEvent):
+    """Event recording model score outputs in shadow/eval mode."""
+
+    event_type: EventType = EventType.MODEL_SCORE_RECORDED
+    candidate_id: str
+    candidate_type: str
+    model_name: str
+    model_version: str
+    score: float
+    confidence: float
+    explanation: Optional[str] = None
+    metadata: dict[str, Any] = Field(default_factory=dict)

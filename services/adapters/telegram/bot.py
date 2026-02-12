@@ -33,6 +33,7 @@ def create_application(bot_token: str, services: dict, cfg) -> Application:
     message_handler.ingestion_service = services["ingestion"]
     message_handler.extraction_service = services["extraction"]
     scheduler.query_service = services["query"]
+    scheduler.event_store = services["event_store"]
     scheduler.config = cfg
     scheduler.db_conn = services["query"].conn
 
