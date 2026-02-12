@@ -38,6 +38,18 @@ from shared.contracts.protocols import (
     LLMServiceProtocol,
     QueryServiceProtocol,
 )
+from shared.contracts.tasks import (
+    TASK_LABEL_NEEDS_REVIEW,
+    Task,
+    TaskExplanation,
+    TaskIngestRequest,
+    TaskIngestResult,
+    TaskLinkRequest,
+    TaskPatchRequest,
+    TaskPriority,
+    TaskSnoozeRequest,
+    TaskStatus,
+)
 
 __all__ = [
     # Events
@@ -65,4 +77,16 @@ __all__ = [
     "ExtractionServiceProtocol",
     "LLMServiceProtocol",
     "QueryServiceProtocol",
+
+    # Tasks (M5)
+    "TASK_LABEL_NEEDS_REVIEW",
+    "TaskStatus",
+    "TaskPriority",
+    "TaskExplanation",
+    "Task",
+    "TaskIngestRequest",
+    "TaskIngestResult",
+    "TaskPatchRequest",
+    "TaskSnoozeRequest",
+    "TaskLinkRequest",
 ]

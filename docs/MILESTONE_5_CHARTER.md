@@ -16,6 +16,11 @@ allocation yet).
 -   Passive stale detection
 -   Fully agent-readable and human-legible state
 
+Review and prompting notes:
+- The system should support a lightweight `needs_review` stage for inferred tasks.
+- Milestone 5 does not require blocking on review or prompting for missing details;
+	missing details can be refined later via lifecycle commands.
+
 ------------------------------------------------------------------------
 
 ## Data Model (Canonical Task)
