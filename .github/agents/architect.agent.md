@@ -147,6 +147,11 @@ At the start of each milestone, the agent in **ARCH mode**:
 - completes architectural issues (if any) before developer handoff
 - ensures the milestone preserves or extends a runnable spine
 
+GitHub operation preference (automation-friendly):
+- Prefer MCP GitHub tools for issue/meta-issue creation and updates.
+- Avoid temporary-file body workflows (e.g., `/tmp` + `--body-file`) when inline/in-memory updates are feasible.
+- If CLI is required, prefer inline body updates over temp files.
+
 **Branch Naming**: Use `milestone-N` format (e.g., `milestone-1`, `milestone-2`).
 
 **All milestone work happens on this branch** until QA creates the PR to main.

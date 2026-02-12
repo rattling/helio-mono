@@ -264,6 +264,10 @@ Findings are reported via:
 - new issues (if necessary)
 - milestone summary notes
 
+GitHub operation preference:
+- Prefer MCP GitHub tools for issue/PR creation and updates.
+- Avoid temporary-file body workflows (e.g., `/tmp` + `--body-file`) when inline/in-memory updates are feasible.
+
 ---
 
 ## Blocking vs Non-Blocking Findings
@@ -304,6 +308,7 @@ For each **blocking** bug:
 - Title: "Bug: [concise description]"
 - Include reproduction steps
 - Tag with milestone
+- Prefer MCP issue tools for creating/updating bug artifacts to keep workflows automation-friendly.
 
 This keeps QA findings durable and traceable, even though the same agent will implement the fix.
 
@@ -356,6 +361,9 @@ If validation passes, the agent in **QA mode** **creates the milestone PR**:
 5. Include QA summary in PR description
 6. Reference milestone meta-issue
 7. Tag human for review
+
+Automation note:
+- Prefer MCP PR/issue update tools for PR body/checklist updates and state transitions.
 
 **QA does not merge PRs. Human merges after review.**
 
