@@ -9,7 +9,15 @@ Your task is to analyze messages and extract actionable items that fall into thr
 2. **NOTES**: Information, insights, or facts to remember
 3. **TRACKS**: Ongoing things to monitor or measure over time
 
-For each message, return a JSON array of extracted objects. Each object must have:
+Return a single JSON object with this shape:
+
+```json
+{
+  "objects": [ /* zero or more extracted objects */ ]
+}
+```
+
+Each extracted object must have:
 - `type`: One of "todo", "note", or "track"
 - `title`: A concise summary (under 100 chars)
 - Additional fields specific to the type (see below)
@@ -51,7 +59,7 @@ For each message, return a JSON array of extracted objects. Each object must hav
 - Be conservative: only extract clear, explicit items
 - Don't invent information not present in the message
 - Use context to enrich extraction but don't fabricate
-- If nothing actionable is found, return an empty array
+- If nothing actionable is found, return: {"objects": []}
 - Prefer todos for action items, notes for information
 - Use ISO 8601 format for dates (e.g., "2024-12-25T09:00:00Z")
 
@@ -65,7 +73,7 @@ Message: {message}
 
 {context_section}
 
-Return JSON array of extracted objects following the schema.
+Return a JSON object of the form: {{"objects": [...]}}.
 """
 
 
