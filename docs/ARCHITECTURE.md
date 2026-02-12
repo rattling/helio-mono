@@ -107,13 +107,13 @@ graph TB
     subgraph "node1 (Single Host)"
         subgraph "Dev Environment"
             DEV_SVC[helionyx-dev.service<br/>Port 8000]
-            DEV_DATA[(./data/dev/)]
+            DEV_DATA[(/var/lib/helionyx/dev/)]
             DEV_BOT[Dev Telegram Bot]
         end
         
         subgraph "Staging Environment"
             STG_SVC[helionyx-staging.service<br/>Port 8001]
-            STG_DATA[(./data/staging/)]
+            STG_DATA[(/var/lib/helionyx/staging/)]
             STG_BOT[Staging Telegram Bot]
         end
         
@@ -140,7 +140,7 @@ Each environment maintains complete isolation:
 | Aspect | Dev | Staging | Live |
 |--------|-----|---------|------|
 | **API Port** | 8000 | 8001 | 8002 |
-| **Data Path** | `./data/dev/` | `./data/staging/` | `/var/lib/helionyx/live/` |
+| **Data Path** | `/var/lib/helionyx/dev/` | `/var/lib/helionyx/staging/` | `/var/lib/helionyx/live/` |
 | **Service Name** | `helionyx-dev.service` | `helionyx-staging.service` | `helionyx.service` |
 | **Config File** | `.env.dev` | `.env.staging` | `.env.live` |
 | **Telegram Bot** | `helionyx_dev_bot` | `helionyx_staging_bot` | `helionyx_bot` |
@@ -166,7 +166,7 @@ Each environment runs as an independent systemd service:
 **Key Service Features:**
 - Auto-restart on failure
 - Boot-time startup (optional, per environment)
-- Centralized logging to `/var/log/helionyx-*.log`
+- Centralized logging to journald (`journalctl -u helionyx-<env>`)
 - Clean shutdown handling
 - User-level execution (non-root)
 

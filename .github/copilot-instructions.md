@@ -1,8 +1,39 @@
 # Copilot Instructions for Helionyx
 
-## Required Reading Before Any Work
+## ADHOC Mode (Operator / Quick Help)
 
-**You must read these documents in order before starting any work:**
+This repo is sometimes used for **ad hoc operational questions** ("what's running?", "is disk encrypted?", "where is config?", "how do I…?")
+that do **not** warrant milestone/issue workflow.
+
+When the user is doing ad hoc work, the agent may operate in **ADHOC mode** with these constraints:
+
+- No GitHub issue/PR workflow unless explicitly requested.
+- No architectural changes.
+- Prefer read-only inspection (commands, file reads) and short runbooks.
+- Code changes are allowed in ADHOC mode when the user wants quick help and will manage issues/branches/PRs themselves.
+- If the user explicitly asks to “follow the workflow”, create/close issues, prep a PR, or make a **contract/architecture** change: switch to the structured workflow below.
+
+If the user asks for code changes and wants to handle branching/issues/commits themselves, the agent can still help by:
+
+- making local code changes (without creating issues/PRs)
+- giving exact commands and diffs
+- running tests / doing verification
+
+In that case, do **not** force ARCH/DEV/QA ceremony; keep it lightweight.
+
+Minimal invariants that still apply in ADHOC mode:
+
+- Never commit secrets; treat `.env*` contents as sensitive.
+- For Python execution, prefer `.venv/bin/python` and `.venv/bin/pip`.
+- If repository identity matters, verify with `git remote -v`.
+
+## Structured Workflow (Optional)
+
+This repo supports a structured milestone workflow (ARCH/DEV/QA + issues + handoffs). It is useful when you want durable state and repeatability.
+
+Use the structured workflow **only when the user explicitly asks for it** (e.g. “create issues”, “do milestone work”, “prep a PR”, “follow the workflow”).
+
+If you are doing structured workflow work, read these documents in order before starting:
 
 1. **Engineering Framework**:
   - [ENGINEERING_CONSTITUTION.md](ENGINEERING_CONSTITUTION.md) - Core engineering values and technical posture
@@ -16,7 +47,7 @@
    - `docs/ARCHITECTURE.md` - Current system structure (if exists)
    - Historical milestone charters (e.g., `MILESTONE0_CHARTER.md`, `MILESTONE1_CHARTER.md`) - Available for reference when needed
 
-**At Session Start**: Acknowledge you have read these documents by briefly stating:
+**At Session Start (Structured Workflow only)**: Acknowledge you have read these documents by briefly stating:
 - Your current mode (ARCH/DEV/QA)
 - The milestone or issue you're working on
 - Key constraints you understand from the docs
@@ -25,7 +56,7 @@ This confirms you have context before proceeding.
 
 ---
 
-## Mode Assignment
+## Mode Assignment (Structured Workflow)
 
 This repo is operated as **one agent that switches modes**.
 
@@ -46,7 +77,7 @@ When work is assigned, identify your active **mode**:
   - System runnability verification
   - Reality-checking documented behavior
 
-**Operate strictly within the current mode's authority.**
+**Operate within the current mode's authority** when using structured workflow.
 Escalate when boundaries are unclear or when work exceeds role scope.
 
 ### Mode Switching Discipline
