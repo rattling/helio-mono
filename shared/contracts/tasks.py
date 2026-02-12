@@ -17,7 +17,6 @@ from pydantic import BaseModel, Field
 
 from shared.contracts.events import SourceType
 
-
 TASK_LABEL_NEEDS_REVIEW = "needs_review"
 
 
@@ -85,7 +84,7 @@ class TaskIngestRequest(BaseModel):
     """Idempotent ingest request.
 
     Idempotency key is `source_ref` within the given `source` domain.
-    
+
     Note: Milestone 5 explicitly defers any conversational prompting to fill
     missing details; missing fields may remain null and be refined later.
     """

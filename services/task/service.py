@@ -50,7 +50,9 @@ class TaskService:
                 source=request.source,
                 source_ref=request.source_ref,
             )
-            return TaskIngestResult(task_id=UUID(task_id), created=False, decision_rationale=decision_rationale)
+            return TaskIngestResult(
+                task_id=UUID(task_id), created=False, decision_rationale=decision_rationale
+            )
 
         dedup_group_id = self._compute_dedup_group_id(request.title, request.body, request.project)
 
@@ -103,7 +105,9 @@ class TaskService:
             source_ref=request.source_ref,
         )
 
-        return TaskIngestResult(task_id=task.task_id, created=True, decision_rationale=decision_rationale)
+        return TaskIngestResult(
+            task_id=task.task_id, created=True, decision_rationale=decision_rationale
+        )
 
     async def list_tasks(self, status: Optional[str] = None) -> list[dict]:
         return await self.query_service.get_tasks(status=status)
@@ -259,7 +263,9 @@ class TaskService:
         )
         await self.event_store.append(event)
 
-    def _compute_dedup_group_id(self, title: str, body: Optional[str], project: Optional[str]) -> str:
+    def _compute_dedup_group_id(
+        self, title: str, body: Optional[str], project: Optional[str]
+    ) -> str:
         normalized_title = " ".join((title or "").lower().split())
         normalized_body = " ".join((body or "").lower().split())
         normalized_project = " ".join((project or "").lower().split())

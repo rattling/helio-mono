@@ -77,7 +77,6 @@ __all__ = [
     "ExtractionServiceProtocol",
     "LLMServiceProtocol",
     "QueryServiceProtocol",
-
     # Tasks (M5)
     "TASK_LABEL_NEEDS_REVIEW",
     "TaskStatus",

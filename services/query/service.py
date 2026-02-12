@@ -506,7 +506,9 @@ class QueryService:
 
         rows = cursor.fetchall()
         stats = {row[0]: row[1] for row in rows}
-        stats["total_objects"] = stats.get("todos", 0) + stats.get("notes", 0) + stats.get("tracks", 0)
+        stats["total_objects"] = (
+            stats.get("todos", 0) + stats.get("notes", 0) + stats.get("tracks", 0)
+        )
 
         # Get last rebuild time
         cursor = self.conn.execute(

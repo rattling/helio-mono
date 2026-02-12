@@ -267,7 +267,9 @@ async def task_snooze_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     try:
         until = datetime.fromisoformat(until_raw)
     except ValueError:
-        await update.message.reply_text("Invalid timestamp. Use ISO format, e.g. 2026-02-15T09:00:00")
+        await update.message.reply_text(
+            "Invalid timestamp. Use ISO format, e.g. 2026-02-15T09:00:00"
+        )
         return
 
     task = await task_service.snooze_task(
@@ -278,7 +280,9 @@ async def task_snooze_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text("Task not found.")
         return
 
-    await update.message.reply_text(f"⏸ Task `{task_id}` snoozed until `{until_raw}`.", parse_mode="Markdown")
+    await update.message.reply_text(
+        f"⏸ Task `{task_id}` snoozed until `{until_raw}`.", parse_mode="Markdown"
+    )
 
 
 async def task_priority_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
