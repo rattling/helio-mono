@@ -22,6 +22,12 @@ Event schemas for the append-only event log. All system activity is recorded as 
 - `FeatureSnapshotRecordedEvent` - Deterministic feature snapshots for replay (M6)
 - `ModelScoreRecordedEvent` - Shadow-model outputs for audit/eval (M6)
 
+Attention queue contracts include typed candidate metadata for bounded personalization:
+- `deterministic_bucket_id` + `deterministic_bucket_rank`
+- `model_score` + `model_confidence` (optional)
+- `personalization_applied` + `personalization_policy`
+- deterministic vs learned explanation fields
+
 ### Objects (`objects.py`)
 Schemas for structured objects extracted from conversations.
 
@@ -57,6 +63,10 @@ Milestone 6 additions are backward-compatible:
 - New event types are additive and optional for consumers
 - Existing event fields and task contracts are unchanged
 - Consumers not aware of M6 events can safely ignore them
+
+Milestone 7 contract additions are backward-compatible:
+- Attention candidate metadata is additive with safe defaults
+- Existing consumers can continue using `task_id`, `urgency_score`, and `explanation`
 
 ### 3. Immutable Events
 Events are immutable once written. Corrections occur via new events.

@@ -11,6 +11,8 @@ Contract changes require explicit coordination and versioning.
 """
 
 from shared.contracts.events import (
+    AttentionBucket,
+    AttentionCandidate,
     AttentionScoringComputedEvent,
     ArtifactRecordedEvent,
     ArtifactType,
@@ -69,6 +71,8 @@ __all__ = [
     # Events
     "BaseEvent",
     "EventType",
+    "AttentionBucket",
+    "AttentionCandidate",
     "SourceType",
     "ArtifactType",
     "MessageIngestedEvent",

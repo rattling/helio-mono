@@ -48,6 +48,10 @@ class TestAttentionAPI:
         assert "top_actionable" in payload
         assert payload["top_actionable"]
         assert "urgency_explanation" in payload["top_actionable"][0]
+        assert "deterministic_bucket_id" in payload["top_actionable"][0]
+        assert "deterministic_bucket_rank" in payload["top_actionable"][0]
+        assert "personalization_applied" in payload["top_actionable"][0]
+        assert payload["top_actionable"][0]["personalization_applied"] is False
 
         week = client.get("/attention/week")
         assert week.status_code == 200
@@ -93,5 +97,7 @@ class TestAttentionAPI:
             assert today.status_code == 200
             top = today.json()["top_actionable"][0]
             assert top["shadow_score"] is None
+            assert top["model_score"] is None
+            assert top["personalization_policy"] == "deterministic_only"
         finally:
             ShadowRanker.score = original_method
