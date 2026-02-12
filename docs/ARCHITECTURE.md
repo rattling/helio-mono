@@ -1,7 +1,7 @@
 # Helionyx Architecture
 
 **Version**: 0.3 (Milestone 3)  
-**Last Updated**: February 11, 2026  
+**Last Updated**: February 12, 2026  
 **Status**: Deployment-Ready
 
 ## Overview
@@ -97,6 +97,10 @@ Helionyx is deployed as a **long-running systemd service on node1**, supporting 
 **Target Platform**: Linux server (node1) with systemd  
 **Deployment Method**: Make-based commands with shell script automation  
 **Service Management**: systemd unit files per environment
+
+**Encryption at Rest (Host-Level):**
+- For node1 deployments, `/var/lib/helionyx` is expected to be an encrypted mount (dm-crypt/LUKS).
+- Helionyx stores plaintext on the filesystem; confidentiality at rest is provided by the host volume encryption.
 
 ### Same-Host Multi-Environment Strategy
 
