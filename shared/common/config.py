@@ -69,6 +69,9 @@ class Config:
         self.SHADOW_RANKER_CONFIDENCE_THRESHOLD = float(
             os.getenv("SHADOW_RANKER_CONFIDENCE_THRESHOLD", "0.6")
         )
+        self.ATTENTION_BOUNDED_PERSONALIZATION_ENABLED = os.getenv(
+            "ATTENTION_BOUNDED_PERSONALIZATION_ENABLED", "false"
+        ).lower() in ("1", "true", "yes", "on")
 
         # API Server
         self.API_HOST = os.getenv("API_HOST", "0.0.0.0")

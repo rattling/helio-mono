@@ -101,3 +101,109 @@ class TestAttentionAPI:
             assert top["personalization_policy"] == "deterministic_only"
         finally:
             ShadowRanker.score = original_method
+
+    def test_attention_bounded_personalization_reorders_in_bucket_only(self, monkeypatch, tmp_path):
+        event_store_path = tmp_path / "events"
+        event_store_path.mkdir()
+        db_path = tmp_path / "projections" / "attention-bounded.db"
+        db_path.parent.mkdir(parents=True)
+
+        monkeypatch.setenv("EVENT_STORE_PATH", str(event_store_path))
+        monkeypatch.setenv("PROJECTIONS_DB_PATH", str(db_path))
+        monkeypatch.setenv("ENV", "dev")
+        monkeypatch.setenv("ATTENTION_BOUNDED_PERSONALIZATION_ENABLED", "true")
+        monkeypatch.setenv("SHADOW_RANKER_ENABLED", "true")
+        monkeypatch.setenv("SHADOW_RANKER_CONFIDENCE_THRESHOLD", "0.6")
+
+        first_id = _seed_task(
+            {
+                "title": "High priority far due",
+                "source": "api",
+                "source_ref": "attn-bounded-001",
+                "priority": "p1",
+                "due_at": "2026-03-20T09:00:00",
+            }
+        )
+        second_id = _seed_task(
+            {
+                "title": "High priority no due",
+                "source": "api",
+                "source_ref": "attn-bounded-002",
+                "priority": "p1",
+            }
+        )
+
+        from services.learning.ranker import ShadowRanker, ShadowRankerResult
+
+        original_method = ShadowRanker.score
+
+        def _score(self, features):
+            if features.get("has_due") == 0.0:
+                return ShadowRankerResult(score=0.95, confidence=0.9, explanation="high relevance")
+            return ShadowRankerResult(score=0.20, confidence=0.9, explanation="lower relevance")
+
+        ShadowRanker.score = _score
+        try:
+            today = client.get("/attention/today")
+            assert today.status_code == 200
+            items = today.json()["top_actionable"]
+            ids = [item["task_id"] for item in items]
+            assert ids.index(second_id) < ids.index(first_id)
+
+            assert any(item["personalization_applied"] is True for item in items)
+            assert all(item["personalization_policy"] == "bounded_in_bucket" for item in items)
+        finally:
+            ShadowRanker.score = original_method
+
+    def test_attention_bounded_personalization_low_confidence_falls_back(
+        self, monkeypatch, tmp_path
+    ):
+        event_store_path = tmp_path / "events"
+        event_store_path.mkdir()
+        db_path = tmp_path / "projections" / "attention-bounded-low-confidence.db"
+        db_path.parent.mkdir(parents=True)
+
+        monkeypatch.setenv("EVENT_STORE_PATH", str(event_store_path))
+        monkeypatch.setenv("PROJECTIONS_DB_PATH", str(db_path))
+        monkeypatch.setenv("ENV", "dev")
+        monkeypatch.setenv("ATTENTION_BOUNDED_PERSONALIZATION_ENABLED", "true")
+        monkeypatch.setenv("SHADOW_RANKER_ENABLED", "true")
+        monkeypatch.setenv("SHADOW_RANKER_CONFIDENCE_THRESHOLD", "0.95")
+
+        _seed_task(
+            {
+                "title": "Low confidence candidate 1",
+                "source": "api",
+                "source_ref": "attn-bounded-low-001",
+                "priority": "p1",
+            }
+        )
+        _seed_task(
+            {
+                "title": "Low confidence candidate 2",
+                "source": "api",
+                "source_ref": "attn-bounded-low-002",
+                "priority": "p1",
+            }
+        )
+
+        from services.learning.ranker import ShadowRanker, ShadowRankerResult
+
+        original_method = ShadowRanker.score
+
+        def _score(self, features):
+            return ShadowRankerResult(
+                score=0.99,
+                confidence=0.6,
+                explanation="below threshold",
+            )
+
+        ShadowRanker.score = _score
+        try:
+            today = client.get("/attention/today")
+            assert today.status_code == 200
+            items = today.json()["top_actionable"]
+            assert all(item["personalization_applied"] is False for item in items)
+            assert all(item["personalization_policy"] == "bounded_in_bucket" for item in items)
+        finally:
+            ShadowRanker.score = original_method

@@ -26,11 +26,13 @@ class AttentionService:
         query_service: QueryService,
         enable_shadow_ranker: bool = True,
         shadow_confidence_threshold: float = 0.6,
+        enable_bounded_personalization: bool = False,
     ):
         self.event_store = event_store
         self.query_service = query_service
         self.enable_shadow_ranker = enable_shadow_ranker
         self.shadow_confidence_threshold = shadow_confidence_threshold
+        self.enable_bounded_personalization = enable_bounded_personalization
         self.ranker = ShadowRanker()
         self.bucket_rank = {
             AttentionBucket.URGENT_DUE_SOON: 0,
@@ -47,13 +49,7 @@ class AttentionService:
 
         scored = [await self._score_task(task, now) for task in tasks]
         actionable = [item for item in scored if item["is_actionable"]]
-        actionable.sort(
-            key=lambda item: (
-                item["deterministic_bucket_rank"],
-                -item["urgency_score"],
-                item["updated_at"] or "",
-            )
-        )
+        actionable = self._sort_with_optional_personalization(actionable)
 
         due_72h = [
             item
@@ -101,12 +97,10 @@ class AttentionService:
             and item["priority"] in ("p0", "p1")
             and item["status"] not in ("done", "cancelled")
         ]
-        high_priority_no_due.sort(
-            key=lambda item: (-item["urgency_score"], item["updated_at"] or "")
-        )
+        high_priority_no_due = self._sort_with_optional_personalization(high_priority_no_due)
 
         blocked = [item for item in scored if item["status"] == "blocked"]
-        blocked.sort(key=lambda item: (-item["urgency_score"], item["updated_at"] or ""))
+        blocked = self._sort_with_optional_personalization(blocked)
 
         await self._record_queue("week", due_this_week + high_priority_no_due + blocked)
 
@@ -134,6 +128,76 @@ class AttentionService:
                 "blocked_summary": len(week["blocked_summary"]),
             },
         }
+
+    def _deterministic_sort_key(self, item: dict[str, Any]) -> tuple[int, float, str]:
+        return (
+            item["deterministic_bucket_rank"],
+            -item["urgency_score"],
+            item["updated_at"] or "",
+        )
+
+    def _sort_with_optional_personalization(
+        self, items: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        deterministic = sorted(items, key=self._deterministic_sort_key)
+        for candidate in deterministic:
+            candidate["personalization_applied"] = False
+            candidate["personalization_policy"] = (
+                "bounded_in_bucket" if self.enable_bounded_personalization else "deterministic_only"
+            )
+
+        if not self.enable_bounded_personalization:
+            return deterministic
+
+        grouped: dict[int, list[dict[str, Any]]] = {}
+        for item in deterministic:
+            grouped.setdefault(item["deterministic_bucket_rank"], []).append(item)
+
+        merged: list[dict[str, Any]] = []
+        for rank in sorted(grouped):
+            merged.extend(self._reorder_bucket_with_model(grouped[rank]))
+
+        return merged
+
+    def _reorder_bucket_with_model(
+        self, bucket_items: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        eligible = [
+            item
+            for item in bucket_items
+            if item.get("model_score") is not None
+            and (item.get("model_confidence") or 0.0) >= self.shadow_confidence_threshold
+        ]
+
+        if len(eligible) < 2:
+            return bucket_items
+
+        ordered_eligible = sorted(
+            eligible,
+            key=lambda item: (
+                -float(item.get("model_score") or 0.0),
+                -item["urgency_score"],
+                item["updated_at"] or "",
+            ),
+        )
+
+        eligible_ids_before = [item["task_id"] for item in eligible]
+        eligible_ids_after = [item["task_id"] for item in ordered_eligible]
+        if eligible_ids_before == eligible_ids_after:
+            return bucket_items
+
+        iterator = iter(ordered_eligible)
+        updated: list[dict[str, Any]] = []
+        eligible_set = set(eligible_ids_before)
+        for item in bucket_items:
+            if item["task_id"] in eligible_set:
+                chosen = next(iterator)
+                chosen["personalization_applied"] = True
+                updated.append(chosen)
+            else:
+                updated.append(item)
+
+        return updated
 
     async def _record_queue(self, queue_name: str, items: list[dict[str, Any]]) -> None:
         event = AttentionScoringComputedEvent(
