@@ -55,3 +55,54 @@ export const ControlRoomOverviewSchema = z.object({
 })
 
 export type ControlRoomOverview = z.infer<typeof ControlRoomOverviewSchema>
+
+export const ExplorerIdentifierRefSchema = z.object({
+  entity_type: z.enum(['task', 'event']),
+  entity_id: z.string(),
+  relation: z.string(),
+})
+
+export const ExplorerLookupResponseSchema = z.object({
+  entity_type: z.enum(['task', 'event']),
+  entity_id: z.string(),
+  canonical: z.record(z.any()),
+  related_identifiers: z.array(ExplorerIdentifierRefSchema).default([]),
+})
+
+export type ExplorerLookupResponse = z.infer<typeof ExplorerLookupResponseSchema>
+
+export const ExplorerTimelineEventSchema = z.object({
+  event_id: z.string(),
+  event_type: z.string(),
+  timestamp: z.string(),
+  rationale: z.string().nullable().optional(),
+  links: z.array(ExplorerIdentifierRefSchema).default([]),
+  payload: z.record(z.any()),
+})
+
+export const ExplorerTimelineResponseSchema = z.object({
+  entity_type: z.enum(['task', 'event']),
+  entity_id: z.string(),
+  events: z.array(ExplorerTimelineEventSchema).default([]),
+  since: z.string().nullable().optional(),
+  until: z.string().nullable().optional(),
+})
+
+export type ExplorerTimelineResponse = z.infer<typeof ExplorerTimelineResponseSchema>
+
+export const ExplorerStateResponseSchema = z.object({
+  entity_type: z.enum(['task', 'event']),
+  entity_id: z.string(),
+  snapshot: z.record(z.any()),
+  traceability: z.record(z.any()).default({}),
+})
+
+export type ExplorerStateResponse = z.infer<typeof ExplorerStateResponseSchema>
+
+export const ExplorerDecisionResponseSchema = z.object({
+  entity_type: z.enum(['task', 'event']),
+  entity_id: z.string(),
+  decisions: z.array(ExplorerTimelineEventSchema).default([]),
+})
+
+export type ExplorerDecisionResponse = z.infer<typeof ExplorerDecisionResponseSchema>
