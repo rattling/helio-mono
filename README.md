@@ -204,6 +204,13 @@ make test
 make clean
 ```
 
+## Learning Controls and Verification
+
+- Runtime mode control: `ATTENTION_PERSONALIZATION_MODE=deterministic|shadow|bounded`
+- Replay diagnostics report: `.venv/bin/python scripts/evaluate_attention_replay.py --out data/projections/attention_replay_report.json`
+- Milestone 8 per-target diagnostics: `jq '.target_diagnostics' data/projections/attention_replay_report.json`
+- Operational rollout/rollback and QA checklist: `docs/M6_LEARNING_RUNBOOK.md`
+
 ## OpenAI Integration
 
 Helionyx uses OpenAI's API for intelligent extraction of todos, notes, and tracking items from natural language messages.
