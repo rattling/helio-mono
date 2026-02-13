@@ -4,7 +4,7 @@ Personal decision and execution substrate built on an append-only event log foun
 
 ## Project Status
 
-**Current Milestone**: Milestone 9 - Helionyx UI Foundation (Tasks + Control Room)  
+**Current Milestone**: Milestone 10 - Data Explorer (Power-User Interrogation and Traceability)  
 **Status**: 🔄 In Progress
 
 ## Quick Start
