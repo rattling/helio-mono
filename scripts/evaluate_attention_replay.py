@@ -45,6 +45,12 @@ def _candidate_field(candidate: object, key: str, default=None):
     return default
 
 
+def _mean(values: list[float]) -> float | None:
+    if not values:
+        return None
+    return round(sum(values) / len(values), 4)
+
+
 async def build_report(events_dir: str, rollback_verified: bool = False) -> dict:
     store = FileEventStore(data_dir=events_dir)
     events = await store.stream_events()
@@ -134,6 +140,25 @@ async def build_report(events_dir: str, rollback_verified: bool = False) -> dict
 
     confidence_above_threshold_rate = _safe_rate(confidence_above_threshold, len(confidences))
     mean_model_confidence = round(sum(confidences) / len(confidences), 4) if confidences else None
+
+    usefulness_scores: list[float] = []
+    timing_fit_scores: list[float] = []
+    interrupt_cost_scores: list[float] = []
+    for event in model_scores:
+        metadata = getattr(event, "metadata", {}) or {}
+        use = metadata.get("usefulness_score")
+        timing = metadata.get("timing_fit_score")
+        interrupt = metadata.get("interrupt_cost_score")
+        if use is not None:
+            usefulness_scores.append(float(use))
+        if timing is not None:
+            timing_fit_scores.append(float(timing))
+        if interrupt is not None:
+            interrupt_cost_scores.append(float(interrupt))
+
+    mean_usefulness_score = _mean(usefulness_scores)
+    mean_timing_fit_score = _mean(timing_fit_scores)
+    mean_interrupt_cost_score = _mean(interrupt_cost_scores)
 
     gate_acceptance_uplift = _gate(
         "acceptance_uplift_non_negative",
@@ -262,6 +287,9 @@ async def build_report(events_dir: str, rollback_verified: bool = False) -> dict
             "ordering_shift_rate": ordering_shift_rate,
             "confidence_above_threshold_rate": confidence_above_threshold_rate,
             "mean_model_confidence": mean_model_confidence,
+            "mean_usefulness_score": mean_usefulness_score,
+            "mean_timing_fit_score": mean_timing_fit_score,
+            "mean_interrupt_cost_score": mean_interrupt_cost_score,
             "reopen_rate": None,
             "median_time_to_complete_after_suggestion_hours": None,
         },
@@ -295,6 +323,20 @@ async def build_report(events_dir: str, rollback_verified: bool = False) -> dict
             "checks": stage_b_checks,
             "thresholds": stage_b_thresholds,
             "note": "Readiness report only; contextual bandit exploration remains disabled.",
+        },
+        "target_diagnostics": {
+            "usefulness": {
+                "mean_score": mean_usefulness_score,
+                "samples": len(usefulness_scores),
+            },
+            "timing_fit": {
+                "mean_score": mean_timing_fit_score,
+                "samples": len(timing_fit_scores),
+            },
+            "interrupt_cost": {
+                "mean_score": mean_interrupt_cost_score,
+                "samples": len(interrupt_cost_scores),
+            },
         },
     }
 

@@ -99,6 +99,11 @@ def test_replay_report_computes_metrics_and_gates(tmp_path):
             model_version="m6-v1",
             score=0.91,
             confidence=0.82,
+            metadata={
+                "usefulness_score": 0.85,
+                "timing_fit_score": 0.62,
+                "interrupt_cost_score": 0.28,
+            },
         ),
         ModelScoreRecordedEvent(
             candidate_id="t2",
@@ -107,6 +112,11 @@ def test_replay_report_computes_metrics_and_gates(tmp_path):
             model_version="m6-v1",
             score=0.76,
             confidence=0.78,
+            metadata={
+                "usefulness_score": 0.72,
+                "timing_fit_score": 0.58,
+                "interrupt_cost_score": 0.34,
+            },
         ),
     ]
 
@@ -118,6 +128,8 @@ def test_replay_report_computes_metrics_and_gates(tmp_path):
     assert report["metrics"]["duplicate_reminder_rate"] == 0.0
     assert report["metrics"]["ordering_shift_rate"] == 0.5
     assert report["metrics"]["confidence_above_threshold_rate"] == 1.0
+    assert report["metrics"]["mean_usefulness_score"] == 0.785
+    assert report["target_diagnostics"]["timing_fit"]["samples"] == 2
     assert report["rollout_gates"]["acceptance_uplift_non_negative"]["status"] == "pass"
     assert report["rollout_gates"]["duplicate_reminder_rate_below_5pct"]["status"] == "pass"
     assert report["rollout_gates"]["ordering_shift_rate_below_40pct"]["status"] == "fail"
