@@ -14,9 +14,9 @@ reversible adaptation.
 
 ## Why This Milestone
 
-After Milestone 10, users can deeply interrogate system behavior via Data
-Explorer, but still cannot fully inspect and govern learning internals from a
-dedicated operator Lab.
+After Milestone 10 and 10A, users can deeply interrogate system behavior via
+Data Explorer (including guided insights), but still cannot fully inspect and
+govern learning internals from a dedicated operator Lab.
 
 Milestone 11 turns learning and model behavior into first-class operator
 surfaces so users can understand and shape adaptation rather than treating it as
@@ -33,6 +33,7 @@ By the end of this milestone, a user should experience:
 - Visibility into LLM operating configuration and active policy mode
 - Carefully scoped write controls for safe operator-driven changes
 - Controlled experiment runs with inspectable outcomes and audit trail
+- A clear rollback path back to deterministic-safe operating posture
 
 ------------------------------------------------------------------------
 
@@ -42,16 +43,19 @@ By the end of this milestone, a user should experience:
 
 - User can inspect key learning metrics and trend views
 - User can inspect mode/config snapshots and model-influence diagnostics
+- User can identify where deterministic fallback is currently active
 
 ### Weeks 2--4: Bounded operator controls
 
 - User can apply limited write operations (mode toggles and selected thresholds)
 - Changes are explicit, auditable, and reversible
+- Safety invariants are enforced on every write path
 
 ### Month 2+: Experiment-assisted optimization
 
-- User can trigger approved experiment/replay workflows from UI
+- User can trigger approved replay/experiment workflows from UI
 - User can inspect results and decide whether to keep or roll back changes
+- Experiment outputs are compared against baseline policy posture before apply
 
 ------------------------------------------------------------------------
 
@@ -61,7 +65,7 @@ By the end of this milestone, a user should experience:
 
 - Learning remains assistive, not autonomous
 - Operator remains final authority on enabling, changing, and rolling back
-	learning influence
+  learning influence
 
 ### Bounded adaptation
 
@@ -72,6 +76,8 @@ By the end of this milestone, a user should experience:
 
 - Lab write actions are narrow, intentional, and auditable
 - No hidden background policy mutation outside approved control surface
+- Each write action must publish an auditable event with actor, before/after,
+  rationale, and rollback metadata
 
 ------------------------------------------------------------------------
 
@@ -83,6 +89,7 @@ By the end of this milestone, a user should experience:
 - Experiment/replay execution results are visible and comparable
 - Rollback to safe deterministic posture remains immediate and reliable
 - Existing tasks/control-room/data-explorer functionality remains non-regressive
+- Lab actions expose explicit “why this is safe” constraints to operators
 
 ------------------------------------------------------------------------
 
@@ -99,17 +106,19 @@ By the end of this milestone, a user should experience:
 3. Validate bounded write controls
 	- Toggle approved mode/control values through UI
 	- Confirm changes take effect, are logged, and can be reverted
+	- Confirm disallowed values are rejected with clear reason
 
 4. Validate experiment workflow
 	- Trigger approved replay/experiment run from UI
 	- Confirm run status and resulting diagnostics are visible and interpretable
+	- Confirm apply/rollback decision point exists after run
 
 5. Validate safety/rollback behavior
 	- Force conservative mode/fallback and verify deterministic behavior
 	- Confirm no safety-constraint violations under changed settings
 
 6. Validate regression coverage
-	- Re-run Milestone 10 Data Explorer checks and Milestone 9 task/control-room checks
+	- Re-run Milestone 10/10A Data Explorer checks and Milestone 9 task/control-room checks
 	- Confirm no regressions in existing surfaces
 
 ------------------------------------------------------------------------
@@ -127,11 +136,13 @@ By the end of this milestone, a user should experience:
 - Safe mode toggles and selected parameter adjustments
 - Explicit change confirmation and audit/event capture
 - One-step rollback path to deterministic-safe baseline
+- Server-side policy guardrails with deterministic rejection reasons
 
 ### Experiment operations
 
 - UI-triggered execution for approved replay/evaluation workflows
 - Run history and result inspection surfaces
+- Explicit apply/rollback decision point after experiment completion
 
 ------------------------------------------------------------------------
 

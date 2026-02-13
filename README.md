@@ -4,7 +4,7 @@ Personal decision and execution substrate built on an append-only event log foun
 
 ## Project Status
 
-**Current Milestone**: Milestone 10 - Data Explorer (Power-User Interrogation and Traceability)  
+**Current Milestone**: Milestone 11 - Helionyx Lab (Learning, LLMs, and Controlled Experimentation)  
 **Status**: 🔄 In Progress
 
 ## Quick Start
@@ -428,9 +428,9 @@ Deep-link contract for cross-surface reproducibility is URL-based:
 - **Milestone 0** (Complete): Architecture Baseline
 - **Milestone 1** (Complete): Core functionality with Telegram integration
 - **Milestone 9** (Complete): UI Foundation (Tasks + Control Room)
-- **Milestone 10** (In Progress): Data Explorer (Power-User Interrogation and Traceability)
-- **Milestone 10A** (Planned): Data Explorer Guided Insights (Opinionated UX + Ad Hoc Power)
-- **Milestone 11** (Planned): Helionyx Lab (Learning, LLMs, and Controlled Experimentation)
+- **Milestone 10** (Complete): Data Explorer (Power-User Interrogation and Traceability)
+- **Milestone 10A** (Complete): Data Explorer Guided Insights (Opinionated UX + Ad Hoc Power)
+- **Milestone 11** (In Progress): Helionyx Lab (Learning, LLMs, and Controlled Experimentation)
 
 ## Contributing
 
