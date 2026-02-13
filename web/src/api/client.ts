@@ -1,6 +1,14 @@
 import {
   ControlRoomOverview,
   ControlRoomOverviewSchema,
+  ExplorerDecisionResponse,
+  ExplorerDecisionResponseSchema,
+  ExplorerLookupResponse,
+  ExplorerLookupResponseSchema,
+  ExplorerStateResponse,
+  ExplorerStateResponseSchema,
+  ExplorerTimelineResponse,
+  ExplorerTimelineResponseSchema,
   Task,
   TaskIngestResult,
   TaskIngestResultSchema,
@@ -18,6 +26,8 @@ type TaskListParams = {
   limit?: number
   offset?: number
 }
+
+type ExplorerEntityType = 'task' | 'event'
 
 function buildQuery(params: Record<string, string | number | undefined>) {
   const query = new URLSearchParams()
@@ -100,5 +110,33 @@ export const apiClient = {
   async getControlRoomOverview(): Promise<ControlRoomOverview> {
     const data = await request('/api/v1/control-room/overview')
     return ControlRoomOverviewSchema.parse(data)
+  },
+
+  async getExplorerLookup(entityType: ExplorerEntityType, entityId: string): Promise<ExplorerLookupResponse> {
+    const data = await request(
+      `/api/v1/explorer/lookup${buildQuery({ entity_type: entityType, entity_id: entityId })}`,
+    )
+    return ExplorerLookupResponseSchema.parse(data)
+  },
+
+  async getExplorerTimeline(entityType: ExplorerEntityType, entityId: string): Promise<ExplorerTimelineResponse> {
+    const data = await request(
+      `/api/v1/explorer/timeline${buildQuery({ entity_type: entityType, entity_id: entityId })}`,
+    )
+    return ExplorerTimelineResponseSchema.parse(data)
+  },
+
+  async getExplorerState(entityType: ExplorerEntityType, entityId: string): Promise<ExplorerStateResponse> {
+    const data = await request(
+      `/api/v1/explorer/state${buildQuery({ entity_type: entityType, entity_id: entityId })}`,
+    )
+    return ExplorerStateResponseSchema.parse(data)
+  },
+
+  async getExplorerDecision(entityType: ExplorerEntityType, entityId: string): Promise<ExplorerDecisionResponse> {
+    const data = await request(
+      `/api/v1/explorer/decision${buildQuery({ entity_type: entityType, entity_id: entityId })}`,
+    )
+    return ExplorerDecisionResponseSchema.parse(data)
   },
 }

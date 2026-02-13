@@ -59,6 +59,16 @@ Operator-facing transparency read models for Milestone 9.
 - `ControlRoomOverview` - consolidated payload for health, readiness, and attention snapshots
 - `ReadinessPayload` and `ReadinessCheck` - structured dependency accessibility results
 
+### Data Explorer (`explorer.py`)
+Operator-facing interrogation models for Milestone 10.
+
+**Key Models:**
+- `ExplorerLookupResponse` - canonical entity lookup payload with related identifiers
+- `ExplorerTimelineResponse` - ordered event timeline for selected entity context
+- `ExplorerStateSnapshotResponse` - projection/state snapshot plus traceability refs
+- `ExplorerDecisionEvidenceResponse` - decision/rationale-oriented evidence view
+- `ExplorerDeepLinkContext` - canonical cross-surface deep-link context contract
+
 ## Contract Principles
 
 ### 1. Explicit and Typed
