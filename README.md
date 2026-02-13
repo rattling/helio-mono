@@ -416,6 +416,23 @@ Deep-link contract for cross-surface reproducibility is URL-based:
 - `explorer_entity_id=<id>`
 - `explorer_view=<lookup|timeline|state|decision>`
 
+## Lab API (Milestone 11)
+
+- `GET /api/v1/lab/overview` - Diagnostics + effective personalization/config snapshot
+- `POST /api/v1/lab/controls` - Guardrailed bounded control updates (`mode`, threshold)
+- `POST /api/v1/lab/rollback` - One-step rollback to deterministic-safe baseline
+- `POST /api/v1/lab/experiments/run` - Run experiment/replay in non-mutating compare mode
+- `GET /api/v1/lab/experiments/history` - Recent experiment runs and apply eligibility
+- `POST /api/v1/lab/experiments/{run_id}/apply` - Explicit apply/rollback/no-op action
+
+### Lab Workflow
+
+1. Open **Lab** and inspect diagnostics + current effective mode/config.
+2. Use **Bounded Controls** only with explicit rationale and actor attribution.
+3. Run an **Experiment** to compare baseline vs candidate behavior.
+4. Apply only when safety gate allows; otherwise keep/no-op or rollback.
+5. Use rollback action to return immediately to deterministic-safe posture.
+
 ## Documentation
 
 - **Project Charter**: [docs/PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md)

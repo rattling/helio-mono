@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 
 import { ControlRoomPage } from './pages/ControlRoomPage'
 import { DataExplorerPage } from './pages/DataExplorerPage'
+import { LabPage } from './pages/LabPage'
 import { TasksPage } from './pages/TasksPage'
 import {
   ExplorerDeepLinkContext,
@@ -9,12 +10,12 @@ import {
   parseExplorerContext,
 } from './explorerContext'
 
-export type TopNavTab = 'tasks' | 'control-room' | 'data-explorer'
+export type TopNavTab = 'tasks' | 'control-room' | 'data-explorer' | 'lab'
 
 function parseInitialTab(): TopNavTab {
   const params = new URLSearchParams(window.location.search)
   const raw = params.get('tab')
-  if (raw === 'tasks' || raw === 'control-room' || raw === 'data-explorer') {
+  if (raw === 'tasks' || raw === 'control-room' || raw === 'data-explorer' || raw === 'lab') {
     return raw
   }
   return 'tasks'
@@ -29,6 +30,7 @@ export function App() {
   const title = useMemo(() => {
     if (tab === 'tasks') return 'Tasks'
     if (tab === 'control-room') return 'Control Room'
+    if (tab === 'lab') return 'Lab'
     return 'Data Explorer'
   }, [tab])
 
@@ -81,6 +83,9 @@ export function App() {
           >
             Data Explorer
           </button>
+          <button className={tab === 'lab' ? 'active' : ''} onClick={() => setActiveTab('lab')}>
+            Lab
+          </button>
         </nav>
       </header>
 
@@ -91,6 +96,7 @@ export function App() {
         {tab === 'data-explorer' && (
           <DataExplorerPage context={explorerContext} onContextChange={onExplorerContextChange} />
         )}
+        {tab === 'lab' && <LabPage />}
       </main>
     </div>
   )

@@ -173,6 +173,9 @@ class FileEventStore:
             DecisionRecordedEvent,
             FeatureSnapshotRecordedEvent,
             FeedbackEvidenceRecordedEvent,
+            LabControlChangedEvent,
+            LabExperimentAppliedEvent,
+            LabExperimentRunEvent,
             MessageIngestedEvent,
             ModelScoreRecordedEvent,
             ObjectExtractedEvent,
@@ -218,6 +221,12 @@ class FileEventStore:
             return ModelScoreRecordedEvent(**event_data)
         elif event_type == EventType.FEEDBACK_EVIDENCE_RECORDED.value:
             return FeedbackEvidenceRecordedEvent(**event_data)
+        elif event_type == EventType.LAB_CONTROL_CHANGED.value:
+            return LabControlChangedEvent(**event_data)
+        elif event_type == EventType.LAB_EXPERIMENT_RUN.value:
+            return LabExperimentRunEvent(**event_data)
+        elif event_type == EventType.LAB_EXPERIMENT_APPLIED.value:
+            return LabExperimentAppliedEvent(**event_data)
         else:
             # Fall back to base event
             return BaseEvent(**event_data)

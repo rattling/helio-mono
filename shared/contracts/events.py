@@ -33,6 +33,9 @@ class EventType(str, Enum):
     FEATURE_SNAPSHOT_RECORDED = "feature_snapshot_recorded"
     MODEL_SCORE_RECORDED = "model_score_recorded"
     FEEDBACK_EVIDENCE_RECORDED = "feedback_evidence_recorded"
+    LAB_CONTROL_CHANGED = "lab_control_changed"
+    LAB_EXPERIMENT_RUN = "lab_experiment_run"
+    LAB_EXPERIMENT_APPLIED = "lab_experiment_applied"
 
 
 class LearningTarget(str, Enum):
@@ -267,3 +270,38 @@ class ModelScoreRecordedEvent(BaseEvent):
     confidence: float
     explanation: Optional[str] = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class LabControlChangedEvent(BaseEvent):
+    """Event recording bounded Lab control mutation and rollback metadata."""
+
+    event_type: EventType = EventType.LAB_CONTROL_CHANGED
+    actor: str
+    rationale: str
+    before: dict[str, Any] = Field(default_factory=dict)
+    after: dict[str, Any] = Field(default_factory=dict)
+    rollback_to: dict[str, Any] = Field(default_factory=dict)
+
+
+class LabExperimentRunEvent(BaseEvent):
+    """Event recording execution of a Lab experiment run (read/compare only)."""
+
+    event_type: EventType = EventType.LAB_EXPERIMENT_RUN
+    run_id: str
+    actor: str
+    experiment_type: str
+    candidate_config: dict[str, Any] = Field(default_factory=dict)
+    baseline_config: dict[str, Any] = Field(default_factory=dict)
+    result: dict[str, Any] = Field(default_factory=dict)
+
+
+class LabExperimentAppliedEvent(BaseEvent):
+    """Event recording explicit apply/rollback decision for a Lab experiment."""
+
+    event_type: EventType = EventType.LAB_EXPERIMENT_APPLIED
+    run_id: str
+    actor: str
+    rationale: str
+    action: str
+    applied: bool
+    reason: Optional[str] = None

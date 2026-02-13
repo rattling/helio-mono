@@ -6,6 +6,7 @@ import {
   ExplorerGuidedInsightsResponseSchema,
   ExplorerLookupResponseSchema,
   ExplorerTimelineResponseSchema,
+  LabOverviewSchema,
   TaskSchema,
 } from '../api/types'
 
@@ -152,5 +153,33 @@ describe('api contract alignment', () => {
     })
 
     expect(parsed.notable_events[0].ranking.severity).toBe('info')
+  })
+
+  it('parses lab overview response shape', () => {
+    const parsed = LabOverviewSchema.parse({
+      generated_at: '2026-02-13T12:00:00',
+      diagnostics: {
+        generated_at: '2026-02-13T12:00:00',
+        metrics: [
+          {
+            key: 'model_scores_7d',
+            label: 'Model Scores (7d)',
+            value: 10,
+            status: 'normal',
+          },
+        ],
+      },
+      config: {
+        mode: 'shadow',
+        shadow_ranker_enabled: true,
+        bounded_personalization_enabled: false,
+        shadow_confidence_threshold: 0.6,
+      },
+      fallback_state: {
+        deterministic_fallback_active: false,
+      },
+    })
+
+    expect(parsed.config.mode).toBe('shadow')
   })
 })
