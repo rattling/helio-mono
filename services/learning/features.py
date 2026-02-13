@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from .semantics import infer_reminder_feedback_semantics
+
 
 def _parse_datetime(value: str | None) -> datetime | None:
     if not value:
@@ -64,4 +66,31 @@ def build_task_features(task: dict[str, Any], now: datetime | None = None) -> di
         "has_future_start_gate": 1.0 if do_not_start_before and do_not_start_before > ts else 0.0,
         "blocked_count": float(len(blocked_by)),
         "needs_review": 1.0 if "needs_review" in labels else 0.0,
+    }
+
+
+def build_feedback_features(
+    *,
+    action: str,
+    followup_action_within_minutes: int | None = None,
+    snooze_minutes: int | None = None,
+) -> dict[str, float]:
+    """Build deterministic feedback features and weak-label targets.
+
+    This keeps weak-label inference explicit and replayable from event-visible
+    fields.
+    """
+    semantics = infer_reminder_feedback_semantics(
+        action=action,
+        followup_action_within_minutes=followup_action_within_minutes,
+        snooze_minutes=snooze_minutes,
+    )
+    return {
+        "action_dismissed": 1.0 if action == "dismissed" else 0.0,
+        "action_snoozed": 1.0 if action == "snoozed" else 0.0,
+        "followup_action_within_minutes": float(followup_action_within_minutes or -1),
+        "snooze_minutes": float(snooze_minutes or -1),
+        "target_usefulness": semantics.usefulness,
+        "target_timing_fit": semantics.timing_fit,
+        "target_interrupt_cost": semantics.interrupt_cost,
     }

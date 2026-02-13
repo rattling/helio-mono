@@ -4,7 +4,7 @@ Personal decision and execution substrate built on an append-only event log foun
 
 ## Project Status
 
-**Current Milestone**: Milestone 6 - Attention + Planning Assistant  
+**Current Milestone**: Milestone 8 - Contextual Feedback Semantics  
 **Status**: 🔄 In Progress
 
 ## Quick Start
@@ -203,6 +203,13 @@ make test
 # Clean generated files
 make clean
 ```
+
+## Learning Controls and Verification
+
+- Runtime mode control: `ATTENTION_PERSONALIZATION_MODE=deterministic|shadow|bounded`
+- Replay diagnostics report: `.venv/bin/python scripts/evaluate_attention_replay.py --out data/projections/attention_replay_report.json`
+- Milestone 8 per-target diagnostics: `jq '.target_diagnostics' data/projections/attention_replay_report.json`
+- Operational rollout/rollback and QA checklist: `docs/M6_LEARNING_RUNBOOK.md`
 
 ## OpenAI Integration
 

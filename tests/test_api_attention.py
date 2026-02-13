@@ -13,6 +13,19 @@ def _seed_task(payload: dict):
     return response.json()["task_id"]
 
 
+def _result(score: float, confidence: float, explanation: str):
+    from services.learning.ranker import ShadowRankerResult
+
+    return ShadowRankerResult(
+        score=score,
+        confidence=confidence,
+        explanation=explanation,
+        usefulness_score=max(0.0, min(1.0, score)),
+        timing_fit_score=max(0.0, min(1.0, score - 0.1)),
+        interrupt_cost_score=max(0.0, min(1.0, 1.0 - score)),
+    )
+
+
 class TestAttentionAPI:
     def test_attention_today_and_week(self, monkeypatch, tmp_path):
         event_store_path = tmp_path / "events"
@@ -54,6 +67,9 @@ class TestAttentionAPI:
         assert "deterministic-only" in payload["top_actionable"][0]["ranking_explanation"]
         assert "personalization_applied" in payload["top_actionable"][0]
         assert payload["top_actionable"][0]["personalization_applied"] is False
+        assert "usefulness_score" in payload["top_actionable"][0]
+        assert "timing_fit_score" in payload["top_actionable"][0]
+        assert "interrupt_cost_score" in payload["top_actionable"][0]
 
         week = client.get("/attention/week")
         assert week.status_code == 200
@@ -135,14 +151,14 @@ class TestAttentionAPI:
             }
         )
 
-        from services.learning.ranker import ShadowRanker, ShadowRankerResult
+        from services.learning.ranker import ShadowRanker
 
         original_method = ShadowRanker.score
 
         def _score(self, features):
             if features.get("has_due") == 0.0:
-                return ShadowRankerResult(score=0.95, confidence=0.9, explanation="high relevance")
-            return ShadowRankerResult(score=0.20, confidence=0.9, explanation="lower relevance")
+                return _result(score=0.95, confidence=0.9, explanation="high relevance")
+            return _result(score=0.20, confidence=0.9, explanation="lower relevance")
 
         ShadowRanker.score = _score
         try:
@@ -194,12 +210,12 @@ class TestAttentionAPI:
             }
         )
 
-        from services.learning.ranker import ShadowRanker, ShadowRankerResult
+        from services.learning.ranker import ShadowRanker
 
         original_method = ShadowRanker.score
 
         def _score(self, features):
-            return ShadowRankerResult(
+            return _result(
                 score=0.99,
                 confidence=0.6,
                 explanation="below threshold",
@@ -245,14 +261,14 @@ class TestAttentionAPI:
             }
         )
 
-        from services.learning.ranker import ShadowRanker, ShadowRankerResult
+        from services.learning.ranker import ShadowRanker
 
         original_method = ShadowRanker.score
 
         def _score(self, features):
             if features.get("has_due") == 0.0:
-                return ShadowRankerResult(score=0.95, confidence=0.95, explanation="prefer B")
-            return ShadowRankerResult(score=0.10, confidence=0.95, explanation="deprioritize A")
+                return _result(score=0.95, confidence=0.95, explanation="prefer B")
+            return _result(score=0.10, confidence=0.95, explanation="deprioritize A")
 
         ShadowRanker.score = _score
         try:

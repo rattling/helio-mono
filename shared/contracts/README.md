@@ -29,6 +29,13 @@ Attention queue contracts include typed candidate metadata for bounded personali
 - `personalization_applied` + `personalization_policy`
 - deterministic vs learned explanation fields
 
+Milestone 8 extends candidate and event contracts with multi-signal semantics:
+- `usefulness_score`
+- `timing_fit_score`
+- `interrupt_cost_score`
+- `recommended_action` (e.g., `retime`, `deprioritize`, `keep`)
+- `FeedbackEvidenceRecordedEvent` with target-level weak-label evidence
+
 ### Objects (`objects.py`)
 Schemas for structured objects extracted from conversations.
 
@@ -68,6 +75,10 @@ Milestone 6 additions are backward-compatible:
 Milestone 7 contract additions are backward-compatible:
 - Attention candidate metadata is additive with safe defaults
 - Existing consumers can continue using `task_id`, `urgency_score`, and `explanation`
+
+Milestone 8 contract additions are backward-compatible:
+- New fields are optional/additive with safe defaults
+- Existing consumers can ignore multi-signal fields without behavior changes
 
 ### 3. Immutable Events
 Events are immutable once written. Corrections occur via new events.

@@ -20,6 +20,8 @@ from shared.contracts.events import (
     DecisionRecordedEvent,
     EventType,
     FeatureSnapshotRecordedEvent,
+    FeedbackEvidenceRecordedEvent,
+    LearningTarget,
     MessageIngestedEvent,
     ModelScoreRecordedEvent,
     ObjectExtractedEvent,
@@ -88,6 +90,8 @@ __all__ = [
     "ReminderDismissedEvent",
     "ReminderSnoozedEvent",
     "FeatureSnapshotRecordedEvent",
+    "FeedbackEvidenceRecordedEvent",
+    "LearningTarget",
     "ModelScoreRecordedEvent",
     # Objects
     "ObjectType",
