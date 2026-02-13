@@ -198,6 +198,15 @@ Additionally:
 - Do not start the next issue until the current issue has at least one coherent commit referencing the issue number.
 - Keep the milestone meta-issue up to date (checkboxes, and “Current Focus” if used).
 
+### 5.4 GitHub Update Method (Automation-Friendly)
+
+When updating GitHub issues/PRs from agent sessions:
+- Prefer MCP GitHub tools for issue/PR updates where available.
+- Avoid temporary-file body workflows (for example, `/tmp/...` + `--body-file`) unless no practical alternative exists.
+- If CLI usage is required, prefer inline/in-memory body updates over filesystem temp files.
+
+Rationale: this improves auto-approval compatibility and reduces friction in non-interactive execution.
+
 ---
 
 ## 6. Parallel Work (Optional)

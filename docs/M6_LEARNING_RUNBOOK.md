@@ -13,10 +13,22 @@ Operate Milestone 6 bounded-learning safely: deterministic attention/planning st
 
 ## Key Commands
 
+Set runtime personalization mode (single control):
+
+```bash
+export ATTENTION_PERSONALIZATION_MODE=deterministic  # deterministic | shadow | bounded
+```
+
 Run replay evaluation report:
 
 ```bash
 .venv/bin/python scripts/evaluate_attention_replay.py --out data/projections/attention_replay_report.json
+```
+
+Run Stage B readiness check (readiness only; no exploration enablement):
+
+```bash
+.venv/bin/python scripts/evaluate_attention_replay.py --rollback-verified --out data/projections/attention_replay_report.json
 ```
 
 Inspect report:
@@ -29,14 +41,20 @@ cat data/projections/attention_replay_report.json
 
 ### Stage 0 — Deterministic Baseline
 
-- Keep default deterministic ordering active
+- Set `ATTENTION_PERSONALIZATION_MODE=deterministic`
 - Confirm `/attention/today` and `/attention/week` outputs are stable and explainable
 
 ### Stage 1 — Shadow Mode
 
-- Enable shadow scoring (default: enabled)
+- Set `ATTENTION_PERSONALIZATION_MODE=shadow`
 - Confirm `model_score_recorded` events are present
 - Confirm user-visible ordering is unchanged
+
+### Stage 1.5 — Bounded Stage A
+
+- Set `ATTENTION_PERSONALIZATION_MODE=bounded`
+- Confirm ranking changes are limited to deterministic bucket boundaries
+- Confirm `personalization_applied` and explanation fields are present in attention payloads
 
 ### Stage 2 — Gate Evaluation
 
@@ -48,12 +66,22 @@ Run replay report and verify gates:
 
 All gates must be `true` before any production influence is considered.
 
+### Stage B Readiness (Bandit Not Enabled)
+
+- Inspect `stage_b_readiness` in the replay report
+- Confirm checks pass for:
+	- interaction volume
+	- acceptance/noise non-regression
+	- calibration quality
+	- rollback verification
+- Keep exploration disabled until readiness is explicitly true
+
 ## Dry-Run Rollback Procedure
 
-1. Disable shadow ranker:
+1. Force deterministic mode (single rollback command):
 
 ```bash
-export SHADOW_RANKER_ENABLED=false
+export ATTENTION_PERSONALIZATION_MODE=deterministic
 ```
 
 2. Restart service:
@@ -66,6 +94,8 @@ make restart ENV=dev
 
 - Call `/attention/today`
 - Confirm deterministic `urgency_score` and explanations are still returned
+- Confirm `personalization_policy` is `deterministic_only`
+- Confirm `personalization_applied` remains `false`
 
 4. Re-run replay report and verify system remains operational.
 

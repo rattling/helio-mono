@@ -24,6 +24,9 @@ def get_attention_service() -> Generator[AttentionService, None, None]:
             query_service=query_service,
             enable_shadow_ranker=getattr(config, "SHADOW_RANKER_ENABLED", True),
             shadow_confidence_threshold=getattr(config, "SHADOW_RANKER_CONFIDENCE_THRESHOLD", 0.6),
+            enable_bounded_personalization=getattr(
+                config, "ATTENTION_BOUNDED_PERSONALIZATION_ENABLED", False
+            ),
         )
     finally:
         query_service.close()

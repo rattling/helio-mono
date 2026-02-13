@@ -66,6 +66,7 @@ For each assigned issue, the agent in **DEV mode** must:
 Before starting code changes:
 - Update the milestone meta-issue “Current Focus” to this issue and DEV mode (if the meta-issue uses it).
 - Emit a status line (MODE/MILESTONE/ISSUE/STATE) for human visibility.
+- For GitHub issue/meta updates, prefer MCP GitHub tools; avoid temp-file body workflows (e.g., `/tmp` + `--body-file`) when an inline/in-memory update path exists.
 
 If it does not:
 - split the issue, **or**
@@ -168,6 +169,10 @@ An issue is **not complete** until the following handoff is written.
 **Required Actions**:
 1. Add closing comment using `.github/agents/templates/ISSUE_HANDOFF_TEMPLATE.md`
 2. **Close the issue in GitHub** (set state to closed)
+
+Implementation note:
+- Prefer MCP GitHub issue update/comment operations for handoff + close steps.
+- If CLI is used, prefer inline body content over temp files unless unavoidable.
 
 The closing comment must include:
 

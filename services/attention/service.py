@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from shared.contracts import (
+    AttentionBucket,
+    AttentionCandidate,
     AttentionScoringComputedEvent,
     FeatureSnapshotRecordedEvent,
     ModelScoreRecordedEvent,
@@ -24,12 +26,22 @@ class AttentionService:
         query_service: QueryService,
         enable_shadow_ranker: bool = True,
         shadow_confidence_threshold: float = 0.6,
+        enable_bounded_personalization: bool = False,
     ):
         self.event_store = event_store
         self.query_service = query_service
         self.enable_shadow_ranker = enable_shadow_ranker
         self.shadow_confidence_threshold = shadow_confidence_threshold
+        self.enable_bounded_personalization = enable_bounded_personalization
         self.ranker = ShadowRanker()
+        self.bucket_rank = {
+            AttentionBucket.URGENT_DUE_SOON: 0,
+            AttentionBucket.READY_HIGH_PRIORITY: 1,
+            AttentionBucket.READY_NORMAL: 2,
+            AttentionBucket.BLOCKED: 3,
+            AttentionBucket.DEFERRED_OR_GATED: 4,
+            AttentionBucket.COMPLETED_OR_CANCELLED: 5,
+        }
 
     async def get_today_attention(self, limit: int = 5) -> dict[str, Any]:
         now = datetime.utcnow()
@@ -37,7 +49,7 @@ class AttentionService:
 
         scored = [await self._score_task(task, now) for task in tasks]
         actionable = [item for item in scored if item["is_actionable"]]
-        actionable.sort(key=lambda item: (-item["urgency_score"], item["updated_at"] or ""))
+        actionable = self._sort_with_optional_personalization(actionable)
 
         due_72h = [
             item
@@ -85,12 +97,10 @@ class AttentionService:
             and item["priority"] in ("p0", "p1")
             and item["status"] not in ("done", "cancelled")
         ]
-        high_priority_no_due.sort(
-            key=lambda item: (-item["urgency_score"], item["updated_at"] or "")
-        )
+        high_priority_no_due = self._sort_with_optional_personalization(high_priority_no_due)
 
         blocked = [item for item in scored if item["status"] == "blocked"]
-        blocked.sort(key=lambda item: (-item["urgency_score"], item["updated_at"] or ""))
+        blocked = self._sort_with_optional_personalization(blocked)
 
         await self._record_queue("week", due_this_week + high_priority_no_due + blocked)
 
@@ -119,17 +129,119 @@ class AttentionService:
             },
         }
 
+    def _deterministic_sort_key(self, item: dict[str, Any]) -> tuple[int, float, str]:
+        return (
+            item["deterministic_bucket_rank"],
+            -item["urgency_score"],
+            item["updated_at"] or "",
+        )
+
+    def _sort_with_optional_personalization(
+        self, items: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        deterministic = sorted(items, key=self._deterministic_sort_key)
+        for candidate in deterministic:
+            candidate["personalization_applied"] = False
+            candidate["personalization_policy"] = (
+                "bounded_in_bucket" if self.enable_bounded_personalization else "deterministic_only"
+            )
+
+        if not self.enable_bounded_personalization:
+            for candidate in deterministic:
+                candidate["ranking_explanation"] = self._build_ranking_explanation(candidate)
+            return deterministic
+
+        grouped: dict[int, list[dict[str, Any]]] = {}
+        for item in deterministic:
+            grouped.setdefault(item["deterministic_bucket_rank"], []).append(item)
+
+        merged: list[dict[str, Any]] = []
+        for rank in sorted(grouped):
+            merged.extend(self._reorder_bucket_with_model(grouped[rank]))
+
+        for candidate in merged:
+            candidate["ranking_explanation"] = self._build_ranking_explanation(candidate)
+
+        return merged
+
+    def _reorder_bucket_with_model(
+        self, bucket_items: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        eligible = [
+            item
+            for item in bucket_items
+            if item.get("model_score") is not None
+            and (item.get("model_confidence") or 0.0) >= self.shadow_confidence_threshold
+        ]
+
+        if len(eligible) < 2:
+            return bucket_items
+
+        ordered_eligible = sorted(
+            eligible,
+            key=lambda item: (
+                -float(item.get("model_score") or 0.0),
+                -item["urgency_score"],
+                item["updated_at"] or "",
+            ),
+        )
+
+        eligible_ids_before = [item["task_id"] for item in eligible]
+        eligible_ids_after = [item["task_id"] for item in ordered_eligible]
+        if eligible_ids_before == eligible_ids_after:
+            return bucket_items
+
+        iterator = iter(ordered_eligible)
+        updated: list[dict[str, Any]] = []
+        eligible_set = set(eligible_ids_before)
+        for item in bucket_items:
+            if item["task_id"] in eligible_set:
+                chosen = next(iterator)
+                chosen["personalization_applied"] = True
+                updated.append(chosen)
+            else:
+                updated.append(item)
+
+        return updated
+
+    def _build_ranking_explanation(self, candidate: dict[str, Any]) -> str:
+        bucket = candidate.get("deterministic_bucket_id", "ready_normal")
+        deterministic = candidate.get("deterministic_explanation") or "deterministic baseline"
+
+        if not self.enable_bounded_personalization:
+            return f"deterministic-only ({bucket}): {deterministic}"
+
+        learned = candidate.get("learned_explanation") or "no learned contribution"
+        confidence = candidate.get("model_confidence")
+        confidence_text = "n/a" if confidence is None else f"{confidence:.2f}"
+        applied = candidate.get("personalization_applied") is True
+        decision = "applied" if applied else "not_applied"
+
+        return (
+            f"bounded_in_bucket ({bucket}) decision={decision}; "
+            f"deterministic={deterministic}; learned={learned}; confidence={confidence_text}"
+        )
+
     async def _record_queue(self, queue_name: str, items: list[dict[str, Any]]) -> None:
         event = AttentionScoringComputedEvent(
             queue_name=queue_name,
             candidates=[
-                {
-                    "task_id": item["task_id"],
-                    "urgency_score": item["urgency_score"],
-                    "explanation": item["urgency_explanation"],
-                    "shadow_score": item.get("shadow_score"),
-                    "shadow_confidence": item.get("shadow_confidence"),
-                }
+                AttentionCandidate(
+                    task_id=item["task_id"],
+                    urgency_score=item["urgency_score"],
+                    explanation=item["urgency_explanation"],
+                    deterministic_bucket_id=item["deterministic_bucket_id"],
+                    deterministic_bucket_rank=item["deterministic_bucket_rank"],
+                    deterministic_explanation=item["deterministic_explanation"],
+                    model_score=item.get("model_score"),
+                    model_confidence=item.get("model_confidence"),
+                    learned_explanation=item.get("learned_explanation"),
+                    ranking_explanation=item.get("ranking_explanation"),
+                    personalization_applied=item.get("personalization_applied", False),
+                    personalization_policy=item.get("personalization_policy", "deterministic_only"),
+                    shadow_score=item.get("shadow_score"),
+                    shadow_confidence=item.get("shadow_confidence"),
+                )
                 for item in items
             ],
             metadata={"service": "attention_service"},
@@ -192,6 +304,15 @@ class AttentionService:
             score -= 30
             components.append("start-gated -30")
 
+        deterministic_bucket_id = self._determine_bucket(
+            status=status,
+            priority=priority,
+            due_at=due_at,
+            do_not_start_before=do_not_start_before,
+            now=now,
+        )
+        deterministic_bucket_rank = self.bucket_rank[deterministic_bucket_id]
+
         is_actionable = status in ("open", "in_progress") and not (
             do_not_start_before and do_not_start_before > now
         )
@@ -207,6 +328,18 @@ class AttentionService:
             "is_actionable": is_actionable,
             "urgency_score": round(score, 2),
             "urgency_explanation": "; ".join(components) if components else "baseline",
+            "deterministic_bucket_id": deterministic_bucket_id,
+            "deterministic_bucket_rank": deterministic_bucket_rank,
+            "deterministic_explanation": "; ".join(components) if components else "baseline",
+            "model_score": None,
+            "model_confidence": None,
+            "learned_explanation": None,
+            "ranking_explanation": (
+                f"deterministic-only ({deterministic_bucket_id}): "
+                f"{'; '.join(components) if components else 'baseline'}"
+            ),
+            "personalization_applied": False,
+            "personalization_policy": "deterministic_only",
         }
 
         features = build_task_features(task, now)
@@ -214,7 +347,12 @@ class AttentionService:
             candidate_id=str(task.get("task_id")),
             candidate_type="attention_task",
             features=features,
-            context={"status": status, "priority": priority},
+            context={
+                "status": status,
+                "priority": priority,
+                "deterministic_bucket_id": deterministic_bucket_id,
+                "deterministic_bucket_rank": deterministic_bucket_rank,
+            },
             metadata={"service": "attention_service"},
         )
 
@@ -226,6 +364,9 @@ class AttentionService:
                 candidate["shadow_score"] = result.score
                 candidate["shadow_confidence"] = result.confidence
                 candidate["shadow_explanation"] = result.explanation
+                candidate["model_score"] = result.score
+                candidate["model_confidence"] = result.confidence
+                candidate["learned_explanation"] = result.explanation
                 model_event = ModelScoreRecordedEvent(
                     candidate_id=str(task.get("task_id")),
                     candidate_type="attention_task",
@@ -234,7 +375,11 @@ class AttentionService:
                     score=result.score,
                     confidence=result.confidence,
                     explanation=result.explanation,
-                    metadata={"service": "attention_service", "mode": "shadow"},
+                    metadata={
+                        "service": "attention_service",
+                        "mode": "shadow",
+                        "deterministic_bucket_id": deterministic_bucket_id,
+                    },
                 )
                 await self.event_store.append(model_event)
             except Exception:
@@ -243,5 +388,38 @@ class AttentionService:
                 candidate["shadow_explanation"] = (
                     "shadow model unavailable; deterministic fallback active"
                 )
+                candidate["model_score"] = None
+                candidate["model_confidence"] = None
+                candidate["learned_explanation"] = (
+                    "shadow model unavailable; deterministic fallback active"
+                )
 
         return candidate
+
+    def _determine_bucket(
+        self,
+        *,
+        status: str,
+        priority: str,
+        due_at: datetime | None,
+        do_not_start_before: datetime | None,
+        now: datetime,
+    ) -> AttentionBucket:
+        if status in ("done", "cancelled"):
+            return AttentionBucket.COMPLETED_OR_CANCELLED
+
+        if status == "blocked":
+            return AttentionBucket.BLOCKED
+
+        if status == "snoozed" or (do_not_start_before and do_not_start_before > now):
+            return AttentionBucket.DEFERRED_OR_GATED
+
+        if due_at is not None:
+            hours_to_due = (due_at - now).total_seconds() / 3600.0
+            if hours_to_due <= 72:
+                return AttentionBucket.URGENT_DUE_SOON
+
+        if priority in ("p0", "p1"):
+            return AttentionBucket.READY_HIGH_PRIORITY
+
+        return AttentionBucket.READY_NORMAL

@@ -34,6 +34,38 @@ class EventType(str, Enum):
     MODEL_SCORE_RECORDED = "model_score_recorded"
 
 
+class AttentionBucket(str, Enum):
+    """Deterministic attention buckets for bounded ranking."""
+
+    URGENT_DUE_SOON = "urgent_due_soon"
+    READY_HIGH_PRIORITY = "ready_high_priority"
+    READY_NORMAL = "ready_normal"
+    BLOCKED = "blocked"
+    DEFERRED_OR_GATED = "deferred_or_gated"
+    COMPLETED_OR_CANCELLED = "completed_or_cancelled"
+
+
+class AttentionCandidate(BaseModel):
+    """Typed attention candidate payload for queue snapshots and APIs."""
+
+    task_id: str
+    urgency_score: float
+    explanation: str
+    deterministic_bucket_id: AttentionBucket = AttentionBucket.READY_NORMAL
+    deterministic_bucket_rank: int = 2
+    deterministic_explanation: Optional[str] = None
+    model_score: Optional[float] = None
+    model_confidence: Optional[float] = None
+    learned_explanation: Optional[str] = None
+    ranking_explanation: Optional[str] = None
+    personalization_applied: bool = False
+    personalization_policy: str = "deterministic_only"
+
+    # Backward-compatible aliases used in existing M6 payloads.
+    shadow_score: Optional[float] = None
+    shadow_confidence: Optional[float] = None
+
+
 class SourceType(str, Enum):
     """Input source types."""
 
@@ -106,7 +138,7 @@ class AttentionScoringComputedEvent(BaseEvent):
 
     event_type: EventType = EventType.ATTENTION_SCORING_COMPUTED
     queue_name: str
-    candidates: list[dict[str, Any]] = Field(default_factory=list)
+    candidates: list[AttentionCandidate] = Field(default_factory=list)
 
 
 class SuggestionShownEvent(BaseEvent):
