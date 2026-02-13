@@ -172,6 +172,7 @@ class FileEventStore:
             ArtifactRecordedEvent,
             DecisionRecordedEvent,
             FeatureSnapshotRecordedEvent,
+            FeedbackEvidenceRecordedEvent,
             MessageIngestedEvent,
             ModelScoreRecordedEvent,
             ObjectExtractedEvent,
@@ -215,6 +216,8 @@ class FileEventStore:
             return FeatureSnapshotRecordedEvent(**event_data)
         elif event_type == EventType.MODEL_SCORE_RECORDED.value:
             return ModelScoreRecordedEvent(**event_data)
+        elif event_type == EventType.FEEDBACK_EVIDENCE_RECORDED.value:
+            return FeedbackEvidenceRecordedEvent(**event_data)
         else:
             # Fall back to base event
             return BaseEvent(**event_data)

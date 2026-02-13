@@ -32,6 +32,15 @@ class EventType(str, Enum):
     REMINDER_SNOOZED = "reminder_snoozed"
     FEATURE_SNAPSHOT_RECORDED = "feature_snapshot_recorded"
     MODEL_SCORE_RECORDED = "model_score_recorded"
+    FEEDBACK_EVIDENCE_RECORDED = "feedback_evidence_recorded"
+
+
+class LearningTarget(str, Enum):
+    """First-class learning targets for contextual feedback semantics."""
+
+    USEFULNESS = "usefulness"
+    TIMING_FIT = "timing_fit"
+    INTERRUPT_COST = "interrupt_cost"
 
 
 class AttentionBucket(str, Enum):
@@ -57,6 +66,10 @@ class AttentionCandidate(BaseModel):
     model_score: Optional[float] = None
     model_confidence: Optional[float] = None
     learned_explanation: Optional[str] = None
+    usefulness_score: Optional[float] = None
+    timing_fit_score: Optional[float] = None
+    interrupt_cost_score: Optional[float] = None
+    recommended_action: Optional[str] = None
     ranking_explanation: Optional[str] = None
     personalization_applied: bool = False
     personalization_policy: str = "deterministic_only"
@@ -204,6 +217,7 @@ class ReminderDismissedEvent(BaseEvent):
     object_id: Optional[str] = None
     fingerprint: Optional[str] = None
     rationale: Optional[str] = None
+    followup_action_within_minutes: Optional[int] = None
 
 
 class ReminderSnoozedEvent(BaseEvent):
@@ -215,6 +229,19 @@ class ReminderSnoozedEvent(BaseEvent):
     fingerprint: Optional[str] = None
     until: Optional[datetime] = None
     rationale: Optional[str] = None
+    snooze_minutes: Optional[int] = None
+
+
+class FeedbackEvidenceRecordedEvent(BaseEvent):
+    """Event recording contextual weak-label evidence for learning targets."""
+
+    event_type: EventType = EventType.FEEDBACK_EVIDENCE_RECORDED
+    source_event_type: str
+    object_id: Optional[str] = None
+    evidence_type: str
+    target_scores: dict[LearningTarget, float] = Field(default_factory=dict)
+    rationale: Optional[str] = None
+    context: dict[str, Any] = Field(default_factory=dict)
 
 
 class FeatureSnapshotRecordedEvent(BaseEvent):
