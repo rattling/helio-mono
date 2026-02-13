@@ -98,6 +98,8 @@ class Config:
         # API Server
         self.API_HOST = os.getenv("API_HOST", "0.0.0.0")
         self.API_PORT = int(os.getenv("API_PORT", "8000"))
+        cors_raw = os.getenv("API_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+        self.API_CORS_ORIGINS = [item.strip() for item in cors_raw.split(",") if item.strip()]
 
         # Logging
         self.LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")

@@ -119,8 +119,25 @@ class TaskService:
             task_id=task.task_id, created=True, decision_rationale=decision_rationale
         )
 
-    async def list_tasks(self, status: Optional[str] = None) -> list[dict]:
-        return await self.query_service.get_tasks(status=status)
+    async def list_tasks(
+        self,
+        status: Optional[str] = None,
+        project: Optional[str] = None,
+        search: Optional[str] = None,
+        sort_by: str = "updated_at",
+        sort_dir: str = "desc",
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[dict]:
+        return await self.query_service.get_tasks(
+            status=status,
+            project=project,
+            search=search,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            limit=limit,
+            offset=offset,
+        )
 
     async def get_task(self, task_id: str) -> Optional[dict]:
         return await self.query_service.get_task_by_id(task_id)

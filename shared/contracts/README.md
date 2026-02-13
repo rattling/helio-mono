@@ -52,6 +52,13 @@ Abstract interfaces defining service operations.
 - `ExtractionServiceProtocol` - Object extraction operations
 - `QueryServiceProtocol` - Query and projection operations
 
+### Control Room (`control_room.py`)
+Operator-facing transparency read models for Milestone 9.
+
+**Key Models:**
+- `ControlRoomOverview` - consolidated payload for health, readiness, and attention snapshots
+- `ReadinessPayload` and `ReadinessCheck` - structured dependency accessibility results
+
 ## Contract Principles
 
 ### 1. Explicit and Typed

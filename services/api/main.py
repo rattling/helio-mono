@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from shared.common.config import Config
 from services.event_store.file_store import FileEventStore
@@ -19,7 +20,7 @@ from services.extraction.openai_client import OpenAILLMService
 from services.extraction.mock_llm import MockLLMService
 from services.query.service import QueryService
 from services.task.service import TaskService
-from services.api.routes import attention, health, ingestion, query, extraction, tasks
+from services.api.routes import attention, control_room, health, ingestion, query, extraction, tasks
 
 logger = logging.getLogger(__name__)
 
@@ -140,12 +141,22 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+runtime_config = Config.from_env()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=runtime_config.API_CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Register routes
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(ingestion.router, prefix="/api/v1/ingest", tags=["ingestion"])
 app.include_router(extraction.router, prefix="/api/v1/extract", tags=["extraction"])
 app.include_router(query.router, prefix="/api/v1", tags=["query"])
 app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["tasks"])
+app.include_router(control_room.router, prefix="/api/v1/control-room", tags=["control-room"])
 app.include_router(attention.router, prefix="/attention", tags=["attention"])
 
 

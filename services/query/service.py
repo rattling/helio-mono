@@ -405,8 +405,17 @@ class QueryService:
 
         return [dict(row) for row in rows]
 
-    async def get_tasks(self, status: Optional[str] = None) -> list[dict]:
-        """Query tasks with optional status filter."""
+    async def get_tasks(
+        self,
+        status: Optional[str] = None,
+        project: Optional[str] = None,
+        search: Optional[str] = None,
+        sort_by: str = "updated_at",
+        sort_dir: str = "desc",
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[dict]:
+        """Query tasks with optional filters and pagination."""
         query = "SELECT * FROM tasks WHERE 1=1"
         params = []
 
@@ -414,7 +423,22 @@ class QueryService:
             query += " AND status = ?"
             params.append(status)
 
-        query += " ORDER BY updated_at DESC"
+        if project:
+            query += " AND project = ?"
+            params.append(project)
+
+        if search:
+            pattern = f"%{search}%"
+            query += " AND (title LIKE ? OR body LIKE ?)"
+            params.extend([pattern, pattern])
+
+        allowed_sort = {"updated_at", "created_at", "due_at", "priority", "title", "status"}
+        normalized_sort_by = sort_by if sort_by in allowed_sort else "updated_at"
+        normalized_sort_dir = "ASC" if sort_dir.lower() == "asc" else "DESC"
+
+        query += f" ORDER BY {normalized_sort_by} {normalized_sort_dir}, updated_at DESC"
+        query += " LIMIT ? OFFSET ?"
+        params.extend([max(1, min(limit, 500)), max(0, offset)])
 
         cursor = await execute_with_retry(self.conn, query, tuple(params))
         rows = cursor.fetchall()
