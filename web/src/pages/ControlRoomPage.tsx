@@ -3,7 +3,11 @@ import { useEffect, useState } from 'react'
 import { apiClient } from '../api/client'
 import type { ControlRoomOverview } from '../api/types'
 
-export function ControlRoomPage() {
+type Props = {
+  onOpenExplorerTask?: (taskId: string) => void
+}
+
+export function ControlRoomPage({ onOpenExplorerTask }: Props) {
   const [data, setData] = useState<ControlRoomOverview | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -84,13 +88,26 @@ export function ControlRoomPage() {
           <div>
             <p className="small">Top actionable: {data.attention_today.top_actionable.length}</p>
             {data.attention_today.top_actionable.slice(0, 5).map((item, index) => (
-              <div key={`${item.task_id}-${index}`} className="panel" style={{ marginBottom: '0.5rem' }}>
+              <div
+                key={`${item.task_id}-${index}`}
+                className="panel"
+                style={{ marginBottom: '0.5rem' }}
+              >
                 <strong>{item.task_id}</strong>
                 <div className="small">{item.ranking_explanation ?? item.urgency_explanation}</div>
                 <div className="code">
                   personalization_applied: {String(item.personalization_applied)}
                   {'\n'}policy: {item.personalization_policy ?? 'n/a'}
                 </div>
+                {onOpenExplorerTask && item.task_id && (
+                  <button
+                    className="ghost"
+                    style={{ marginTop: '0.5rem' }}
+                    onClick={() => onOpenExplorerTask(String(item.task_id))}
+                  >
+                    Open in Data Explorer
+                  </button>
+                )}
               </div>
             ))}
           </div>

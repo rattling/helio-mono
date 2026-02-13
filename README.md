@@ -4,7 +4,7 @@ Personal decision and execution substrate built on an append-only event log foun
 
 ## Project Status
 
-**Current Milestone**: Milestone 9 - Helionyx UI Foundation (Tasks + Control Room)  
+**Current Milestone**: Milestone 10 - Data Explorer (Power-User Interrogation and Traceability)  
 **Status**: 🔄 In Progress
 
 ## Quick Start
@@ -112,7 +112,7 @@ You can override ports and API URL when needed:
 make up ENV=dev API_PORT=8010 UI_PORT=5180 API_BASE_URL=http://localhost:8010
 ```
 
-### Start the Web UI (Milestone 9)
+### Start the Web UI (Milestone 10)
 
 Run the API service first (`make run`) in one terminal, then in a separate terminal:
 
@@ -126,6 +126,7 @@ make web-run ENV=live
 Open the matching UI port (default `5173` for dev) for:
 - **Tasks**: list/create/edit/complete/snooze workflows
 - **Control Room**: health/readiness + attention transparency views
+- **Data Explorer**: lookup/timeline/state/decision interrogation views
 
 ### Health Check
 
@@ -189,7 +190,7 @@ helio-mono/
 ├── docs/                 # Project documentation
 │   ├── PROJECT_CHARTER.md
 │   └── ARCHITECTURE_DECISION_M0.md
-├── web/                  # Milestone 9 web UI (React + TypeScript + Vite)
+├── web/                  # Milestone 9+ web UI (React + TypeScript + Vite)
 ├── services/             # Core services (service-oriented monorepo)
 │   ├── event_store/     # Append-only event persistence
 │   ├── ingestion/       # Input normalization and artifact recording
@@ -382,6 +383,39 @@ You can also send regular messages and the bot will extract todos, notes, and tr
    - attention today/week snapshots
    - explanation-oriented ranking fields for inspectability
 
+## Data Explorer API (Milestone 10)
+
+- `GET /api/v1/explorer/lookup` - Canonical entity lookup by type/id
+- `GET /api/v1/explorer/timeline` - Ordered event timeline for selected entity context
+- `GET /api/v1/explorer/state` - Projection/state snapshot with traceability refs
+- `GET /api/v1/explorer/decision` - Decision/rationale-oriented evidence feed
+- `GET /api/v1/explorer/insights` - Guided insights payload with system pulse + notable events ranking metadata
+
+### Data Explorer Interrogation Workflow
+
+Use this sequence for guided-first operator debugging:
+
+1. Open **Data Explorer** in **Guided Insights** mode to review:
+   - System Pulse metrics (open/blocked/overdue/stale/event-throughput)
+   - Notable Events feed with deterministic ranking factors
+2. Open notable cards into evidence drilldowns (timeline/decision).
+3. Pivot to **Ad Hoc Query** mode for precision lookup/state inspection with preserved context.
+
+Ad hoc flow remains available directly when you already know a specific ID:
+
+1. Start from a known ID in Control Room (for example a surfaced `task_id`).
+2. Open **Data Explorer** and run **Lookup** for canonical object state.
+3. Run **Timeline** to inspect ordered event causality.
+4. Run **State** to inspect current projection snapshot + traceability links.
+5. Run **Decision** to inspect decision/suggestion/reminder rationale evidence.
+
+Deep-link contract for cross-surface reproducibility is URL-based:
+- `tab=data-explorer`
+- `explorer_mode=<guided|ad_hoc>`
+- `explorer_entity_type=<task|event>`
+- `explorer_entity_id=<id>`
+- `explorer_view=<lookup|timeline|state|decision>`
+
 ## Documentation
 
 - **Project Charter**: [docs/PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md)
@@ -393,8 +427,9 @@ You can also send regular messages and the bot will extract todos, notes, and tr
 
 - **Milestone 0** (Complete): Architecture Baseline
 - **Milestone 1** (Complete): Core functionality with Telegram integration
-- **Milestone 9** (In Progress): UI Foundation (Tasks + Control Room)
-- **Milestone 10** (Planned): Data Explorer (Power-User Interrogation and Traceability)
+- **Milestone 9** (Complete): UI Foundation (Tasks + Control Room)
+- **Milestone 10** (In Progress): Data Explorer (Power-User Interrogation and Traceability)
+- **Milestone 10A** (Planned): Data Explorer Guided Insights (Opinionated UX + Ad Hoc Power)
 - **Milestone 11** (Planned): Helionyx Lab (Learning, LLMs, and Controlled Experimentation)
 
 ## Contributing

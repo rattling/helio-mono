@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { apiClient } from '../api/client'
-import { ControlRoomOverviewSchema, TaskSchema } from '../api/types'
+import {
+  ControlRoomOverviewSchema,
+  ExplorerGuidedInsightsResponseSchema,
+  ExplorerLookupResponseSchema,
+  ExplorerTimelineResponseSchema,
+  TaskSchema,
+} from '../api/types'
 
 describe('api contract alignment', () => {
   it('parses task payload shape', () => {
@@ -71,5 +77,80 @@ describe('api contract alignment', () => {
     )
 
     await expect(apiClient.listTasks()).rejects.toThrow()
+  })
+
+  it('parses explorer lookup response shape', () => {
+    const parsed = ExplorerLookupResponseSchema.parse({
+      entity_type: 'task',
+      entity_id: 'task-1',
+      canonical: { task_id: 'task-1' },
+      related_identifiers: [
+        {
+          entity_type: 'task',
+          entity_id: 'task-2',
+          relation: 'blocked_by',
+        },
+      ],
+    })
+    expect(parsed.related_identifiers[0].relation).toBe('blocked_by')
+  })
+
+  it('parses explorer timeline response shape', () => {
+    const parsed = ExplorerTimelineResponseSchema.parse({
+      entity_type: 'task',
+      entity_id: 'task-1',
+      events: [
+        {
+          event_id: 'evt-1',
+          event_type: 'decision_recorded',
+          timestamp: '2026-02-13T12:00:00',
+          links: [],
+          payload: {},
+        },
+      ],
+    })
+    expect(parsed.events.length).toBe(1)
+  })
+
+  it('parses guided insights response shape', () => {
+    const parsed = ExplorerGuidedInsightsResponseSchema.parse({
+      generated_at: '2026-02-13T12:00:00',
+      pulse: {
+        generated_at: '2026-02-13T12:00:00',
+        metrics: [
+          {
+            key: 'open_tasks',
+            label: 'Open Tasks',
+            value: 7,
+            status: 'normal',
+          },
+        ],
+      },
+      notable_events: [
+        {
+          notable_id: 'evt-1',
+          title: 'Decision Recorded',
+          summary: 'why',
+          event_type: 'decision_recorded',
+          event_id: 'evt-1',
+          timestamp: '2026-02-13T12:00:00',
+          ranking: {
+            severity: 'info',
+            composite_score: 4.2,
+            factors: [{ key: 'recency', label: 'Recency', value: 2.0 }],
+          },
+          evidence_refs: [
+            {
+              view: 'timeline',
+              entity_type: 'task',
+              entity_id: 'task-1',
+              reason: 'Inspect timeline',
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(parsed.notable_events[0].ranking.severity).toBe('info')
   })
 })
