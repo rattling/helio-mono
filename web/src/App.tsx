@@ -53,6 +53,7 @@ export function App() {
     const nextContext: ExplorerDeepLinkContext = {
       entity_type: 'task',
       entity_id: taskId,
+      mode: 'ad_hoc',
       view: 'lookup',
     }
     setExplorerContext(nextContext)

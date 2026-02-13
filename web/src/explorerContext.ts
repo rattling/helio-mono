@@ -2,11 +2,13 @@ import { z } from 'zod'
 
 export const ExplorerEntityTypeSchema = z.enum(['task', 'event'])
 export const ExplorerViewSchema = z.enum(['lookup', 'timeline', 'state', 'decision'])
+export const ExplorerModeSchema = z.enum(['guided', 'ad_hoc'])
 
 export const ExplorerDeepLinkContextSchema = z.object({
   entity_type: ExplorerEntityTypeSchema.optional(),
   entity_id: z.string().optional(),
   view: ExplorerViewSchema.default('lookup'),
+  mode: ExplorerModeSchema.default('guided'),
   since: z.string().optional(),
   until: z.string().optional(),
 })
@@ -19,6 +21,7 @@ export function parseExplorerContext(search: string): ExplorerDeepLinkContext {
     entity_type: params.get('explorer_entity_type') ?? undefined,
     entity_id: params.get('explorer_entity_id') ?? undefined,
     view: params.get('explorer_view') ?? undefined,
+    mode: params.get('explorer_mode') ?? undefined,
     since: params.get('explorer_since') ?? undefined,
     until: params.get('explorer_until') ?? undefined,
   })
@@ -35,6 +38,9 @@ export function applyExplorerContext(search: string, context: ExplorerDeepLinkCo
 
   if (context.view) params.set('explorer_view', context.view)
   else params.delete('explorer_view')
+
+  if (context.mode) params.set('explorer_mode', context.mode)
+  else params.delete('explorer_mode')
 
   if (context.since) params.set('explorer_since', context.since)
   else params.delete('explorer_since')

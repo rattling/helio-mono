@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { apiClient } from '../api/client'
 import {
   ControlRoomOverviewSchema,
+  ExplorerGuidedInsightsResponseSchema,
   ExplorerLookupResponseSchema,
   ExplorerTimelineResponseSchema,
   TaskSchema,
@@ -109,5 +110,47 @@ describe('api contract alignment', () => {
       ],
     })
     expect(parsed.events.length).toBe(1)
+  })
+
+  it('parses guided insights response shape', () => {
+    const parsed = ExplorerGuidedInsightsResponseSchema.parse({
+      generated_at: '2026-02-13T12:00:00',
+      pulse: {
+        generated_at: '2026-02-13T12:00:00',
+        metrics: [
+          {
+            key: 'open_tasks',
+            label: 'Open Tasks',
+            value: 7,
+            status: 'normal',
+          },
+        ],
+      },
+      notable_events: [
+        {
+          notable_id: 'evt-1',
+          title: 'Decision Recorded',
+          summary: 'why',
+          event_type: 'decision_recorded',
+          event_id: 'evt-1',
+          timestamp: '2026-02-13T12:00:00',
+          ranking: {
+            severity: 'info',
+            composite_score: 4.2,
+            factors: [{ key: 'recency', label: 'Recency', value: 2.0 }],
+          },
+          evidence_refs: [
+            {
+              view: 'timeline',
+              entity_type: 'task',
+              entity_id: 'task-1',
+              reason: 'Inspect timeline',
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(parsed.notable_events[0].ranking.severity).toBe('info')
   })
 })

@@ -70,6 +70,15 @@ from shared.contracts.tasks import (
 )
 from shared.contracts.control_room import ControlRoomOverview, ReadinessCheck, ReadinessPayload
 from shared.contracts.explorer import (
+    ExplorerEvidenceRef,
+    ExplorerGuidedInsightsResponse,
+    ExplorerMode,
+    ExplorerNotableEvent,
+    ExplorerPulse,
+    ExplorerPulseMetric,
+    ExplorerRankingFactor,
+    ExplorerRankingMetadata,
+    NotableSeverity,
     ExplorerDecisionEvidenceResponse,
     ExplorerDeepLinkContext,
     ExplorerEntityType,
@@ -142,6 +151,7 @@ __all__ = [
     "ControlRoomOverview",
     # Data Explorer (M10)
     "ExplorerEntityType",
+    "ExplorerMode",
     "ExplorerViewMode",
     "ExplorerIdentifierRef",
     "ExplorerLookupResponse",
@@ -149,5 +159,13 @@ __all__ = [
     "ExplorerTimelineResponse",
     "ExplorerStateSnapshotResponse",
     "ExplorerDecisionEvidenceResponse",
+    "ExplorerPulseMetric",
+    "ExplorerPulse",
+    "NotableSeverity",
+    "ExplorerRankingFactor",
+    "ExplorerRankingMetadata",
+    "ExplorerEvidenceRef",
+    "ExplorerNotableEvent",
+    "ExplorerGuidedInsightsResponse",
     "ExplorerDeepLinkContext",
 ]

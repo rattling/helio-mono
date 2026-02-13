@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Generator
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
@@ -15,12 +15,21 @@ from shared.contracts import (
     BaseEvent,
     DecisionRecordedEvent,
     ExplorerDecisionEvidenceResponse,
+    ExplorerEvidenceRef,
     ExplorerEntityType,
+    ExplorerGuidedInsightsResponse,
     ExplorerIdentifierRef,
     ExplorerLookupResponse,
+    ExplorerNotableEvent,
+    ExplorerPulse,
+    ExplorerPulseMetric,
+    ExplorerRankingFactor,
+    ExplorerRankingMetadata,
     ExplorerStateSnapshotResponse,
     ExplorerTimelineEvent,
     ExplorerTimelineResponse,
+    ExplorerViewMode,
+    NotableSeverity,
 )
 from services.event_store.file_store import FileEventStore
 from services.query.service import QueryService
@@ -124,6 +133,131 @@ def _timeline_event(event: BaseEvent) -> ExplorerTimelineEvent:
         links=_event_links(event),
         payload=event.model_dump(mode="json"),
     )
+
+
+def _parse_datetime(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
+    except ValueError:
+        return None
+
+
+def _severity_and_base_score(event_type: str) -> tuple[NotableSeverity, float]:
+    event_type = event_type.lower()
+    if "failed" in event_type:
+        return NotableSeverity.CRITICAL, 4.0
+    if "rejected" in event_type:
+        return NotableSeverity.RISK, 3.6
+    if "dismissed" in event_type or "snoozed" in event_type:
+        return NotableSeverity.WARNING, 2.7
+    if "decision" in event_type or "suggestion" in event_type or "reminder" in event_type:
+        return NotableSeverity.INFO, 2.2
+    return NotableSeverity.INFO, 1.4
+
+
+def _severity_rank(severity: NotableSeverity) -> int:
+    return {
+        NotableSeverity.CRITICAL: 4,
+        NotableSeverity.RISK: 3,
+        NotableSeverity.WARNING: 2,
+        NotableSeverity.INFO: 1,
+    }[severity]
+
+
+def _event_title(event_type: str) -> str:
+    return event_type.replace("_", " ").strip().title()
+
+
+def _make_evidence_refs(
+    event: BaseEvent, links: list[ExplorerIdentifierRef]
+) -> list[ExplorerEvidenceRef]:
+    refs: list[ExplorerEvidenceRef] = []
+    first_link = links[0] if links else None
+    if first_link:
+        refs.append(
+            ExplorerEvidenceRef(
+                view=ExplorerViewMode.TIMELINE,
+                entity_type=first_link.entity_type,
+                entity_id=first_link.entity_id,
+                reason="Inspect full timeline context",
+            )
+        )
+        refs.append(
+            ExplorerEvidenceRef(
+                view=ExplorerViewMode.DECISION,
+                entity_type=first_link.entity_type,
+                entity_id=first_link.entity_id,
+                reason="Inspect decision-oriented evidence",
+            )
+        )
+    refs.append(
+        ExplorerEvidenceRef(
+            view=ExplorerViewMode.TIMELINE,
+            entity_type=ExplorerEntityType.EVENT,
+            entity_id=str(event.event_id),
+            reason="Inspect source event payload",
+        )
+    )
+    return refs
+
+
+def _score_notable(event: BaseEvent, now: datetime) -> ExplorerNotableEvent:
+    links = _event_links(event)
+    severity, severity_score = _severity_and_base_score(event.event_type.value)
+    age_hours = max(0.0, (now - event.timestamp.replace(tzinfo=None)).total_seconds() / 3600)
+    recency_score = max(0.0, 3.0 - (age_hours / 12.0))
+    blast_radius_score = min(2.0, len({(item.entity_type, item.entity_id) for item in links}) * 0.5)
+    novelty_score = (
+        1.2
+        if ("rejected" in event.event_type.value or "dismissed" in event.event_type.value)
+        else 0.4
+    )
+    relevance_score = (
+        1.0
+        if any(
+            marker in event.event_type.value
+            for marker in ("decision", "suggestion", "reminder", "attention")
+        )
+        else 0.5
+    )
+
+    factors = [
+        ExplorerRankingFactor(key="severity", label="Severity", value=severity_score),
+        ExplorerRankingFactor(key="recency", label="Recency", value=recency_score),
+        ExplorerRankingFactor(key="blast_radius", label="Blast Radius", value=blast_radius_score),
+        ExplorerRankingFactor(key="novelty", label="Novelty/Regression", value=novelty_score),
+        ExplorerRankingFactor(
+            key="operator_relevance", label="Operator Relevance", value=relevance_score
+        ),
+    ]
+    composite_score = round(sum(item.value for item in factors), 4)
+
+    summary = getattr(event, "rationale", None) or "Inspect evidence links for full context."
+
+    return ExplorerNotableEvent(
+        notable_id=f"{event.event_id}:{event.event_type.value}",
+        title=_event_title(event.event_type.value),
+        summary=summary,
+        event_type=event.event_type.value,
+        event_id=str(event.event_id),
+        timestamp=event.timestamp,
+        ranking=ExplorerRankingMetadata(
+            severity=severity,
+            composite_score=composite_score,
+            factors=factors,
+        ),
+        evidence_refs=_make_evidence_refs(event, links),
+    )
+
+
+def _pulse_status(value: int, high: int, medium: int) -> str:
+    if value >= high:
+        return "high"
+    if value >= medium:
+        return "elevated"
+    return "normal"
 
 
 async def _collect_timeline(
@@ -283,4 +417,98 @@ async def explorer_decision(
         entity_type=entity_type,
         entity_id=entity_id,
         decisions=decision_like,
+    )
+
+
+@router.get("/insights", response_model=ExplorerGuidedInsightsResponse)
+async def explorer_insights(
+    days: int = Query(7, ge=1, le=30),
+    limit: int = Query(15, ge=1, le=100),
+    services: tuple[FileEventStore, QueryService] = Depends(get_explorer_services),
+) -> ExplorerGuidedInsightsResponse:
+    """Return guided-insights pulse and deterministic notable-events feed."""
+    event_store, query_service = services
+
+    now = datetime.utcnow()
+    since = now - timedelta(days=days)
+    events = await event_store.stream_events(since=since)
+    events = sorted(events, key=lambda item: item.timestamp, reverse=True)
+
+    all_tasks = await query_service.get_tasks(limit=500)
+    open_tasks = [task for task in all_tasks if task.get("status") not in {"done", "cancelled"}]
+    blocked_tasks = [task for task in open_tasks if (task.get("blocked_by") or [])]
+    overdue_tasks = [
+        task
+        for task in open_tasks
+        if (due_at := _parse_datetime(task.get("due_at"))) and due_at < now
+    ]
+    stale_tasks = [
+        task
+        for task in open_tasks
+        if (updated_at := _parse_datetime(task.get("updated_at")))
+        and updated_at < (now - timedelta(days=7))
+    ]
+
+    recent_events_24h = [
+        event
+        for event in events
+        if event.timestamp.replace(tzinfo=None) >= now - timedelta(hours=24)
+    ]
+
+    pulse = ExplorerPulse(
+        generated_at=now,
+        metrics=[
+            ExplorerPulseMetric(
+                key="open_tasks",
+                label="Open Tasks",
+                value=len(open_tasks),
+                status=_pulse_status(len(open_tasks), high=25, medium=10),
+                description="Tasks not in done/cancelled state",
+            ),
+            ExplorerPulseMetric(
+                key="blocked_tasks",
+                label="Blocked Tasks",
+                value=len(blocked_tasks),
+                status=_pulse_status(len(blocked_tasks), high=8, medium=3),
+                description="Open tasks with dependency blockers",
+            ),
+            ExplorerPulseMetric(
+                key="overdue_tasks",
+                label="Overdue Tasks",
+                value=len(overdue_tasks),
+                status=_pulse_status(len(overdue_tasks), high=5, medium=1),
+                description="Open tasks with due_at before now",
+            ),
+            ExplorerPulseMetric(
+                key="stale_tasks",
+                label="Stale Tasks",
+                value=len(stale_tasks),
+                status=_pulse_status(len(stale_tasks), high=10, medium=4),
+                description="Open tasks not updated in the last 7 days",
+            ),
+            ExplorerPulseMetric(
+                key="events_24h",
+                label="Events (24h)",
+                value=len(recent_events_24h),
+                status=_pulse_status(len(recent_events_24h), high=100, medium=30),
+                description="Event throughput in the last 24 hours",
+            ),
+        ],
+    )
+
+    candidates = [_score_notable(event, now) for event in events]
+    candidates.sort(
+        key=lambda item: (
+            _severity_rank(item.ranking.severity),
+            item.ranking.composite_score,
+            item.timestamp,
+            item.event_id,
+        ),
+        reverse=True,
+    )
+
+    return ExplorerGuidedInsightsResponse(
+        generated_at=now,
+        pulse=pulse,
+        notable_events=candidates[:limit],
     )

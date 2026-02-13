@@ -3,6 +3,8 @@ import {
   ControlRoomOverviewSchema,
   ExplorerDecisionResponse,
   ExplorerDecisionResponseSchema,
+  ExplorerGuidedInsightsResponse,
+  ExplorerGuidedInsightsResponseSchema,
   ExplorerLookupResponse,
   ExplorerLookupResponseSchema,
   ExplorerStateResponse,
@@ -138,5 +140,10 @@ export const apiClient = {
       `/api/v1/explorer/decision${buildQuery({ entity_type: entityType, entity_id: entityId })}`,
     )
     return ExplorerDecisionResponseSchema.parse(data)
+  },
+
+  async getExplorerInsights(days = 7, limit = 15): Promise<ExplorerGuidedInsightsResponse> {
+    const data = await request(`/api/v1/explorer/insights${buildQuery({ days, limit })}`)
+    return ExplorerGuidedInsightsResponseSchema.parse(data)
   },
 }

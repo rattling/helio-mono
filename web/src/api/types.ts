@@ -106,3 +106,55 @@ export const ExplorerDecisionResponseSchema = z.object({
 })
 
 export type ExplorerDecisionResponse = z.infer<typeof ExplorerDecisionResponseSchema>
+
+export const ExplorerModeSchema = z.enum(['guided', 'ad_hoc'])
+
+export const ExplorerPulseMetricSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  value: z.union([z.number(), z.string()]),
+  status: z.string(),
+  trend: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+})
+
+export const ExplorerPulseSchema = z.object({
+  generated_at: z.string(),
+  metrics: z.array(ExplorerPulseMetricSchema).default([]),
+})
+
+export const ExplorerRankingFactorSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  value: z.number(),
+})
+
+export const ExplorerEvidenceRefSchema = z.object({
+  view: z.enum(['lookup', 'timeline', 'state', 'decision']),
+  entity_type: z.enum(['task', 'event']),
+  entity_id: z.string(),
+  reason: z.string(),
+})
+
+export const ExplorerNotableEventSchema = z.object({
+  notable_id: z.string(),
+  title: z.string(),
+  summary: z.string(),
+  event_type: z.string(),
+  event_id: z.string(),
+  timestamp: z.string(),
+  ranking: z.object({
+    severity: z.enum(['critical', 'risk', 'warning', 'info']),
+    composite_score: z.number(),
+    factors: z.array(ExplorerRankingFactorSchema).default([]),
+  }),
+  evidence_refs: z.array(ExplorerEvidenceRefSchema).default([]),
+})
+
+export const ExplorerGuidedInsightsResponseSchema = z.object({
+  generated_at: z.string(),
+  pulse: ExplorerPulseSchema,
+  notable_events: z.array(ExplorerNotableEventSchema).default([]),
+})
+
+export type ExplorerGuidedInsightsResponse = z.infer<typeof ExplorerGuidedInsightsResponseSchema>

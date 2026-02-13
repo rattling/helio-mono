@@ -389,10 +389,19 @@ You can also send regular messages and the bot will extract todos, notes, and tr
 - `GET /api/v1/explorer/timeline` - Ordered event timeline for selected entity context
 - `GET /api/v1/explorer/state` - Projection/state snapshot with traceability refs
 - `GET /api/v1/explorer/decision` - Decision/rationale-oriented evidence feed
+- `GET /api/v1/explorer/insights` - Guided insights payload with system pulse + notable events ranking metadata
 
 ### Data Explorer Interrogation Workflow
 
-Use this sequence for power-user debugging:
+Use this sequence for guided-first operator debugging:
+
+1. Open **Data Explorer** in **Guided Insights** mode to review:
+   - System Pulse metrics (open/blocked/overdue/stale/event-throughput)
+   - Notable Events feed with deterministic ranking factors
+2. Open notable cards into evidence drilldowns (timeline/decision).
+3. Pivot to **Ad Hoc Query** mode for precision lookup/state inspection with preserved context.
+
+Ad hoc flow remains available directly when you already know a specific ID:
 
 1. Start from a known ID in Control Room (for example a surfaced `task_id`).
 2. Open **Data Explorer** and run **Lookup** for canonical object state.
@@ -402,6 +411,7 @@ Use this sequence for power-user debugging:
 
 Deep-link contract for cross-surface reproducibility is URL-based:
 - `tab=data-explorer`
+- `explorer_mode=<guided|ad_hoc>`
 - `explorer_entity_type=<task|event>`
 - `explorer_entity_id=<id>`
 - `explorer_view=<lookup|timeline|state|decision>`

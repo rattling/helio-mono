@@ -75,3 +75,31 @@ def test_explorer_timeline_state_and_decision(monkeypatch, tmp_path):
     decision_payload = decision.json()
     assert isinstance(decision_payload["decisions"], list)
     assert any("decision" in item["event_type"] for item in decision_payload["decisions"])
+
+
+def test_explorer_guided_insights(monkeypatch, tmp_path):
+    task_id = _seed_task("explorer-insights-001", monkeypatch, tmp_path)
+
+    complete = client.post(f"/api/v1/tasks/{task_id}/complete")
+    assert complete.status_code == 200
+
+    response = client.get("/api/v1/explorer/insights?days=14&limit=10")
+    assert response.status_code == 200
+    payload = response.json()
+
+    assert "generated_at" in payload
+    assert "pulse" in payload
+    assert "metrics" in payload["pulse"]
+    assert payload["pulse"]["metrics"]
+
+    notable = payload["notable_events"]
+    assert isinstance(notable, list)
+    assert len(notable) <= 10
+    assert notable
+
+    first = notable[0]
+    assert "ranking" in first
+    assert "severity" in first["ranking"]
+    assert "composite_score" in first["ranking"]
+    assert isinstance(first["ranking"]["factors"], list)
+    assert first["evidence_refs"]

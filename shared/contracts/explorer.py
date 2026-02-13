@@ -21,6 +21,18 @@ class ExplorerViewMode(str, Enum):
     DECISION = "decision"
 
 
+class ExplorerMode(str, Enum):
+    GUIDED = "guided"
+    AD_HOC = "ad_hoc"
+
+
+class NotableSeverity(str, Enum):
+    CRITICAL = "critical"
+    RISK = "risk"
+    WARNING = "warning"
+    INFO = "info"
+
+
 class ExplorerIdentifierRef(BaseModel):
     entity_type: ExplorerEntityType
     entity_id: str
@@ -64,10 +76,61 @@ class ExplorerDecisionEvidenceResponse(BaseModel):
     decisions: list[ExplorerTimelineEvent] = Field(default_factory=list)
 
 
+class ExplorerPulseMetric(BaseModel):
+    key: str
+    label: str
+    value: int | float | str
+    status: str
+    trend: Optional[str] = None
+    description: Optional[str] = None
+
+
+class ExplorerPulse(BaseModel):
+    generated_at: datetime
+    metrics: list[ExplorerPulseMetric] = Field(default_factory=list)
+
+
+class ExplorerRankingFactor(BaseModel):
+    key: str
+    label: str
+    value: float
+
+
+class ExplorerRankingMetadata(BaseModel):
+    severity: NotableSeverity
+    composite_score: float
+    factors: list[ExplorerRankingFactor] = Field(default_factory=list)
+
+
+class ExplorerEvidenceRef(BaseModel):
+    view: ExplorerViewMode
+    entity_type: ExplorerEntityType
+    entity_id: str
+    reason: str
+
+
+class ExplorerNotableEvent(BaseModel):
+    notable_id: str
+    title: str
+    summary: str
+    event_type: str
+    event_id: str
+    timestamp: datetime
+    ranking: ExplorerRankingMetadata
+    evidence_refs: list[ExplorerEvidenceRef] = Field(default_factory=list)
+
+
+class ExplorerGuidedInsightsResponse(BaseModel):
+    generated_at: datetime
+    pulse: ExplorerPulse
+    notable_events: list[ExplorerNotableEvent] = Field(default_factory=list)
+
+
 class ExplorerDeepLinkContext(BaseModel):
     entity_type: ExplorerEntityType
     entity_id: str
     view: ExplorerViewMode = ExplorerViewMode.LOOKUP
+    mode: ExplorerMode = ExplorerMode.GUIDED
     since: Optional[datetime] = None
     until: Optional[datetime] = None
     preset: Optional[str] = None
