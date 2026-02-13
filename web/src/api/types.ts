@@ -40,8 +40,8 @@ export const ControlRoomOverviewSchema = z.object({
     checks: z.record(
       z.object({
         path: z.string(),
-        accessible: z.boolean().optional(),
-        parent_accessible: z.boolean().optional(),
+        accessible: z.boolean().nullable().optional(),
+        parent_accessible: z.boolean().nullable().optional(),
       }),
     ),
   }),

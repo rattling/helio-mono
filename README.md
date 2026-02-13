@@ -20,15 +20,15 @@ make setup
 # 3. Install dependencies (creates virtual environment)
 make install
 
-# 4. Run the Helionyx service (default: dev environment)
-make run
-
-# 5. Start web UI (Milestone 9)
+# 4. Start API + UI together (default: dev)
 make web-install
-make web-run
+make up
 
-# 6. Check system status
+# 5. Check comprehensive local status
 make status
+
+# 6. Stop both when done
+make down
 ```
 
 ## Running the Service
@@ -60,16 +60,70 @@ The service will:
 
 Logs are visible on the console. Press Ctrl+C to stop the service cleanly.
 
+### Local Runtime Control (API/UI)
+
+Use these targets for easy local process control in `dev`, `staging`, or `live`.
+
+```bash
+# Start API + UI in background for an environment
+make up ENV=dev
+make up ENV=staging
+make up ENV=live
+
+# Start only one surface
+make start-api ENV=dev
+make start-web ENV=dev
+
+# Stop one or both
+make stop-api ENV=dev
+make stop-web ENV=dev
+make down ENV=dev
+
+# Tail logs
+make logs-api ENV=dev
+make logs-web ENV=dev
+
+# Comprehensive status (processes + endpoint probes + event data)
+make status ENV=dev
+```
+
+### Execution Modes (Important)
+
+There are two distinct ways commands run in this repo:
+
+1. **Local process mode (direct host processes, non-systemd)**
+   - Uses targets like: `make run`, `make web-run`, `make start-api`, `make start-web`, `make up`, `make down`
+   - Intended for local development and quick operator workflows
+   - Uses foreground processes (`run`, `web-run`) or background PID/log files in `.run/`
+
+2. **Deployment mode (systemd-oriented on node1)**
+   - Uses targets like: `make deploy ENV=<env>`, `make restart ENV=<env>`, `make logs ENV=<env>`, `make stop ENV=<env>`
+   - Intended for managed deployed services
+   - Delegates to deployment scripts in `scripts/deploy/` and systemd unit management
+
+Defaults by environment:
+- `dev`: API `8000`, UI `5173`
+- `staging`: API `8001`, UI `5174`
+- `live`: API `8002`, UI `5175`
+
+You can override ports and API URL when needed:
+
+```bash
+make up ENV=dev API_PORT=8010 UI_PORT=5180 API_BASE_URL=http://localhost:8010
+```
+
 ### Start the Web UI (Milestone 9)
 
-Run the API service first (`make run`), then in a separate terminal:
+Run the API service first (`make run`) in one terminal, then in a separate terminal:
 
 ```bash
 make web-install
-make web-run
+make web-run ENV=dev
+make web-run ENV=staging
+make web-run ENV=live
 ```
 
-Open `http://localhost:5173` for:
+Open the matching UI port (default `5173` for dev) for:
 - **Tasks**: list/create/edit/complete/snooze workflows
 - **Control Room**: health/readiness + attention transparency views
 
@@ -191,6 +245,9 @@ make run
 # Run with specific environment
 make run ENV=staging
 
+# Start API + UI together in background
+make up ENV=dev
+
 # Run the walking skeleton demo
 make demo
 
@@ -205,6 +262,9 @@ make rebuild
 
 # Check system status
 make status
+
+# Stop API + UI background processes
+make down ENV=dev
 
 # Run linters
 make lint
@@ -307,13 +367,20 @@ You can also send regular messages and the bot will extract todos, notes, and tr
 ## Task API (Milestone 5)
 
 - `POST /api/v1/tasks/ingest` - Idempotent ingest via `(source, source_ref)`
-- `GET /api/v1/tasks` - List tasks (optional `status` filter)
+- `GET /api/v1/tasks` - List tasks (`status`, `project`, `search`, `sort_by`, `sort_dir`, `limit`, `offset`)
 - `GET /api/v1/tasks/{task_id}` - Get one task
 - `PATCH /api/v1/tasks/{task_id}` - Patch mutable task fields
 - `POST /api/v1/tasks/{task_id}/complete` - Mark task done
 - `POST /api/v1/tasks/{task_id}/snooze` - Snooze task until timestamp
 - `POST /api/v1/tasks/{task_id}/link` - Link blocking task dependencies
 - `GET /api/v1/tasks/review/queue` - Deterministic review queue with passive stale detection
+
+## Control Room API (Milestone 9)
+
+- `GET /api/v1/control-room/overview` - Consolidated transparency payload:
+   - health and readiness checks
+   - attention today/week snapshots
+   - explanation-oriented ranking fields for inspectability
 
 ## Documentation
 
@@ -326,6 +393,9 @@ You can also send regular messages and the bot will extract todos, notes, and tr
 
 - **Milestone 0** (Complete): Architecture Baseline
 - **Milestone 1** (Complete): Core functionality with Telegram integration
+- **Milestone 9** (In Progress): UI Foundation (Tasks + Control Room)
+- **Milestone 10** (Planned): Data Explorer (Power-User Interrogation and Traceability)
+- **Milestone 11** (Planned): Helionyx Lab (Learning, LLMs, and Controlled Experimentation)
 
 ## Contributing
 

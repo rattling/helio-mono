@@ -38,6 +38,29 @@ describe('api contract alignment', () => {
     expect(parsed.readiness.status).toBe('ready')
   })
 
+  it('accepts nullable readiness check fields', () => {
+    const parsed = ControlRoomOverviewSchema.parse({
+      health: { status: 'healthy', service: 'helionyx' },
+      readiness: {
+        status: 'ready',
+        checks: {
+          event_store: { path: '/tmp/events', accessible: true, parent_accessible: null },
+          projections_db: {
+            path: '/tmp/projections.db',
+            accessible: null,
+            parent_accessible: true,
+          },
+        },
+      },
+      attention_today: { top_actionable: [] },
+      attention_week: { due_this_week: [] },
+      generated_at: '2026-02-13T12:00:00',
+    })
+
+    expect(parsed.readiness.checks.event_store.parent_accessible).toBeNull()
+    expect(parsed.readiness.checks.projections_db.accessible).toBeNull()
+  })
+
   it('fails fast on malformed task API response', async () => {
     vi.stubGlobal(
       'fetch',
