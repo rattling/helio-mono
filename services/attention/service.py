@@ -180,7 +180,15 @@ class AttentionService:
         ordered_eligible = sorted(
             eligible,
             key=lambda item: (
-                -float(item.get("model_score") or 0.0),
+                -float(
+                    (
+                        (item.get("usefulness_score") or 0.0)
+                        - 0.5 * (item.get("interrupt_cost_score") or 0.0)
+                        + 0.25 * (item.get("timing_fit_score") or 0.0)
+                    )
+                    if item.get("usefulness_score") is not None
+                    else (item.get("model_score") or 0.0)
+                ),
                 -item["urgency_score"],
                 item["updated_at"] or "",
             ),
@@ -214,12 +222,21 @@ class AttentionService:
         learned = candidate.get("learned_explanation") or "no learned contribution"
         confidence = candidate.get("model_confidence")
         confidence_text = "n/a" if confidence is None else f"{confidence:.2f}"
+        usefulness = candidate.get("usefulness_score")
+        timing_fit = candidate.get("timing_fit_score")
+        interrupt_cost = candidate.get("interrupt_cost_score")
+        use_text = "n/a" if usefulness is None else f"{usefulness:.2f}"
+        timing_text = "n/a" if timing_fit is None else f"{timing_fit:.2f}"
+        interrupt_text = "n/a" if interrupt_cost is None else f"{interrupt_cost:.2f}"
         applied = candidate.get("personalization_applied") is True
         decision = "applied" if applied else "not_applied"
+        recommended_action = candidate.get("recommended_action") or "keep"
 
         return (
             f"bounded_in_bucket ({bucket}) decision={decision}; "
-            f"deterministic={deterministic}; learned={learned}; confidence={confidence_text}"
+            f"deterministic={deterministic}; learned={learned}; confidence={confidence_text}; "
+            f"usefulness={use_text}; timing_fit={timing_text}; interrupt_cost={interrupt_text}; "
+            f"action={recommended_action}"
         )
 
     async def _record_queue(self, queue_name: str, items: list[dict[str, Any]]) -> None:
@@ -236,6 +253,10 @@ class AttentionService:
                     model_score=item.get("model_score"),
                     model_confidence=item.get("model_confidence"),
                     learned_explanation=item.get("learned_explanation"),
+                    usefulness_score=item.get("usefulness_score"),
+                    timing_fit_score=item.get("timing_fit_score"),
+                    interrupt_cost_score=item.get("interrupt_cost_score"),
+                    recommended_action=item.get("recommended_action"),
                     ranking_explanation=item.get("ranking_explanation"),
                     personalization_applied=item.get("personalization_applied", False),
                     personalization_policy=item.get("personalization_policy", "deterministic_only"),
@@ -334,6 +355,10 @@ class AttentionService:
             "model_score": None,
             "model_confidence": None,
             "learned_explanation": None,
+            "usefulness_score": None,
+            "timing_fit_score": None,
+            "interrupt_cost_score": None,
+            "recommended_action": "keep",
             "ranking_explanation": (
                 f"deterministic-only ({deterministic_bucket_id}): "
                 f"{'; '.join(components) if components else 'baseline'}"
@@ -367,6 +392,10 @@ class AttentionService:
                 candidate["model_score"] = result.score
                 candidate["model_confidence"] = result.confidence
                 candidate["learned_explanation"] = result.explanation
+                candidate["usefulness_score"] = result.usefulness_score
+                candidate["timing_fit_score"] = result.timing_fit_score
+                candidate["interrupt_cost_score"] = result.interrupt_cost_score
+                candidate["recommended_action"] = self._recommended_action(candidate)
                 model_event = ModelScoreRecordedEvent(
                     candidate_id=str(task.get("task_id")),
                     candidate_type="attention_task",
@@ -379,6 +408,10 @@ class AttentionService:
                         "service": "attention_service",
                         "mode": "shadow",
                         "deterministic_bucket_id": deterministic_bucket_id,
+                        "usefulness_score": result.usefulness_score,
+                        "timing_fit_score": result.timing_fit_score,
+                        "interrupt_cost_score": result.interrupt_cost_score,
+                        "recommended_action": candidate["recommended_action"],
                     },
                 )
                 await self.event_store.append(model_event)
@@ -393,8 +426,25 @@ class AttentionService:
                 candidate["learned_explanation"] = (
                     "shadow model unavailable; deterministic fallback active"
                 )
+                candidate["usefulness_score"] = None
+                candidate["timing_fit_score"] = None
+                candidate["interrupt_cost_score"] = None
+                candidate["recommended_action"] = "keep"
 
         return candidate
+
+    def _recommended_action(self, candidate: dict[str, Any]) -> str:
+        usefulness = candidate.get("usefulness_score")
+        timing_fit = candidate.get("timing_fit_score")
+        interrupt_cost = candidate.get("interrupt_cost_score")
+
+        if usefulness is None or timing_fit is None or interrupt_cost is None:
+            return "keep"
+        if usefulness >= 0.65 and timing_fit < 0.45:
+            return "retime"
+        if usefulness < 0.35 and interrupt_cost >= 0.6:
+            return "deprioritize"
+        return "keep"
 
     def _determine_bucket(
         self,
