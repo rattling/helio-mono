@@ -4,7 +4,7 @@ Personal decision and execution substrate built on an append-only event log foun
 
 ## Project Status
 
-**Current Milestone**: Milestone 6 - Attention + Planning Assistant  
+**Current Milestone**: Milestone 8 - Contextual Feedback Semantics  
 **Status**: 🔄 In Progress
 
 ## Quick Start
