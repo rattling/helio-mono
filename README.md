@@ -4,7 +4,7 @@ Personal decision and execution substrate built on an append-only event log foun
 
 ## Project Status
 
-**Current Milestone**: Milestone 8 - Contextual Feedback Semantics  
+**Current Milestone**: Milestone 9 - Helionyx UI Foundation (Tasks + Control Room)  
 **Status**: 🔄 In Progress
 
 ## Quick Start
@@ -23,7 +23,11 @@ make install
 # 4. Run the Helionyx service (default: dev environment)
 make run
 
-# 5. Check system status
+# 5. Start web UI (Milestone 9)
+make web-install
+make web-run
+
+# 6. Check system status
 make status
 ```
 
@@ -55,6 +59,19 @@ The service will:
 5. Start the FastAPI HTTP server on port 8000
 
 Logs are visible on the console. Press Ctrl+C to stop the service cleanly.
+
+### Start the Web UI (Milestone 9)
+
+Run the API service first (`make run`), then in a separate terminal:
+
+```bash
+make web-install
+make web-run
+```
+
+Open `http://localhost:5173` for:
+- **Tasks**: list/create/edit/complete/snooze workflows
+- **Control Room**: health/readiness + attention transparency views
 
 ### Health Check
 
@@ -118,6 +135,7 @@ helio-mono/
 ├── docs/                 # Project documentation
 │   ├── PROJECT_CHARTER.md
 │   └── ARCHITECTURE_DECISION_M0.md
+├── web/                  # Milestone 9 web UI (React + TypeScript + Vite)
 ├── services/             # Core services (service-oriented monorepo)
 │   ├── event_store/     # Append-only event persistence
 │   ├── ingestion/       # Input normalization and artifact recording
@@ -199,6 +217,9 @@ make precommit
 
 # Run tests
 make test
+
+# Run web tests
+make web-test
 
 # Clean generated files
 make clean

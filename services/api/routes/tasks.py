@@ -46,10 +46,28 @@ async def ingest_task(
 @router.get("", response_model=list[dict])
 async def list_tasks(
     status: Optional[str] = Query(None, description="Task status filter"),
+    project: Optional[str] = Query(None, description="Task project filter"),
+    search: Optional[str] = Query(None, description="Search in task title/body"),
+    sort_by: str = Query(
+        "updated_at",
+        description="Sort field",
+        pattern="^(updated_at|created_at|due_at|priority|title|status)$",
+    ),
+    sort_dir: str = Query("desc", description="Sort direction", pattern="^(asc|desc)$"),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     task_service: TaskService = Depends(get_task_service),
 ) -> list[dict]:
     """List tasks."""
-    return await task_service.list_tasks(status=status)
+    return await task_service.list_tasks(
+        status=status,
+        project=project,
+        search=search,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get("/review/queue", response_model=list[dict])

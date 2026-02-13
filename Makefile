@@ -1,4 +1,4 @@
-.PHONY: help setup install test lint format precommit clean run demo telegram rebuild import-chatgpt view-events status deploy restart logs stop backup restore
+.PHONY: help setup install test lint format precommit clean run demo telegram rebuild import-chatgpt view-events status deploy restart logs stop backup restore web-install web-run web-test web-build
 
 # Default environment if not specified
 ENV ?= dev
@@ -31,6 +31,18 @@ install: ## Install dependencies
 	@echo "Installing dependencies..."
 	pip install -e ".[dev,extraction,telegram]"
 	@echo "Dependencies installed!"
+
+web-install: ## Install web dependencies
+	cd web && npm install
+
+web-run: ## Run web UI (Vite dev server)
+	cd web && npm run dev
+
+web-test: ## Run web tests
+	cd web && npm test
+
+web-build: ## Build web UI bundle
+	cd web && npm run build
 
 test: ## Run tests
 	.venv/bin/python -m pytest tests/ -v

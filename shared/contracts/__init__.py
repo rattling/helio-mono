@@ -68,6 +68,7 @@ from shared.contracts.tasks import (
     TaskSuggestion,
     TaskStatus,
 )
+from shared.contracts.control_room import ControlRoomOverview, ReadinessCheck, ReadinessPayload
 
 __all__ = [
     # Events
@@ -124,4 +125,8 @@ __all__ = [
     "TaskSuggestion",
     "TaskApplySuggestionRequest",
     "TaskRejectSuggestionRequest",
+    # Control Room (M9)
+    "ReadinessCheck",
+    "ReadinessPayload",
+    "ControlRoomOverview",
 ]

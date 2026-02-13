@@ -270,3 +270,70 @@ class TestTaskEndpoints:
         )
         assert reject_response.status_code == 200
         assert reject_response.json()["rejected"] is True
+
+    def test_list_tasks_filter_sort_pagination(self, monkeypatch, tmp_path):
+        event_store_path = tmp_path / "events"
+        event_store_path.mkdir()
+        db_path = tmp_path / "projections" / "tasks-listing.db"
+        db_path.parent.mkdir(parents=True)
+
+        monkeypatch.setenv("EVENT_STORE_PATH", str(event_store_path))
+        monkeypatch.setenv("PROJECTIONS_DB_PATH", str(db_path))
+        monkeypatch.setenv("ENV", "dev")
+
+        payloads = [
+            {
+                "title": "Alpha migration",
+                "body": "project alpha setup",
+                "source": "api",
+                "source_ref": "tasks-list-001",
+                "project": "alpha",
+                "priority": "p2",
+            },
+            {
+                "title": "Beta test",
+                "body": "project beta rollout",
+                "source": "api",
+                "source_ref": "tasks-list-002",
+                "project": "beta",
+                "priority": "p1",
+            },
+            {
+                "title": "Gamma review",
+                "body": "project alpha closeout",
+                "source": "api",
+                "source_ref": "tasks-list-003",
+                "project": "alpha",
+                "priority": "p0",
+            },
+        ]
+
+        ids = []
+        for payload in payloads:
+            response = client.post("/api/v1/tasks/ingest", json=payload)
+            assert response.status_code == 201
+            ids.append(response.json()["task_id"])
+
+        alpha_only = client.get("/api/v1/tasks?project=alpha")
+        assert alpha_only.status_code == 200
+        alpha_data = alpha_only.json()
+        assert len(alpha_data) == 2
+        assert all(task["project"] == "alpha" for task in alpha_data)
+
+        search_hit = client.get("/api/v1/tasks?search=rollout")
+        assert search_hit.status_code == 200
+        search_data = search_hit.json()
+        assert len(search_data) == 1
+        assert search_data[0]["title"] == "Beta test"
+
+        sorted_by_priority = client.get("/api/v1/tasks?sort_by=priority&sort_dir=asc")
+        assert sorted_by_priority.status_code == 200
+        sorted_data = sorted_by_priority.json()
+        priorities = [item["priority"] for item in sorted_data]
+        assert priorities == sorted(priorities)
+
+        paged = client.get("/api/v1/tasks?sort_by=title&sort_dir=asc&limit=1&offset=1")
+        assert paged.status_code == 200
+        paged_data = paged.json()
+        assert len(paged_data) == 1
+        assert paged_data[0]["title"] == "Beta test"
