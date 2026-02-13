@@ -11,6 +11,14 @@ import {
   ExplorerStateResponseSchema,
   ExplorerTimelineResponse,
   ExplorerTimelineResponseSchema,
+  LabControlUpdateResponse,
+  LabControlUpdateResponseSchema,
+  LabExperimentHistory,
+  LabExperimentHistorySchema,
+  LabExperimentRunResult,
+  LabExperimentRunResultSchema,
+  LabOverview,
+  LabOverviewSchema,
   Task,
   TaskIngestResult,
   TaskIngestResultSchema,
@@ -30,6 +38,7 @@ type TaskListParams = {
 }
 
 type ExplorerEntityType = 'task' | 'event'
+type LabMode = 'deterministic' | 'shadow' | 'bounded'
 
 function buildQuery(params: Record<string, string | number | undefined>) {
   const query = new URLSearchParams()
@@ -145,5 +154,65 @@ export const apiClient = {
   async getExplorerInsights(days = 7, limit = 15): Promise<ExplorerGuidedInsightsResponse> {
     const data = await request(`/api/v1/explorer/insights${buildQuery({ days, limit })}`)
     return ExplorerGuidedInsightsResponseSchema.parse(data)
+  },
+
+  async getLabOverview(): Promise<LabOverview> {
+    const data = await request('/api/v1/lab/overview')
+    return LabOverviewSchema.parse(data)
+  },
+
+  async updateLabControls(payload: {
+    actor: string
+    rationale: string
+    mode: LabMode
+    shadow_confidence_threshold: number
+  }): Promise<LabControlUpdateResponse> {
+    const data = await request('/api/v1/lab/controls', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+    return LabControlUpdateResponseSchema.parse(data)
+  },
+
+  async rollbackLabControls(payload: {
+    actor: string
+    rationale: string
+  }): Promise<LabControlUpdateResponse> {
+    const data = await request('/api/v1/lab/rollback', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+    return LabControlUpdateResponseSchema.parse(data)
+  },
+
+  async runLabExperiment(payload: {
+    actor: string
+    rationale: string
+    experiment_type?: string
+    candidate_mode: LabMode
+    candidate_shadow_confidence_threshold: number
+  }): Promise<LabExperimentRunResult> {
+    const data = await request('/api/v1/lab/experiments/run', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+    return LabExperimentRunResultSchema.parse(data)
+  },
+
+  async getLabExperimentHistory(limit = 20): Promise<LabExperimentHistory> {
+    const data = await request(`/api/v1/lab/experiments/history${buildQuery({ limit })}`)
+    return LabExperimentHistorySchema.parse(data)
+  },
+
+  async applyLabExperiment(runId: string, payload: {
+    actor: string
+    rationale: string
+    action: 'apply' | 'rollback' | 'no_op'
+  }): Promise<LabControlUpdateResponse> {
+    const data = await request(`/api/v1/lab/experiments/${runId}/apply`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+    return LabControlUpdateResponseSchema.parse(data)
   },
 }

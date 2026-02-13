@@ -4,7 +4,7 @@ Personal decision and execution substrate built on an append-only event log foun
 
 ## Project Status
 
-**Current Milestone**: Milestone 10 - Data Explorer (Power-User Interrogation and Traceability)  
+**Current Milestone**: Milestone 11 - Helionyx Lab (Learning, LLMs, and Controlled Experimentation)  
 **Status**: 🔄 In Progress
 
 ## Quick Start
@@ -416,6 +416,23 @@ Deep-link contract for cross-surface reproducibility is URL-based:
 - `explorer_entity_id=<id>`
 - `explorer_view=<lookup|timeline|state|decision>`
 
+## Lab API (Milestone 11)
+
+- `GET /api/v1/lab/overview` - Diagnostics + effective personalization/config snapshot
+- `POST /api/v1/lab/controls` - Guardrailed bounded control updates (`mode`, threshold)
+- `POST /api/v1/lab/rollback` - One-step rollback to deterministic-safe baseline
+- `POST /api/v1/lab/experiments/run` - Run experiment/replay in non-mutating compare mode
+- `GET /api/v1/lab/experiments/history` - Recent experiment runs and apply eligibility
+- `POST /api/v1/lab/experiments/{run_id}/apply` - Explicit apply/rollback/no-op action
+
+### Lab Workflow
+
+1. Open **Lab** and inspect diagnostics + current effective mode/config.
+2. Use **Bounded Controls** only with explicit rationale and actor attribution.
+3. Run an **Experiment** to compare baseline vs candidate behavior.
+4. Apply only when safety gate allows; otherwise keep/no-op or rollback.
+5. Use rollback action to return immediately to deterministic-safe posture.
+
 ## Documentation
 
 - **Project Charter**: [docs/PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md)
@@ -428,9 +445,9 @@ Deep-link contract for cross-surface reproducibility is URL-based:
 - **Milestone 0** (Complete): Architecture Baseline
 - **Milestone 1** (Complete): Core functionality with Telegram integration
 - **Milestone 9** (Complete): UI Foundation (Tasks + Control Room)
-- **Milestone 10** (In Progress): Data Explorer (Power-User Interrogation and Traceability)
-- **Milestone 10A** (Planned): Data Explorer Guided Insights (Opinionated UX + Ad Hoc Power)
-- **Milestone 11** (Planned): Helionyx Lab (Learning, LLMs, and Controlled Experimentation)
+- **Milestone 10** (Complete): Data Explorer (Power-User Interrogation and Traceability)
+- **Milestone 10A** (Complete): Data Explorer Guided Insights (Opinionated UX + Ad Hoc Power)
+- **Milestone 11** (In Progress): Helionyx Lab (Learning, LLMs, and Controlled Experimentation)
 
 ## Contributing
 

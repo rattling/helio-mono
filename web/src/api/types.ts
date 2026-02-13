@@ -158,3 +158,72 @@ export const ExplorerGuidedInsightsResponseSchema = z.object({
 })
 
 export type ExplorerGuidedInsightsResponse = z.infer<typeof ExplorerGuidedInsightsResponseSchema>
+
+export const LabModeSchema = z.enum(['deterministic', 'shadow', 'bounded'])
+
+export const LabMetricSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  value: z.union([z.number(), z.string()]),
+  status: z.string(),
+  description: z.string().nullable().optional(),
+})
+
+export const LabOverviewSchema = z.object({
+  generated_at: z.string(),
+  diagnostics: z.object({
+    generated_at: z.string(),
+    metrics: z.array(LabMetricSchema).default([]),
+  }),
+  config: z.object({
+    mode: LabModeSchema,
+    shadow_ranker_enabled: z.boolean(),
+    bounded_personalization_enabled: z.boolean(),
+    shadow_confidence_threshold: z.number(),
+  }),
+  fallback_state: z.record(z.any()).default({}),
+})
+
+export type LabOverview = z.infer<typeof LabOverviewSchema>
+
+export const LabControlUpdateResponseSchema = z.object({
+  status: z.string(),
+  effective_config: z.object({
+    mode: LabModeSchema,
+    shadow_ranker_enabled: z.boolean(),
+    bounded_personalization_enabled: z.boolean(),
+    shadow_confidence_threshold: z.number(),
+  }),
+  audit: z.record(z.any()).default({}),
+})
+
+export type LabControlUpdateResponse = z.infer<typeof LabControlUpdateResponseSchema>
+
+export const LabExperimentRunResultSchema = z.object({
+  run_id: z.string(),
+  status: z.string(),
+  generated_at: z.string(),
+  baseline: z.record(z.any()).default({}),
+  candidate: z.record(z.any()).default({}),
+  comparison: z.record(z.any()).default({}),
+  apply_allowed: z.boolean(),
+  apply_block_reason: z.string().nullable().optional(),
+})
+
+export type LabExperimentRunResult = z.infer<typeof LabExperimentRunResultSchema>
+
+export const LabExperimentHistorySchema = z.object({
+  runs: z.array(
+    z.object({
+      run_id: z.string(),
+      generated_at: z.string(),
+      actor: z.string(),
+      experiment_type: z.string(),
+      candidate: z.record(z.any()).default({}),
+      apply_allowed: z.boolean(),
+      status: z.string(),
+    }),
+  ).default([]),
+})
+
+export type LabExperimentHistory = z.infer<typeof LabExperimentHistorySchema>

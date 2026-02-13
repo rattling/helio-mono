@@ -24,6 +24,7 @@ from services.api.routes import (
     attention,
     control_room,
     explorer,
+    lab,
     health,
     ingestion,
     query,
@@ -167,6 +168,7 @@ app.include_router(query.router, prefix="/api/v1", tags=["query"])
 app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["tasks"])
 app.include_router(control_room.router, prefix="/api/v1/control-room", tags=["control-room"])
 app.include_router(explorer.router, prefix="/api/v1/explorer", tags=["explorer"])
+app.include_router(lab.router, prefix="/api/v1/lab", tags=["lab"])
 app.include_router(attention.router, prefix="/attention", tags=["attention"])
 
 

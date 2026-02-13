@@ -71,6 +71,16 @@ Operator-facing interrogation models for Milestones 10 and 10A.
 - `ExplorerNotableEvent` + `ExplorerRankingMetadata` - deterministic notable-event ranking visibility
 - `ExplorerDeepLinkContext` - canonical cross-surface deep-link context contract including `mode`
 
+### Lab (`lab.py`)
+Operator-facing learning/control/experiment models for Milestone 11.
+
+**Key Models:**
+- `LabOverviewResponse` - diagnostics + effective config/mode snapshot
+- `LabControlUpdateRequest/Response` - bounded write contract with audit payload
+- `LabExperimentRunRequest/Result` - non-mutating run-phase comparison contract
+- `LabExperimentApplyRequest` - explicit apply/rollback/no-op decision contract
+- `LabExperimentHistoryResponse` - run history for operator inspection
+
 ## Contract Principles
 
 ### 1. Explicit and Typed
