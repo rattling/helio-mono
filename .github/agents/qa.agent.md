@@ -195,7 +195,7 @@ QA must verify that the implementation has not drifted from architectural intent
 
 **How to Check**:
 - Read `docs/ARCHITECTURE.md` (if exists)
-- Review any ADRs in `docs/ADR_*.md`
+- Review any ADRs in `docs/ADR/*.md`
 - Inspect imports and dependencies
 - Check if services reach into each other's internals
 - Verify contracts in `shared/contracts/` match actual usage

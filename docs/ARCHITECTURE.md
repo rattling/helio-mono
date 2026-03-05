@@ -1,25 +1,28 @@
 # Helionyx Architecture
 
-**Version**: 0.3 (Milestone 3)  
-**Last Updated**: February 12, 2026  
-**Status**: Deployment-Ready
+**Version**: 0.5 (Architecture Index Refactor)  
+**Last Updated**: March 5, 2026  
+**Status**: Active
 
-## Overview
+## Purpose
 
-Helionyx is a personal decision and execution substrate built on an append-only event log foundation. It records, interprets, and surfaces decisions from conversational data while maintaining explicit human authority and full traceability.
+This document is the **top-level architecture index** for Helionyx.
 
-### Core Principles
+It intentionally stays concise and stable. Deep technical details, diagrams,
+and process-specific evolution live in `docs/architecture/`.
 
-1. **Append-only event log** - Immutable source of truth
-2. **Explicit contracts** - Services interact through defined interfaces
-3. **Human authority** - LLMs are tools, not autonomous agents (within bounded surfaces)
-4. **Durable artifacts** - All reasoning and decisions are recorded
-5. **Service-oriented monorepo** - Independently testable and evolvable components
-6. **Environment-aware configuration** - Separate dev/staging/live configurations (M2+)
+## Core Principles
 
----
+1. **Append-only event log** is the immutable source of truth.
+2. **Human authority** is absolute.
+3. **Bounded autonomy** is allowed only under explicit policy.
+4. **Deterministic guardrails** enforce fail-closed behavior.
+5. **Derived state** is rebuildable from durable history.
+6. **Service boundaries** are explicit and contract-first.
 
-## System Context
+## Architecture Map
+
+### System Context
 
 ```mermaid
 graph TB
@@ -27,888 +30,123 @@ graph TB
     ChatGPT[ChatGPT Export]
     Telegram[Telegram]
     CLI[CLI]
-    
+    APIClient[API/Web Clients]
+
     Helionyx[Helionyx System]
-    
+    Control[Control Plane\nPolicy + Guardrails]
+    Orchestration[Orchestration Plane\nLangGraph]
+
     LLM[OpenAI API]
-    
+
     User -->|Messages| Telegram
     User -->|Dumps| ChatGPT
     User -->|Commands| CLI
-    
+    User -->|Queries/Actions| APIClient
+
     ChatGPT -->|Import| Helionyx
     Telegram -->|Messages| Helionyx
     CLI -->|Commands| Helionyx
-    
-    Helionyx -->|Extraction| LLM
+    APIClient -->|REST| Helionyx
+
+    Helionyx --> Control
+    Control --> Orchestration
+
+    Orchestration -->|Bounded reasoning\nand extraction| LLM
     LLM -->|Responses| Helionyx
-    
+
     Helionyx -->|Queries| User
     Helionyx -->|Reminders| Telegram
 ```
 
-**External Actors:**
-- **Human User** - Source of authority, primary actor
-- **ChatGPT Export** - Historical conversation data (bootstrap)
-- **Telegram** - Active conversational interface
-- **OpenAI API** - LLM for extraction and summarization
-
----
-
-## Configuration Management (M2+)
-
-### Environment-Aware Configuration
-
-Helionyx supports three distinct environments with separate configurations:
-
-- **dev** - Development environment (verbose logging, mock LLM optional)
-- **staging** - Pre-production testing (production-like but isolated data)
-- **live** - Production environment (strict error handling, cost controls)
-
-**Configuration Loading Strategy:**
-1. Load base `.env` file (if exists)
-2. Overlay environment-specific `.env.{ENV}` file (if exists)
-3. Environment variables override file values
-
-**Usage:**
-```bash
-make run               # Default: dev
-make run ENV=staging   # Staging environment
-make run ENV=live      # Live environment
-```
-
-**Configuration Variables:**
-- Storage paths (event store, projections DB)
-- OpenAI API credentials and limits
-- Telegram bot credentials
-- Notification settings
-- Logging levels per environment
-
-See `.env.template` for complete configuration documentation.
-
----
-
-## Deployment Architecture (M3+)
-
-### Deployment Model
-
-Helionyx is deployed as a **long-running systemd service on node1**, supporting multiple isolated environments on the same host. This pragmatic approach enables safe testing and gradual rollout without multi-node complexity.
-
-**Target Platform**: Linux server (node1) with systemd  
-**Deployment Method**: Make-based commands with shell script automation  
-**Service Management**: systemd unit files per environment
-
-**Encryption at Rest (Host-Level):**
-- For node1 deployments, `/var/lib/helionyx` is expected to be an encrypted mount (dm-crypt/LUKS).
-- Helionyx stores plaintext on the filesystem; confidentiality at rest is provided by the host volume encryption.
-
-### Same-Host Multi-Environment Strategy
-
-Three environments run simultaneously on node1 with complete isolation:
-
-```mermaid
-graph TB
-    subgraph "node1 (Single Host)"
-        subgraph "Dev Environment"
-            DEV_SVC[helionyx-dev.service<br/>Port 8000]
-            DEV_DATA[(/var/lib/helionyx/dev/)]
-            DEV_BOT[Dev Telegram Bot]
-        end
-        
-        subgraph "Staging Environment"
-            STG_SVC[helionyx-staging.service<br/>Port 8001]
-            STG_DATA[(/var/lib/helionyx/staging/)]
-            STG_BOT[Staging Telegram Bot]
-        end
-        
-        subgraph "Live Environment"
-            LIVE_SVC[helionyx.service<br/>Port 8002]
-            LIVE_DATA[(/var/lib/helionyx/live/)]
-            LIVE_BOT[Live Telegram Bot]
-        end
-    end
-    
-    DEV_SVC -->|Reads/Writes| DEV_DATA
-    STG_SVC -->|Reads/Writes| STG_DATA
-    LIVE_SVC -->|Reads/Writes| LIVE_DATA
-    
-    DEV_SVC -.->|Sends via| DEV_BOT
-    STG_SVC -.->|Sends via| STG_BOT
-    LIVE_SVC -.->|Sends via| LIVE_BOT
-```
-
-### Environment Isolation
-
-Each environment maintains complete isolation:
-
-| Aspect | Dev | Staging | Live |
-|--------|-----|---------|------|
-| **API Port** | 8000 | 8001 | 8002 |
-| **Data Path** | `/var/lib/helionyx/dev/` | `/var/lib/helionyx/staging/` | `/var/lib/helionyx/live/` |
-| **Service Name** | `helionyx-dev.service` | `helionyx-staging.service` | `helionyx.service` |
-| **Config File** | `.env.dev` | `.env.staging` | `.env.live` |
-| **Telegram Bot** | `helionyx_dev_bot` | `helionyx_staging_bot` | `helionyx_bot` |
-| **Log Level** | DEBUG | INFO | WARNING |
-| **LLM** | Mock optional | Real | Real |
-
-**Isolation Guarantees:**
-- No shared state between environments
-- No port conflicts
-- Independent service lifecycle
-- Separate Telegram notification channels
-- Environment-specific cost controls
-
-### Systemd Service Management
-
-Each environment runs as an independent systemd service:
-
-**Service Files:**
-- `/etc/systemd/system/helionyx-dev.service`
-- `/etc/systemd/system/helionyx-staging.service`
-- `/etc/systemd/system/helionyx.service`
-
-**Key Service Features:**
-- Auto-restart on failure
-- Boot-time startup (optional, per environment)
-- Centralized logging to journald (`journalctl -u helionyx-<env>`)
-- Clean shutdown handling
-- User-level execution (non-root)
-
-**Service Control:**
-```bash
-# Via systemd directly
-sudo systemctl start helionyx-dev
-sudo systemctl status helionyx-dev
-sudo systemctl stop helionyx-dev
-
-# Via make commands (preferred)
-make deploy ENV=dev    # Deploy and restart
-make status ENV=dev    # Check status
-make logs ENV=dev      # View logs
-make restart ENV=dev   # Restart service
-make stop ENV=dev      # Stop service
-```
-
-### Deployment Workflow
-
-**Initial Setup** (first-time only):
-1. Clone repository to node1
-2. Create virtual environment and install dependencies
-3. Configure environment-specific `.env.{env}` files
-4. Set up Telegram bots (human task via @BotFather)
-5. Install systemd service files
-6. Enable and start services
-
-**Standard Deployment** (updates):
-1. `make deploy ENV=<env>` executes:
-   - Pull latest code from milestone branch
-   - Update dependencies if changed
-   - Preserve event log and projection data
-   - Restart systemd service
-   - Verify service health
-   - Rollback on failure
-
-**Deployment Properties:**
-- **Idempotent** - Safe to run repeatedly
-- **Atomic** - Service restarts cleanly
-- **Preserves state** - Event log never mutated
-- **Environment-aware** - Respects isolation boundaries
-- **Reversible** - Rollback supported on failure
-
-### Configuration-Driven Binding
-
-API server binding is configuration-driven (M3+):
-
-```python
-# services/api/runner.py
-uvicorn.run(
-    "services.api.main:app",
-    host=config.API_HOST,    # From API_HOST env var (default: 0.0.0.0)
-    port=config.API_PORT,    # From API_PORT env var (default: 8000)
-    ...
-)
-```
-
-This enables same-host deployment where each environment binds to its configured port.
-
-### Operational Considerations
-
-**Monitoring:**
-- Health check: `GET /health` on each environment's port
-- Logs: `make logs ENV=<env>` or `journalctl -u helionyx-<env>`
-- Status: `make status ENV=<env>` or `systemctl status helionyx-<env>`
-
-**Data Management:**
-- Event logs are append-only, never deployed
-- Projections can be rebuilt from events
-- Backups cover `.env` files and event logs (M4)
-
-**Deployment Discipline:**
-- All deployments are auditable (git commits)
-- Deployment preserves event log integrity
-- Staging environment validates changes before live
-- Rollback available if service fails health check
-
-**Limitations:**
-- Single host (no high availability)
-- No load balancing (personal use scale)
-- No containerization (pragmatic simplicity)
-- Future: can containerize or distribute if needed
-
----
-
-## Service Architecture
-
-### Component Diagram
+### Service/Plane Topology
 
 ```mermaid
 graph TB
     subgraph "Unified Service"
+        subgraph "Control Plane"
+            POL[Policy + Responsibility Boundaries]
+            GATE[Guardrails + Escalation]
+        end
+
+        subgraph "Orchestration Plane"
+            ORCH[LangGraph Runtime]
+        end
+
         subgraph "Adapter Layer"
-            API[FastAPI HTTP Server]
-            TG[Telegram Bot]
+            API[FastAPI]
+            TG[Telegram]
             CLI[CLI Scripts]
         end
-        
+
         subgraph "Domain Services"
-            ING[Ingestion Service]
-            EXT[Extraction Service]
-            QRY[Query Service]
+            ING[Ingestion]
+            EXT[Extraction]
+            QRY[Query]
         end
-        
-        subgraph "Infrastructure"
-            EVT[(Event Store<br/>JSONL Files)]
-            PROJ[(Projections DB<br/>SQLite)]
+
+        subgraph "Data Substrate"
+            EVT[(Event Store JSONL)]
+            PROJ[(Projections SQLite)]
         end
     end
-    
-    subgraph "External Interfaces"
-        HTTP[HTTP Clients]
-        TGClient[Telegram Users]
-        Scripts[CLI Tools]
-    end
-    
-    subgraph "External Services"
-        LLM[OpenAI API]
-    end
-    
-    HTTP -->|REST API| API
-    TGClient -->|Bot Commands| TG
-    Scripts -->|Direct Calls| CLI
-    
-    API --> ING
-    API --> QRY
-    TG --> ING
-    TG --> QRY
-    CLI --> ING
-    CLI --> QRY
-    
+
+    API --> ORCH
+    TG --> ORCH
+    CLI --> ORCH
+
+    POL --> ORCH
+    GATE --> ORCH
+
+    ORCH --> ING
+    ORCH --> EXT
+    ORCH --> QRY
+
     ING --> EVT
     EVT --> EXT
-    EXT --> LLM
     EXT --> EVT
     EVT --> QRY
     QRY --> PROJ
-    
-    style EVT fill:#f9f,stroke:#333,stroke-width:4px
-    style PROJ fill:#bbf,stroke:#333,stroke-width:2px
-    style API fill:#afa,stroke:#333,stroke-width:2px
-    style TG fill:#afa,stroke:#333,stroke-width:2px
 ```
 
-### Service Runner Model (M2+)
+## Process Architecture Docs
 
-Helionyx operates as a **unified long-running service** that combines:
-- FastAPI HTTP server for API endpoints
-- Telegram bot adapter (optional, config-driven)
-- Background task management (scheduling, notifications)
-- Coordinated service lifecycle (startup, shutdown)
+Use these as the source of truth for detailed behavior and evolution.
 
-**Key Features:**
-- Single process with asyncio-based concurrency
-- Environment-aware configuration (dev/staging/live)
-- Graceful startup and shutdown with resource cleanup
-- Health and readiness endpoints for monitoring
-- Integrated logging and error handling
+- `docs/architecture/PROCESS_ORCHESTRATION_CONTROL.md`
+  - LangGraph runtime model, control-plane boundaries, audit event families.
+- `docs/architecture/PROCESS_MESSAGE_PIPELINE.md`
+  - Canonical message→extraction→projection flow, state machines, data flow.
+- `docs/architecture/PROCESS_RUNTIME_DEPLOYMENT.md`
+  - Service lifecycle, environment isolation, runtime/deployment posture.
+- `docs/architecture/PROCESS_CALENDAR_EMAIL.md`
+  - Planned M13 calendar/email process boundaries and schedule semantics.
 
-**Entry Point:** `services/api/runner.py` using `make run ENV=<env>`
+## Policy Contract
 
-### Service Responsibilities
+Control-plane policy envelope and deterministic enforcement are versioned in:
 
-#### Event Store
-**Responsibility**: Append-only event persistence  
-**Technology**: File-based JSONL  
-**Contract**: `EventStoreProtocol`
+- `docs/CONTROL_PLANE_POLICY_CONTRACT.md`
 
-- Append events atomically
-- Retrieve by ID, type, time range
-- Stream events for processing
-- **Never** modifies existing events
+## ADRs and Milestone Charters
 
-**Rationale**: File-based for simplicity, inspectability, and zero external dependencies. Sufficient for single-user use case.
+- ADRs: `docs/ADR/`
+- Milestone charters/reports: `docs/Milestones/`
 
----
+## How to Update Architecture Docs
 
-#### Ingestion Service
-**Responsibility**: Input normalization and recording  
-**Technology**: Python service  
-**Contract**: N/A (entry point)
+When making major architecture changes:
 
-- Accept inputs from ChatGPT dumps, Telegram, CLI
-- Normalize to standard message format
-- Record as `MessageIngestedEvent`
-- Preserve all raw data as artifacts
-- Trigger extraction (synchronously for M0)
+1. Update the relevant single process doc in `docs/architecture/`.
+2. If policy semantics changed, update `docs/CONTROL_PLANE_POLICY_CONTRACT.md`.
+3. Add/update ADRs for non-trivial or irreversible decisions.
+4. Only update this index when top-level structure or doc map changes.
 
-**Source Adapters:**
-- ChatGPT dump parser (JSON)
-- Telegram bot handler
-- CLI command processor
-
----
-
-#### Extraction Service
-**Responsibility**: LLM-based object extraction  
-**Technology**: Python service + OpenAI SDK  
-**Contract**: `ExtractionServiceProtocol`
-
-- Read messages from event log
-- Construct prompts for LLM
-- Extract structured objects (Todo, Note, Track)
-- Record LLM prompts and responses as artifacts
-- Write `ObjectExtractedEvent` to event log
-
-**Extraction Logic:**
-- Stateless (state comes from event log)
-- Prompt engineering for object detection
-- Confidence scoring (optional)
-- Can be triggered on-demand or via event stream
-
-**LLM Integration (M1+):**
-- Uses `LLMServiceProtocol` abstraction
-- OpenAI implementation via `OpenAILLMService`
-- All LLM interactions recorded as artifacts (prompts and responses)
-- Error handling with exponential backoff and graceful degradation
-- Rate limiting via token bucket algorithm
-- Cost tracking and daily limits
-- See `docs/ADR_M1_LLM_INTEGRATION.md` for detailed architecture
-
----
-
-#### Query Service
-**Responsibility**: Queryable projections  
-**Technology**: Python service + SQLite  
-**Contract**: `QueryServiceProtocol`
-
-- Build projections from event log
-- Provide query operations (todos, notes, tracks)
-- Support filtering, search, tags
-- Trigger push notifications based on rules (M1+)
-
-**Projection Strategy:**
-- Derived from event log (can rebuild)
-- SQLite for pragmatic querying
-- Eventual consistency with event log
-- Periodic rebuild as needed
-
-**Persistence (M1+):**
-- Single SQLite database: `./data/projections/helionyx.db`
-- Schema includes todos, notes, tracks, metadata tables
-- Full projection rebuild from event log
-- Incremental updates for running system
-- See `docs/ADR_M1_SQLITE_PERSISTENCE.md` for detailed design
-- Schema definition: `services/query/schema.sql`
-
----
-
-### Interface Adapters
-
-Thin translation layers between external systems and core services. **Contain no business logic**.
-
-#### FastAPI HTTP API (M2+)
-
-**Responsibility**: RESTful adapter layer for HTTP access  
-**Technology**: FastAPI + Uvicorn  
-**Location**: `services/api/`
-
-**Endpoints:**
-- `GET /health` - Service health check
-- `GET /health/ready` - Readiness probe (DB connectivity)
-- `POST /api/v1/ingest/message` - Ingest a new message
-- `GET /api/v1/todos` - Query todos (with filters)
-- `GET /api/v1/notes` - Query notes (with search)
-- `GET /api/v1/tracks` - Query tracking items
-- `POST /api/v1/tasks/ingest` - Idempotent task ingest
-- `GET /api/v1/tasks` - Query canonical tasks
-- `GET /api/v1/tasks/{task_id}` - Fetch task by id
-- `PATCH /api/v1/tasks/{task_id}` - Update mutable fields
-- `POST /api/v1/tasks/{task_id}/complete` - Mark task complete
-- `POST /api/v1/tasks/{task_id}/snooze` - Snooze task
-- `POST /api/v1/tasks/{task_id}/link` - Link dependencies
-- `GET /api/v1/tasks/review/queue` - Deterministic review queue
-- `GET /api/v1/stats` - System statistics
-
-**Design Principles:**
-- Strictly adapter layer - no domain logic
-- Services injected via lifespan context manager
-- Pydantic models for request/response validation
-- Standard HTTP status codes and error handling
-- Environment-aware startup/shutdown
-
-**Lifecycle Management:**
-- FastAPI lifespan events manage service initialization
-- All services initialized once at startup
-- Database connections opened and closed cleanly
-- Telegram bot started as background asyncio task
-- Graceful shutdown on SIGTERM/SIGINT
-
-**Configuration:**
-- Environment-specific `.env.{dev|staging|live}` files
-- Loaded via `Config.from_env(ENV)` at startup
-- See `.env.template` for all configuration variables
-
-#### CLI Adapter
-
-**Responsibility**: Direct command-line interaction  
-**Technology**: Python scripts  
-**Location**: `scripts/`
-
-- **CLI Adapter**: Direct command-line interaction (development)
-- **HTTP API**: RESTful endpoints (future)
-- **Telegram Bot**: Active conversation interface (M1)
-
-Adapters contain no business logic, only:
-- Protocol translation
-- Authentication/authorization (future)
-- Error handling and user feedback
-
-**Telegram Bot (M1+)**:
-- Primary interactive interface for queries and notifications
-- Uses python-telegram-bot framework (v21+)
-- Stateless adapter pattern - no business logic in bot
-- Command handlers for queries and task lifecycle operations
-- Query commands: `/todos`, `/notes`, `/tracks`, `/tasks`, `/stats`
-- Task mutation commands: `/task_show`, `/task_done`, `/task_snooze`, `/task_priority`
-- Message ingestion for conversational data
-- Background scheduler for push notifications (reminders, daily summaries)
-- Notification state tracked in projection database
-- Single-user configuration (one chat ID)
-- See `docs/ADR_M1_TELEGRAM_ARCHITECTURE.md` for detailed design
-
----
-
-## Data Architecture
-
-### Event Schema
-All events extend `BaseEvent`:
-
-```python
-{
-    "event_id": UUID,
-    "event_type": EventType,
-    "timestamp": datetime,
-    "metadata": dict
-}
-```
-
-**Event Types:**
-- `MESSAGE_INGESTED` - Raw user or assistant message
-- `ARTIFACT_RECORDED` - LLM prompt, response, or summary
-- `OBJECT_EXTRACTED` - Structured todo, note, or track
-- `DECISION_RECORDED` - Decision/audit record (used for M5 task lifecycle replay)
-
-See `shared/contracts/events.py` for full schemas.
-
-### Object Schema
-Extracted objects conform to:
-
-```python
-{
-    "object_id": UUID,
-    "object_type": ObjectType,  # todo, note, track
-    "created_at": datetime,
-    "source_event_id": UUID,
-    # Type-specific fields
-}
-```
-
-See `shared/contracts/objects.py` for full details.
-
-### Data Flow Diagram
-
-```mermaid
-graph LR
-    MSG[Raw Message] --> E1[MessageIngested<br/>Event]
-    E1 --> ES[(Event Store)]
-    ES --> EXT[Extraction<br/>Service]
-    EXT --> LLM[OpenAI API]
-    LLM --> ART[Artifact<br/>Events]
-    ART --> ES
-    EXT --> E2[ObjectExtracted<br/>Event]
-    E2 --> ES
-    ES --> PROJ[Query Service<br/>Projections]
-    PROJ --> SQLITE[(SQLite)]
-    SQLITE --> USER[User Queries]
-    
-    style ES fill:#f9f,stroke:#333,stroke-width:4px
-    style SQLITE fill:#bbf,stroke:#333,stroke-width:2px
-```
-
----
-
-## State Management
-
-### Object Lifecycle Diagrams
-
-#### Todo State Machine
-
-```mermaid
-stateDiagram-v2
-    [*] --> Pending: Create
-    Pending --> InProgress: Start
-    Pending --> Cancelled: Cancel
-    InProgress --> Completed: Complete
-    InProgress --> Cancelled: Cancel
-    InProgress --> Pending: Pause
-    Completed --> [*]
-    Cancelled --> [*]
-    
-    note right of Pending
-        Default initial state
-    end note
-    
-    note right of Completed
-        Records completion timestamp
-    end note
-```
-
-#### Note Lifecycle
-
-```mermaid
-stateDiagram-v2
-    [*] --> Active: Create
-    Active --> Active: Update/Tag
-    Active --> [*]: Archive (future)
-    
-    note right of Active
-        Notes are immutable in event log
-        Updates create new events
-    end note
-```
-
-#### Track State Machine
-
-```mermaid
-stateDiagram-v2
-    [*] --> Active: Create
-    Active --> Paused: Pause
-    Active --> Completed: Complete
-    Paused --> Active: Resume
-    Paused --> Completed: Complete
-    Completed --> [*]
-    
-    note right of Active
-        Monitored regularly
-    end note
-```
-
----
-
-## Key Flows
-
-### Canonical Flow: Message to Extracted Object
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Telegram
-    participant Ingestion
-    participant EventStore
-    participant Extraction
-    participant OpenAI
-    participant Query
-    
-    User->>Telegram: "Remind me to review reports"
-    Telegram->>Ingestion: forward_message()
-    
-    Ingestion->>EventStore: append(MessageIngestedEvent)
-    EventStore-->>Ingestion: event_id
-    
-    Ingestion->>Extraction: trigger_extraction(event_id)
-    Extraction->>EventStore: get_by_id(event_id)
-    EventStore-->>Extraction: MessageIngestedEvent
-    
-    Extraction->>OpenAI: extract_objects(message)
-    Extraction->>EventStore: append(ArtifactRecordedEvent [prompt])
-    
-    OpenAI-->>Extraction: extracted_objects_json
-    Extraction->>EventStore: append(ArtifactRecordedEvent [response])
-    
-    Extraction->>EventStore: append(ObjectExtractedEvent [todo])
-    EventStore-->>Extraction: event_id
-    
-    Extraction-->>Ingestion: extraction_complete
-    
-    Note over Query: Asynchronously rebuilds projections
-    Query->>EventStore: stream_events(since=last_processed)
-    EventStore-->>Query: [new events]
-    Query->>Query: update_projections()
-    
-    User->>Telegram: "What are my todos?"
-    Telegram->>Query: get_todos()
-    Query-->>Telegram: [todos list]
-    Telegram-->>User: Display todos
-```
-
-### ChatGPT Dump Import Flow
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant CLI
-    participant Ingestion
-    participant EventStore
-    participant Extraction
-    
-    User->>CLI: import_chatgpt_dump(file.json)
-    CLI->>CLI: parse_json()
-    
-    loop Each conversation message
-        CLI->>Ingestion: ingest_message(content, metadata)
-        Ingestion->>EventStore: append(MessageIngestedEvent)
-    end
-    
-    CLI-->>User: import_complete (N messages)
-    
-    User->>CLI: run_extraction()
-    CLI->>Extraction: extract_from_recent(limit=N)
-    
-    loop Each unprocessed message
-        Extraction->>Extraction: process_message()
-        Extraction->>EventStore: append events
-    end
-    
-    CLI-->>User: extraction_complete
-```
-
----
-
-## Technology Stack
-
-| Component | Technology | Version | Rationale |
-|-----------|-----------|---------|-----------|
-| Language | Python | 3.11+ | Project default, rich ecosystem |
-| API Framework | FastAPI | 0.115+ | Modern, async, auto-docs |
-| Validation | Pydantic | 2.9+ | Type safety, schemas |
-| Event Storage | JSONL Files | - | Simple, inspectable, durable |
-| Projections | SQLite | 3.x | Embedded, zero-config, reliable |
-| LLM Client | OpenAI SDK | 1.54+ | Primary provider for M1 |
-| Testing | pytest | 8.3+ | Standard Python testing |
-| Code Quality | black, ruff, mypy | Latest | Linting and type checking |
-
----
-
-## Design Decisions
-
-### 1. File-Based Event Store
-
-**Decision**: Use append-only JSONL files for event storage
-
-**Rationale**:
-- ✅ Simple implementation
-- ✅ Human-inspectable
-- ✅ No external dependencies
-- ✅ Sufficient for single-user throughput
-- ✅ Can migrate to DB later if needed
-
-**Trade-offs**:
-- Slower for large-scale queries (mitigated by projections)
-- No ACID transactions across events (acceptable for append-only)
-- File system limits (not a concern for personal use)
-
----
-
-### 2. Synchronous Service Interaction (M0)
-
-**Decision**: Services call each other directly (not async messaging)
-
-**Rationale**:
-- ✅ Simpler for M0 scope
-- ✅ Easier to debug and reason about
-- ✅ No additional infrastructure (message queue)
-- ✅ Can evolve to async later
-
-**Trade-offs**:
-- Services more tightly coupled at runtime
-- Less resilient to service failures
-- Lower throughput ceiling
-
-**Future**: Add message queue (Redis, RabbitMQ) if async needed
-
----
-
-### 3. SQLite for Projections
-
-**Decision**: Use SQLite for queryable read models
-
-**Rationale**:
-- ✅ Embedded (no server)
-- ✅ Full SQL capability
-- ✅ Battle-tested reliability
-- ✅ Easy backup and inspection
-
-**Trade-offs**:
-- Single-writer limitation (not a problem for personal use)
-- Less suitable for distributed systems
-
----
-
-### 4. Python Across All Services
-
-**Decision**: Pure Python stack (no polyglot)
-
-**Rationale**:
-- ✅ Single language reduces complexity
-- ✅ Easier for single developer / agent coordination
-- ✅ Rich ecosystem for LLM, data, APIs
-- ✅ Matches project defaults
-
----
-
-## Configuration Management
-
-### Environment Variables
-- `OPENAI_API_KEY` - Required for extraction
-- `TELEGRAM_BOT_TOKEN` - Required for Telegram (M1)
-- `EVENT_STORE_PATH` - Event log directory
-- `PROJECTIONS_DB_PATH` - SQLite database path
-- `LOG_LEVEL` - Logging verbosity
-- `ENVIRONMENT` - dev, staging, production
-
-### Files
-- `.env` - Local development config (gitignored)
-- `.env.example` - Template for required vars
-
----
-
-## Testing Strategy
-
-### Unit Tests
-- Contract/schema validation
-- Service logic in isolation
-- Mock external dependencies
-
-### Integration Tests
-- Service-to-service interactions
-- Event store read/write
-- Projection rebuilding
-
-### End-to-End Tests
-- Full flow from input to query
-- Walking skeleton exercised
-- CLI commands
-
----
-
-## Deployment Model (Current)
-
-**M0/M1**: Local development only
-
-```
-User Machine
-├── Python 3.11+ environment
-├── Event logs (./data/events/)
-├── Projections DB (./data/projections/helionyx.db)
-└── Services run locally
-```
-
-**Future** (M2+): Containerized or cloud deployment
-- Docker Compose for local dev
-- Cloud hosting for production
-- Service separation as needed
-
----
-
-## Monitoring and Observability
-
-**M0**: Basic logging to stdout/files
-
-**M1+**:
-- Structured logging (JSON)
-- Event log inspection tools
-- Projection lag monitoring
-- LLM API usage tracking
-
----
-
-## Security Considerations
-
-**M0/M1 - Single User**:
-- API keys in environment (not in code)
-- Local file permissions
-- No network exposure
-
-**Future - Multi-User**:
-- Authentication required
-- Authorization per user
-- Data isolation
-- API rate limiting
-
----
-
-## Scalability Considerations
-
-**Current Design Limits**:
-- Single user: thousands of messages per day (sufficient)
-- Event store: millions of events (years of personal use)
-- SQLite: acceptable for < 100GB (far beyond personal use)
-
-**If Scaling Needed**:
-- Event store → PostgreSQL with partitioning
-- Message queue for async processing
-- Read replicas for projections
-- Service separation and independent scaling
-
-**Not a concern for M0/M1 scope.**
-
----
-
-## Future Evolution Paths
-
-### Milestone 1
-- Telegram integration
-- ChatGPT dump import
-- Basic object extraction
-- Query capabilities
-
-### Milestone 2+ (Non-binding)
-- Native chat UI
-- Richer decision models
-- Policy and rule engine
-- Multi-agent orchestration
-- External integrations (email, calendar)
-- Multi-user support
-
----
-
-## Appendix: Architectural Review Checklist
-
-When reviewing changes or considering evolution:
-
-- [ ] Does it preserve the append-only event log?
-- [ ] Are service boundaries respected?
-- [ ] Are contracts explicit and versioned?
-- [ ] Does it maintain human authority?
-- [ ] Is state durable and recoverable?
-- [ ] Can services be tested independently?
-- [ ] Is it pragmatic for current needs (not over-engineered)?
-- [ ] Does it enable future evolution without rewrite?
-
----
+This keeps architecture maintenance focused: one major change, one process doc.
 
 ## Document History
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-02-10 | Architect Agent | Initial architecture baseline for Milestone 0 |
-
+| 0.4 | 2026-03-05 | Architect Agent | Added M12/M13 direction (orchestration + bounded autonomy) |
+| 0.5 | 2026-03-05 | Architect Agent | Refactored into concise index; moved deep details to `docs/architecture/` |

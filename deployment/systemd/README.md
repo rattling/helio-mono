@@ -268,4 +268,5 @@ See `man systemd.exec` for full list of security options.
 
 - **Deployment Guide**: [`docs/DEPLOYMENT.md`](../../docs/DEPLOYMENT.md)
 - **Architecture**: [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md)
+- **Architecture Processes**: [`docs/architecture/`](../../docs/architecture/)
 - **Configuration**: [`.env.template`](../../.env.template)

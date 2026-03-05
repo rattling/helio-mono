@@ -189,7 +189,11 @@ helio-mono/
 │   └── agents/           # Agent role charters and templates
 ├── docs/                 # Project documentation
 │   ├── PROJECT_CHARTER.md
-│   └── ARCHITECTURE_DECISION_M0.md
+│   ├── ARCHITECTURE.md
+│   ├── architecture/     # Process-level architecture deep docs
+│   ├── CONTROL_PLANE_POLICY_CONTRACT.md
+│   ├── ADR/
+│   └── Milestones/
 ├── web/                  # Milestone 9+ web UI (React + TypeScript + Vite)
 ├── services/             # Core services (service-oriented monorepo)
 │   ├── event_store/     # Append-only event persistence
@@ -291,7 +295,13 @@ make clean
 - Runtime mode control: `ATTENTION_PERSONALIZATION_MODE=deterministic|shadow|bounded`
 - Replay diagnostics report: `.venv/bin/python scripts/evaluate_attention_replay.py --out data/projections/attention_replay_report.json`
 - Milestone 8 per-target diagnostics: `jq '.target_diagnostics' data/projections/attention_replay_report.json`
-- Operational rollout/rollback and QA checklist: `docs/M6_LEARNING_RUNBOOK.md`
+- Operational rollout/rollback and QA checklist: `docs/Milestones/M6_LEARNING_RUNBOOK.md`
+
+## Forward Planning
+
+- Milestone 12 charter draft: `docs/Milestones/MILESTONE12_CHARTER.md` (LangGraph orchestration plane for current Helionyx capabilities and bounded autonomy controls)
+- Milestone 13 charter draft: `docs/Milestones/MILESTONE13_CHARTER.md` (Google/Zoho calendar + Gmail/email digest integrations on top of M12 orchestration)
+- Control-plane policy contract (living spec): `docs/CONTROL_PLANE_POLICY_CONTRACT.md`
 
 ## OpenAI Integration
 
@@ -436,7 +446,9 @@ Deep-link contract for cross-surface reproducibility is URL-based:
 ## Documentation
 
 - **Project Charter**: [docs/PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md)
-- **Architecture Decision**: [docs/ARCHITECTURE_DECISION_M0.md](docs/ARCHITECTURE_DECISION_M0.md)
+- **Architecture Index**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **Process Architecture Docs**: [docs/architecture](docs/architecture)
+- **Architecture Decision**: [docs/ADR/ARCHITECTURE_DECISION_M0.md](docs/ADR/ARCHITECTURE_DECISION_M0.md)
 - **Engineering Constitution**: [.github/ENGINEERING_CONSTITUTION.md](.github/ENGINEERING_CONSTITUTION.md)
 - **Workflow**: [.github/WORKFLOW.md](.github/WORKFLOW.md)
 
@@ -448,6 +460,8 @@ Deep-link contract for cross-surface reproducibility is URL-based:
 - **Milestone 10** (Complete): Data Explorer (Power-User Interrogation and Traceability)
 - **Milestone 10A** (Complete): Data Explorer Guided Insights (Opinionated UX + Ad Hoc Power)
 - **Milestone 11** (In Progress): Helionyx Lab (Learning, LLMs, and Controlled Experimentation)
+- **Milestone 12** (Planned): LangGraph orchestration plane for existing capabilities
+- **Milestone 13** (Planned): Calendar and email digest integrations
 
 ## Contributing
 

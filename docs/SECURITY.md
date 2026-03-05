@@ -81,7 +81,7 @@ sudo journalctl -u helionyx -f
 M4 decision: defer application-level encryption-at-rest.
 
 See ADR:
-- [docs/ADR_M4_ENCRYPTION_AT_REST.md](ADR_M4_ENCRYPTION_AT_REST.md)
+- [docs/ADR/ADR_M4_ENCRYPTION_AT_REST.md](ADR/ADR_M4_ENCRYPTION_AT_REST.md)
 
 Compensating controls:
 - Restrictive filesystem permissions for runtime data and backups

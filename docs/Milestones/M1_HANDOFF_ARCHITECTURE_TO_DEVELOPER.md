@@ -102,7 +102,7 @@ You can work on these **in any order** or in parallel:
 
 #### Issue #15: OpenAI Extraction Service
 **Complexity**: M (Moderate)  
-**Reference**: `docs/ADR_M1_LLM_INTEGRATION.md`
+**Reference**: `docs/ADR/ADR_M1_LLM_INTEGRATION.md`
 
 **Files to Create**:
 ```
@@ -135,7 +135,7 @@ services/extraction/service.py  # Refactor to use LLM client
 
 #### Issue #14: SQLite Query Service Persistence
 **Complexity**: M (Moderate)  
-**Reference**: `docs/ADR_M1_SQLITE_PERSISTENCE.md`
+**Reference**: `docs/ADR/ADR_M1_SQLITE_PERSISTENCE.md`
 
 **Files to Create**:
 ```
@@ -169,7 +169,7 @@ services/query/service.py   # Replace in-memory with SQLite
 
 #### Issue #13: Telegram Bot Commands and Handlers
 **Complexity**: M (Standard)  
-**Reference**: `docs/ADR_M1_TELEGRAM_ARCHITECTURE.md`
+**Reference**: `docs/ADR/ADR_M1_TELEGRAM_ARCHITECTURE.md`
 
 **Dependencies**: Install `python-telegram-bot==21.0+`
 
@@ -215,7 +215,7 @@ services/adapters/telegram/
     notifications.py    # Notification formatters
 ```
 
-**Reference**: `docs/ADR_M1_TELEGRAM_ARCHITECTURE.md` section 7
+**Reference**: `docs/ADR/ADR_M1_TELEGRAM_ARCHITECTURE.md` section 7
 
 ---
 
