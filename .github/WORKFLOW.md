@@ -14,7 +14,7 @@ It specifies:
 - how work is handed off and resumed
 
 This document assumes the constraints and posture defined in:
-- ENGINEERING_CONSTITUTION.md
+- SDLC/ENGINEERING_CONSTITUTION.md
 - Role charters in `SDLC/agent/modes/`
 - Process authority and startup runbook in `SDLC/`
 

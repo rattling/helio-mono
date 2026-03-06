@@ -48,7 +48,7 @@ Productivity default:
 If you are doing structured workflow work, read these documents in order before starting:
 
 1. **Engineering Framework**:
-  - [ENGINEERING_CONSTITUTION.md](ENGINEERING_CONSTITUTION.md) - Core engineering values and technical posture
+  - [SDLC/ENGINEERING_CONSTITUTION.md](../SDLC/ENGINEERING_CONSTITUTION.md) - Core engineering values and technical posture
   - [WORKFLOW.md](WORKFLOW.md) - How work is structured and executed
   - Your role charter in [SDLC agent modes](../SDLC/agent/modes/)
 

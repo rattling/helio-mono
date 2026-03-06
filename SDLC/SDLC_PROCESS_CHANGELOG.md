@@ -20,6 +20,12 @@ Tracks durable updates to SDLC/process guidance (not per-run findings).
   - `SDLC/SDLC_GITHUB_BRIDGE_POLICY.md`
 
 ### Updated
+- Moved engineering constitution to SDLC root and updated all cross-references:
+  - `SDLC/ENGINEERING_CONSTITUTION.md`
+- Updated process template compliance checks to validate SDLC template paths:
+  - `SDLC/scripts/check_workflow_templates.py`
+
+### Updated
 - `.github/copilot-instructions.md`
   - checklist-derived milestone issue set is authoritative
   - mandatory per-issue durable loop

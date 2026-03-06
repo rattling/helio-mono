@@ -188,11 +188,17 @@ See [`.env.template`](.env.template) for complete documentation of all configura
 
 ```
 helio-mono/
-├── .github/               # Engineering framework and workflow
-│   ├── ENGINEERING_CONSTITUTION.md
+├── .github/               # GitHub-discovery files and workflow entrypoints
 │   ├── WORKFLOW.md
 │   ├── copilot-instructions.md
-│   └── agents/           # Agent role charters and templates
+│   ├── workflows/
+│   ├── ISSUE_TEMPLATE/
+│   └── PULL_REQUEST_TEMPLATE.md
+├── SDLC/                 # SDLC framework (human + agent + scripts)
+│   ├── ENGINEERING_CONSTITUTION.md
+│   ├── agent/
+│   ├── human/
+│   └── scripts/
 ├── docs/                 # Project documentation
 │   ├── PROJECT_CHARTER.md
 │   ├── ARCHITECTURE_DECISION_M0.md
@@ -214,7 +220,6 @@ helio-mono/
 │   └── common/          # Common utilities
 ├── tests/               # Test suite
 ├── scripts/             # Operational scripts
-│   └── process/         # Process compliance and rehydration helpers
 ├── data/                # Runtime data (gitignored)
 │   ├── events/         # Event store files
 │   └── projections/    # SQLite projection databases
@@ -450,7 +455,7 @@ Deep-link contract for cross-surface reproducibility is URL-based:
 
 - **Project Charter**: [docs/PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md)
 - **Architecture Decision**: [docs/ARCHITECTURE_DECISION_M0.md](docs/ARCHITECTURE_DECISION_M0.md)
-- **Engineering Constitution**: [.github/ENGINEERING_CONSTITUTION.md](.github/ENGINEERING_CONSTITUTION.md)
+- **Engineering Constitution**: [SDLC/ENGINEERING_CONSTITUTION.md](SDLC/ENGINEERING_CONSTITUTION.md)
 - **Workflow**: [.github/WORKFLOW.md](.github/WORKFLOW.md)
 
 ## Milestones

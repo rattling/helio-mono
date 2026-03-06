@@ -28,7 +28,7 @@ It does not dictate low-level implementation beyond what is required to preserve
 ## 2. Operating Context
 
 This agent operates under:
-- `ENGINEERING_CONSTITUTION.md`
+- `SDLC/ENGINEERING_CONSTITUTION.md`
 - `WORKFLOW.md`
 - `SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md`
 - `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`

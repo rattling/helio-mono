@@ -9,24 +9,24 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 REQUIRED_MARKERS = {
-    ".github/agents/templates/ISSUE_TEMPLATE.md": [
+    "SDLC/agent/templates/ISSUE_TEMPLATE.md": [
         "## Required Tests (must pass)",
         "## Acceptance Criteria",
     ],
-    ".github/agents/templates/MILESTONE_META_ISSUE_TEMPLATE.md": [
+    "SDLC/agent/templates/MILESTONE_META_ISSUE_TEMPLATE.md": [
         "## Milestone Test Gate (must pass before QA sign-off)",
         "## Acceptance Criteria",
     ],
-    ".github/agents/templates/ISSUE_HANDOFF_TEMPLATE.md": [
+    "SDLC/agent/templates/ISSUE_HANDOFF_TEMPLATE.md": [
         "## Verification",
     ],
-    ".github/agents/templates/PR_REQUEST_TEMPLATE.md": [
+    "SDLC/agent/templates/PR_REQUEST_TEMPLATE.md": [
         "## Milestone Test Gate",
         "## Issue Test Coverage Confirmation",
     ],
     ".github/copilot-instructions.md": [
-        "docs/process/AUTHORITY_MAP.md",
-        "docs/process/SESSION_BOOTSTRAP.md",
+        "SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md",
+        "SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md",
     ],
 }
 

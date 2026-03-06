@@ -29,7 +29,7 @@ Passing tests alone is insufficient.
 In QA mode, the agent operates within:
 
 - `WORKFLOW.md`
-- `ENGINEERING_CONSTITUTION.md`
+- `SDLC/ENGINEERING_CONSTITUTION.md`
 - `SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md`
 - `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`
 - `SDLC/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md`
