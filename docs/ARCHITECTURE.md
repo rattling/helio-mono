@@ -1,7 +1,7 @@
 # Helionyx Architecture
 
-**Version**: 0.5 (Architecture Index Refactor)  
-**Last Updated**: March 5, 2026  
+**Version**: 0.6 (M12 LangGraph Runtime Active)  
+**Last Updated**: March 6, 2026  
 **Status**: Active
 
 ## Purpose
@@ -150,3 +150,4 @@ This keeps architecture maintenance focused: one major change, one process doc.
 | 0.1 | 2026-02-10 | Architect Agent | Initial architecture baseline for Milestone 0 |
 | 0.4 | 2026-03-05 | Architect Agent | Added M12/M13 direction (orchestration + bounded autonomy) |
 | 0.5 | 2026-03-05 | Architect Agent | Refactored into concise index; moved deep details to `docs/architecture/` |
+| 0.6 | 2026-03-06 | Architect Agent | Confirmed M12 LangGraph runtime is active in orchestration boundary and aligned index metadata |

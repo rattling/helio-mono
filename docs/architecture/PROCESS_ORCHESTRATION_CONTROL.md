@@ -1,6 +1,6 @@
 # Process Architecture: Orchestration + Control
 
-**Status**: M12 baseline design, M13-ready  
+**Status**: M12 implemented (LangGraph runtime active), M13-ready  
 **Primary scope**: bounded agentic orchestration under deterministic policy control
 
 ## Purpose
