@@ -3,6 +3,10 @@
 These are intentionally short.
 They *only* set mode + context; the detailed rules live in `.github/copilot-instructions.md` and the mode guides.
 
+Operational companion docs:
+- `docs/process/MILESTONE_EXECUTION_RUNBOOK.md`
+- `docs/process/PROCESS_CHANGELOG.md`
+
 ---
 
 ## Prompt 1 — ARCH (plan the milestone)
