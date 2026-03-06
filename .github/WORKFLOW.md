@@ -4,6 +4,8 @@
 
 This document defines **how work is executed** in this repository.
 
+Execution principle: use the minimum safe context needed to complete the current unit of work.
+
 It specifies:
 - how projects start
 - how milestones are planned and executed
@@ -14,9 +16,14 @@ It specifies:
 This document assumes the constraints and posture defined in:
 - ENGINEERING_CONSTITUTION.md
 - Role charters in `.github/agents/`
+- Process authority and startup runbook in `docs/process/`
 
 All execution artifacts must conform to the templates defined in:
 - `.github/agents/templates/`
+
+Hard-rule precedence and startup flow are centralized in:
+- `docs/process/AUTHORITY_MAP.md`
+- `docs/process/SESSION_BOOTSTRAP.md`
 
 ---
 
@@ -32,6 +39,9 @@ Modes:
 **Mode discipline**:
 - The agent must explicitly state its current mode at the start of a working session.
 - If switching modes mid-session, the agent must announce the switch and follow that mode’s rules.
+
+For mode authority boundaries and conflict resolution precedence, see:
+- `docs/process/AUTHORITY_MAP.md`
 
 ### Two-Prompt Cadence (Default)
 
@@ -83,6 +93,9 @@ If an issue is too large, it must be split.
 ---
 
 ## 3. Project Startup
+
+Session startup and rehydration procedure is defined in:
+- `docs/process/SESSION_BOOTSTRAP.md`
 
 ### 3.1 Required Project Documents
 Before implementation begins, the following must exist:
@@ -158,7 +171,7 @@ A milestone that breaks existing user interaction paths is invalid.
 ### 5.1 Start
 When starting an issue, the agent must:
 - read the issue description
-- read relevant docs (architecture, invariants)
+- read relevant docs (architecture, invariants) only as needed by scope and risk
 - confirm scope is reasonable
 
 If not, the issue must be split or escalated using:
@@ -279,6 +292,8 @@ All necessary state must be recoverable from:
 - issue and PR discussions
 
 If work cannot be resumed from these artifacts, the workflow has failed.
+
+Use the checklist in `docs/process/SESSION_BOOTSTRAP.md` to rehydrate quickly.
 
 ---
 

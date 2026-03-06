@@ -25,6 +25,16 @@ Update this whenever focus changes so a rehydrated agent can immediately find â€
 - Walking skeleton preserved or extended
 - Milestone goals satisfied
 
+## Milestone Test Gate (must pass before QA sign-off)
+- [ ] `<command for core new test suites>`
+- [ ] `<command for required regression suites>`
+- [ ] `<command for interaction path checks (API/CLI/runner/bot as applicable)>`
+
+Rules:
+- List exact commands (copy/paste runnable).
+- Include only commands relevant to this milestoneâ€™s scope.
+- If a required test file is missing, milestone is not ready for QA sign-off.
+
 ## Notes
 - <dependencies, risks, sequencing concerns>
 

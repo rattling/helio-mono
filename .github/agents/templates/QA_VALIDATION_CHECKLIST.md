@@ -14,6 +14,8 @@
 - [ ] Handoffs match actual deliverables
 - [ ] No orphaned or incomplete work
 - [ ] Issue descriptions reflect final implementation
+- [ ] Each issue contains **Required Tests (must pass)**
+- [ ] Each issue handoff includes exact test commands run and results
 
 ### 1.2 Meta-Issue
 - [ ] All sub-issues checked off
@@ -21,6 +23,8 @@
 - [ ] Blockers section empty or resolved
 - [ ] Acceptance criteria listed
 - [ ] Known limitations documented
+- [ ] Milestone Test Gate commands are listed
+- [ ] Milestone Test Gate commands are executed (or blockers linked)
 
 ### 1.3 Traceability
 - [ ] Commits reference issue numbers
@@ -127,6 +131,7 @@
 - [ ] No unintended side effects
 - [ ] Core flows unaffected
 - [ ] Tests pass
+- [ ] Issue-level required regression tests pass
 
 **Result**: ❌ FAIL / ⚠️ PARTIAL / ✅ PASS
 
@@ -177,6 +182,7 @@ If APPROVED:
 - [ ] Issue state verified
 - [ ] System validated end-to-end
 - [ ] QA summary prepared
+- [ ] Milestone Test Gate evidence captured
 - [ ] Ready to create PR
 
 **Next Action**: Create PR using `PR_REQUEST_TEMPLATE.md`

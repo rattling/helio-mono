@@ -1,4 +1,4 @@
-.PHONY: help setup install test lint format precommit clean run demo telegram rebuild import-chatgpt view-events status deploy restart logs stop backup restore web-install web-run web-test web-build start-api start-web stop-api stop-web up down logs-api logs-web
+.PHONY: help setup install test lint format precommit clean run demo telegram rebuild import-chatgpt view-events status deploy restart logs stop backup restore web-install web-run web-test web-build start-api start-web stop-api stop-web up down logs-api logs-web process-check process-bootstrap
 
 # Default environment if not specified
 ENV ?= dev
@@ -47,6 +47,12 @@ help: ## Show this help message
 	@echo ''
 	@echo 'Other Commands:'
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+
+process-check: ## Validate process templates and workflow markers
+	.venv/bin/python scripts/process/check_workflow_templates.py
+
+process-bootstrap: ## Run local session bootstrap sanity checks
+	.venv/bin/python scripts/process/session_bootstrap_check.py
 
 setup: ## Initial setup (create .env, directories)
 	@echo "Setting up Helionyx..."
