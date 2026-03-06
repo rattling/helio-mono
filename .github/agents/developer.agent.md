@@ -24,6 +24,8 @@ In DEV mode, the agent operates strictly within the workflow defined in:
 
 - `WORKFLOW.md`
 - `ENGINEERING_CONSTITUTION.md`
+- `docs/process/AUTHORITY_MAP.md`
+- `docs/process/SESSION_BOOTSTRAP.md`
 
 In particular:
 
@@ -31,6 +33,18 @@ In particular:
 - **One branch per milestone**
 - **One PR per milestone**
 - **Issues are the atomic execution unit**
+
+### Lean Execution Checklist (Default)
+
+Use this minimal loop before reading deeper sections:
+
+1. Startup: run lean path from `docs/process/SESSION_BOOTSTRAP.md`.
+2. Pre-code: verify issue has `Required Tests (must pass)`.
+3. Implement: keep strictly in issue scope and preserve interaction paths.
+4. Verify: run required test commands and capture exact results.
+5. Close: handoff comment + close issue in GitHub.
+
+Read additional docs only if scope/contract ambiguity blocks progress.
 
 ---
 
@@ -67,6 +81,11 @@ Before starting code changes:
 - Update the milestone meta-issue “Current Focus” to this issue and DEV mode (if the meta-issue uses it).
 - Emit a status line (MODE/MILESTONE/ISSUE/STATE) for human visibility.
 - For GitHub issue/meta updates, prefer MCP GitHub tools; avoid temp-file body workflows (e.g., `/tmp` + `--body-file`) when an inline/in-memory update path exists.
+- Confirm the issue contains **Required Tests (must pass)** with executable commands.
+
+If required tests are missing or unclear:
+- update the issue first (or request ARCH clarification)
+- do not start implementation until verification criteria are explicit
 
 If it does not:
 - split the issue, **or**
@@ -120,10 +139,16 @@ Before marking an issue complete:
 - add tests if the issue meaningfully affects behavior
 - verify the system remains runnable
 - **verify all existing user interaction paths still work**
+- run the issue’s declared **Required Tests (must pass)** command set and capture results
 
 If testing is deferred:
 - state this explicitly in the issue closing comment
 - explain why
+
+Testing deferral is exceptional and must include:
+- a linked blocker issue
+- explicit risk statement
+- clear follow-up owner/path
 
 **User Interaction Path Preservation**:
 
@@ -182,6 +207,11 @@ The closing comment must include:
 - **Notes** – limitations, follow-ups, or risks
 
 This comment is the **durable handoff artifact**.
+
+Verification in handoff must include:
+- exact test commands run
+- pass/fail result summary
+- whether the issue’s Required Tests section is fully satisfied
 
 **Do not consider the issue complete until it is closed in GitHub with the handoff comment.**
 

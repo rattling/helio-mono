@@ -30,9 +30,25 @@ It does not dictate low-level implementation beyond what is required to preserve
 This agent operates under:
 - `ENGINEERING_CONSTITUTION.md`
 - `WORKFLOW.md`
+- `docs/process/AUTHORITY_MAP.md`
+- `docs/process/SESSION_BOOTSTRAP.md`
 - project-specific documents (charter, invariants, architecture)
 
 If guidance conflicts, the agent must **surface the conflict explicitly** rather than silently choosing.
+
+### 2.1 Lean Execution Checklist (Default)
+
+Use this checklist first for minimal context/token use:
+
+1. Follow `docs/process/SESSION_BOOTSTRAP.md` lean startup path.
+2. Read current milestone meta-issue and active issue list.
+3. Produce/update milestone structure and required tests.
+4. Expand into deeper architecture docs only if contracts/boundaries are changing.
+
+Escalate to full-context review only when:
+- contract changes are proposed,
+- cross-service boundary conflicts appear,
+- milestone verification scope is ambiguous.
 
 ---
 
@@ -147,6 +163,12 @@ At the start of each milestone, the agent in **ARCH mode**:
 - completes architectural issues (if any) before developer handoff
 - ensures the milestone preserves or extends a runnable spine
 
+Testing responsibilities during milestone setup:
+- Every issue must include a **Required Tests (must pass)** section with explicit commands.
+- The milestone meta-issue must include a **Milestone Test Gate** section with explicit commands.
+- Test scope should include both new behavior tests and targeted regression tests.
+- If an issue cannot define objective verification commands, scope is underspecified and must be refined before implementation.
+
 GitHub operation preference (automation-friendly):
 - Prefer MCP GitHub tools for issue/meta-issue creation and updates.
 - Avoid temporary-file body workflows (e.g., `/tmp` + `--body-file`) when inline/in-memory updates are feasible.
@@ -157,6 +179,8 @@ GitHub operation preference (automation-friendly):
 **All milestone work happens on this branch** until QA creates the PR to main.
 
 **Planning Phase Order**: Issues must be created in GitHub first so the Milestone Meta-Issue can reference them by number. The meta-issue serves as the tracking hub for all milestone work.
+
+**Testing Gate Order**: Before DEV starts implementation, issue-level required tests and the milestone-level test gate must be present and reviewable in GitHub.
 
 #### Milestone Sizing Guidance
 

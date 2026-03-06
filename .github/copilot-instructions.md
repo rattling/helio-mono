@@ -31,7 +31,16 @@ Minimal invariants that still apply in ADHOC mode:
 
 This repo supports a structured milestone workflow (ARCH/DEV/QA + issues + handoffs). It is useful when you want durable state and repeatability.
 
-Use the structured workflow **only when the user explicitly asks for it** (e.g. “create issues”, “do milestone work”, “prep a PR”, “follow the workflow”).
+Canonical process references (single source of truth):
+- `docs/process/AUTHORITY_MAP.md` (instruction precedence, mode authority, conflict handling)
+- `docs/process/SESSION_BOOTSTRAP.md` (startup + rehydration checklist)
+
+Use the structured workflow **only when the user explicitly asks for it** (e.g. “create issues”, “do milestone work”, “prep a PR”, “follow the workflow”, "architect mode", "developer mode", "qa mode").
+
+Productivity default:
+- Start with the lean path in `docs/process/SESSION_BOOTSTRAP.md`.
+- Expand context only when required by scope, contracts, or verification ambiguity.
+- Prefer linking to canonical docs over re-stating long rule text in new artifacts.
 
 If you are doing structured workflow work, read these documents in order before starting:
 
@@ -93,6 +102,10 @@ Escalate when boundaries are unclear or when work exceeds role scope.
 
 ## Critical Execution Rules
 
+Hard-rule precedence and conflict handling live in `docs/process/AUTHORITY_MAP.md`.
+Startup and rehydration sequence lives in `docs/process/SESSION_BOOTSTRAP.md`.
+The rules below are the Helionyx-specific invariants that remain non-negotiable.
+
 ### Git Repository Context
 - **At session start, run `git remote -v` to verify repository URL**
 - The repository is at `git@github.com:rattling/helio-mono.git`
@@ -116,6 +129,14 @@ Escalate when boundaries are unclear or when work exceeds role scope.
 - Complete in a single session
 - Must use handoff template on completion
 - Assume zero chat context for resumption
+- Every issue must define **Required Tests (must pass)** with explicit commands
+- Issue closure requires reporting exact test commands run + results
+
+### Test Discipline
+- Milestone meta-issues must define a **Milestone Test Gate** with explicit commands
+- DEV must run the issue-level required tests before closing an issue
+- QA must block PR creation if issue-level required tests or milestone test gate are missing/unverified
+- If tests cannot be run, open/link a blocker issue and record risk explicitly
 
 ### Contract Changes
 - Service contracts are explicit and versioned
@@ -203,6 +224,7 @@ To maximize recoverability:
 - Do not move to the next issue until the current issue has:
   - at least one coherent commit (using `COMMIT_MSG_TEMPLATE.md`, referencing `#<issue>`)
   - verification recorded (tests run / not run + why)
+  - issue-level required tests executed (or blocker linked)
   - a closing handoff comment (`ISSUE_HANDOFF_TEMPLATE.md`) and is **closed** in GitHub
 - Keep the milestone meta-issue checklist up to date as issues close.
 

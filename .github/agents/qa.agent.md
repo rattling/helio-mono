@@ -30,6 +30,8 @@ In QA mode, the agent operates within:
 
 - `WORKFLOW.md`
 - `ENGINEERING_CONSTITUTION.md`
+- `docs/process/AUTHORITY_MAP.md`
+- `docs/process/SESSION_BOOTSTRAP.md`
 
 Key constraints:
 - QA work happens **within a milestone**
@@ -38,6 +40,18 @@ Key constraints:
 
 QA validates what exists.  
 It does not invent missing pieces.
+
+### Lean Validation Checklist (Default)
+
+Use this compact sequence first:
+
+1. Rehydrate from milestone meta-issue `Current Focus` and latest handoff.
+2. Verify issue-state integrity (closed issues, required tests, test gate presence).
+3. Run milestone test gate commands.
+4. Run targeted end-to-end checks for active interaction paths.
+5. If failures appear, open bug issue(s), switch DEV for fixes, then recheck.
+
+Expand to full-document deep checks only for architectural drift or broad regressions.
 
 ---
 
@@ -89,8 +103,13 @@ QA must verify GitHub state before PR creation:
 - commits properly reference issues
 - ADRs created for architectural changes
 - branch is mergeable with main
+- each issue defines **Required Tests (must pass)**
+- issue handoffs include executed test commands and results
+- milestone meta-issue defines **Milestone Test Gate** commands
 
 If issue state does not reflect actual delivery, that is a QA failure.
+
+If required tests or milestone test gate are missing, QA must block milestone PR creation.
 
 ---
 
@@ -357,10 +376,11 @@ If validation passes, the agent in **QA mode** **creates the milestone PR**:
 1. Verify all issues closed with handoffs
 2. Verify meta-issue updated
 3. Verify branch is mergeable
-4. Create PR using `PR_REQUEST_TEMPLATE.md`
-5. Include QA summary in PR description
-6. Reference milestone meta-issue
-7. Tag human for review
+4. Verify milestone test gate commands were executed and passing (or blockers linked)
+5. Create PR using `PR_REQUEST_TEMPLATE.md`
+6. Include QA summary in PR description
+7. Reference milestone meta-issue
+8. Tag human for review
 
 Automation note:
 - Prefer MCP PR/issue update tools for PR body/checklist updates and state transitions.

@@ -189,7 +189,13 @@ helio-mono/
 │   └── agents/           # Agent role charters and templates
 ├── docs/                 # Project documentation
 │   ├── PROJECT_CHARTER.md
-│   └── ARCHITECTURE_DECISION_M0.md
+│   ├── ARCHITECTURE_DECISION_M0.md
+│   ├── ARCHITECTURE.md
+│   ├── architecture/     # Process-level architecture deep docs
+│   ├── process/          # Workflow authority + bootstrap runbooks
+│   ├── CONTROL_PLANE_POLICY_CONTRACT.md
+│   ├── ADR/
+│   └── Milestones/
 ├── web/                  # Milestone 9+ web UI (React + TypeScript + Vite)
 ├── services/             # Core services (service-oriented monorepo)
 │   ├── event_store/     # Append-only event persistence
@@ -202,6 +208,7 @@ helio-mono/
 │   └── common/          # Common utilities
 ├── tests/               # Test suite
 ├── scripts/             # Operational scripts
+│   └── process/         # Process compliance and rehydration helpers
 ├── data/                # Runtime data (gitignored)
 │   ├── events/         # Event store files
 │   └── projections/    # SQLite projection databases
