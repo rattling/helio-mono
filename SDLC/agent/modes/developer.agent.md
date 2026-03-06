@@ -24,9 +24,9 @@ In DEV mode, the agent operates strictly within the workflow defined in:
 
 - `WORKFLOW.md`
 - `ENGINEERING_CONSTITUTION.md`
-- `docs/process/sdlc/agent/SDLC_AGENT_AUTHORITY_MAP.md`
-- `docs/process/sdlc/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`
-- `docs/process/sdlc/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md`
+- `SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md`
+- `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`
+- `SDLC/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md`
 
 In particular:
 
@@ -39,14 +39,14 @@ In particular:
 
 Use this minimal loop before reading deeper sections:
 
-1. Startup: run lean path from `docs/process/sdlc/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`.
+1. Startup: run lean path from `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`.
 2. Pre-code: verify issue has `Required Tests (must pass)`.
 3. Implement: keep strictly in issue scope and preserve interaction paths.
 4. Verify: run required test commands and capture exact results.
 5. Close: handoff comment + close issue in GitHub.
 
 Read additional docs only if scope/contract ambiguity blocks progress.
-Treat `docs/process/sdlc/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md` as canonical for the per-issue durable loop and PR preflight details.
+Treat `SDLC/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md` as canonical for the per-issue durable loop and PR preflight details.
 
 ---
 
@@ -204,7 +204,7 @@ Docs must reflect reality, not aspiration.
 An issue is **not complete** until the following handoff is written.
 
 **Required Actions**:
-1. Add closing comment using `docs/process/sdlc/agent/templates/ISSUE_HANDOFF_TEMPLATE.md`
+1. Add closing comment using `SDLC/agent/templates/ISSUE_HANDOFF_TEMPLATE.md`
 2. **Close the issue in GitHub** (set state to closed)
 
 Implementation note:
@@ -228,7 +228,7 @@ Verification in handoff must include:
 **Do not consider the issue complete until it is closed in GitHub with the handoff comment.**
 
 Before creating/updating milestone PR body, run local preflight validation with the full candidate body:
-- `PR_BODY="<body>" .venv/bin/python scripts/process/check_pr_body.py`
+- `PR_BODY="<body>" .venv/bin/python SDLC/scripts/check_pr_body.py`
 - If this check fails, fix missing sections before publishing PR updates.
 
 Assume the next agent has:

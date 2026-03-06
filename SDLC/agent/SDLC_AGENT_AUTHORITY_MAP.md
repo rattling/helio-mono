@@ -4,7 +4,7 @@
 
 This document defines instruction precedence and conflict handling for Helionyx workflow execution.
 
-For the human-oriented process overview and flow diagrams, see `docs/process/sdlc/human/SDLC_HUMAN_PROCESS_GUIDE.md`.
+For the human-oriented process overview and flow diagrams, see `SDLC/human/SDLC_HUMAN_PROCESS_GUIDE.md`.
 
 Use this whenever guidance appears to conflict across prompts, role docs, templates, and project docs.
 
@@ -17,14 +17,14 @@ Productivity intent: resolve ambiguity quickly with minimal reading, then contin
 3. Repository hard rules in `.github/copilot-instructions.md`
 4. Workflow and mode operating guides:
    - `.github/WORKFLOW.md`
-   - `docs/process/sdlc/agent/modes/architect.agent.md`
-   - `docs/process/sdlc/agent/modes/developer.agent.md`
-   - `docs/process/sdlc/agent/modes/qa.agent.md`
+   - `SDLC/agent/modes/architect.agent.md`
+   - `SDLC/agent/modes/developer.agent.md`
+   - `SDLC/agent/modes/qa.agent.md`
 5. Milestone/issue artifacts:
    - milestone charter
    - milestone meta-issue
    - issue body + acceptance criteria
-6. Templates and checklists in `docs/process/sdlc/agent/templates/`
+6. Templates and checklists in `SDLC/agent/templates/`
 7. Agent defaults (when not in conflict with items above)
 
 If two sources at the same precedence conflict, choose the newer, more specific source and record the assumption in issue or PR notes.
@@ -63,8 +63,8 @@ Never silently choose a lower-precedence rule when a higher-precedence rule appl
 
 Default to the smallest context set that can safely unblock execution:
 
-1. `docs/process/sdlc/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md` (mode + startup checks)
-2. Active mode guide (`docs/process/sdlc/agent/modes/*.agent.md`)
+1. `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md` (mode + startup checks)
+2. Active mode guide (`SDLC/agent/modes/*.agent.md`)
 3. Current issue or milestone meta-issue
 
 Expand context only if one of these is true:

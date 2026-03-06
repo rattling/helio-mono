@@ -4,9 +4,9 @@ These prompts are intentionally short.
 They set mode + context for the session; detailed execution rules remain in `.github/copilot-instructions.md` and the mode guides.
 
 Operational companion docs:
-- `docs/process/sdlc/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md`
-- `docs/process/sdlc/SDLC_PROCESS_CHANGELOG.md`
-- `docs/process/sdlc/human/SDLC_HUMAN_PROCESS_GUIDE.md`
+- `SDLC/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md`
+- `SDLC/SDLC_PROCESS_CHANGELOG.md`
+- `SDLC/human/SDLC_HUMAN_PROCESS_GUIDE.md`
 
 ---
 
@@ -61,19 +61,19 @@ Goal: Review process documentation chain end-to-end for productivity and consist
 
 Scope:
 - .github/copilot-instructions.md
-- docs/process/sdlc/agent/SDLC_AGENT_AUTHORITY_MAP.md
-- docs/process/sdlc/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md
-- docs/process/sdlc/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md
+- SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md
+- SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md
+- SDLC/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md
 - .github/WORKFLOW.md
-- docs/process/sdlc/agent/modes/{architect,developer,qa}.agent.md
-- docs/process/sdlc/agent/templates/* (especially issue/PR/handoff templates)
+- SDLC/agent/modes/{architect,developer,qa}.agent.md
+- SDLC/agent/templates/* (especially issue/PR/handoff templates)
 
 Required outcomes:
 - identify duplication/conflicts/stale references
 - prefer canonical ownership + short cross-links
 - preserve feature delivery quality, architecture discipline, and test rigor
 - reduce token/context waste from repeated rule text
-- update docs/templates as needed and record changes in docs/process/sdlc/SDLC_PROCESS_CHANGELOG.md
+- update docs/templates as needed and record changes in SDLC/SDLC_PROCESS_CHANGELOG.md
 
 Deliverables:
 - concise summary of findings

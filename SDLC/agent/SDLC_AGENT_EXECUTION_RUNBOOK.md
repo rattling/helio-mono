@@ -2,7 +2,7 @@
 
 Purpose: prevent rehydration drift and avoid avoidable CI churn during ARCH/DEV/QA milestone execution.
 
-For human-oriented overview diagrams and update guidance, see `docs/process/sdlc/human/SDLC_HUMAN_PROCESS_GUIDE.md`.
+For human-oriented overview diagrams and update guidance, see `SDLC/human/SDLC_HUMAN_PROCESS_GUIDE.md`.
 
 ## Source of Truth for Milestone Scope
 
@@ -40,7 +40,7 @@ If interrupted mid-issue:
 
 Before creating/updating a PR body, run:
 
-`PR_BODY="<body>" .venv/bin/python scripts/process/check_pr_body.py`
+`PR_BODY="<body>" .venv/bin/python SDLC/scripts/check_pr_body.py`
 
 Publish/update PR body only if preflight passes.
 

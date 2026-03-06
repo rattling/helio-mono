@@ -1,4 +1,4 @@
-<!-- Canonical source: docs/process/sdlc/agent/templates/PR_REQUEST_TEMPLATE.md -->
+<!-- Canonical source: SDLC/agent/templates/PR_REQUEST_TEMPLATE.md -->
 
 ## Summary
 

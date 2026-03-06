@@ -29,5 +29,5 @@ This directory contains the software delivery process artifacts grouped by audie
 
 - `SDLC_HUMAN_*` files are intended for operators/reviewers.
 - `SDLC_AGENT_*` files are intended for execution behavior in agent sessions.
-- Shared process state/history remains at the `docs/process/sdlc/` root.
+- Shared process state/history remains at the `SDLC/` root.
 - `.github/` keeps only required bridge/discovery entrypoints; canonical process rules remain in SDLC docs.

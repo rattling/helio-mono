@@ -37,8 +37,8 @@ across local execution, automation, and CI.
 
 For most sessions, stop after these reads:
 
-1. `docs/process/sdlc/agent/SDLC_AGENT_AUTHORITY_MAP.md`
-2. Active mode guide in `docs/process/sdlc/agent/modes/`
+1. `SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md`
+2. Active mode guide in `SDLC/agent/modes/`
 3. Current issue or milestone meta-issue
 
 This is the default path for high productivity and low token usage.
@@ -54,8 +54,8 @@ When in ARCH/DEV/QA mode, execute in order:
 1. Read:
    - `.github/ENGINEERING_CONSTITUTION.md`
    - `.github/WORKFLOW.md`
-   - active mode guide in `docs/process/sdlc/agent/modes/`
-   - `docs/process/sdlc/agent/SDLC_AGENT_AUTHORITY_MAP.md`
+   - active mode guide in `SDLC/agent/modes/`
+   - `SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md`
 2. Read project context:
    - `docs/PROJECT_CHARTER.md`
    - active milestone charter in `docs/MILESTONES/`

@@ -32,25 +32,25 @@ Minimal invariants that still apply in ADHOC mode:
 This repo supports a structured milestone workflow (ARCH/DEV/QA + issues + handoffs). It is useful when you want durable state and repeatability.
 
 Canonical process references (single source of truth):
-- `docs/process/sdlc/agent/SDLC_AGENT_AUTHORITY_MAP.md` (instruction precedence, mode authority, conflict handling)
-- `docs/process/sdlc/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md` (startup + rehydration checklist)
-- `docs/process/sdlc/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md` (canonical per-issue execution loop and PR preflight)
-- `docs/process/sdlc/SDLC_GITHUB_BRIDGE_POLICY.md` (what stays in `.github/` for platform discovery vs what stays canonical in SDLC)
+- `SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md` (instruction precedence, mode authority, conflict handling)
+- `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md` (startup + rehydration checklist)
+- `SDLC/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md` (canonical per-issue execution loop and PR preflight)
+- `SDLC/SDLC_GITHUB_BRIDGE_POLICY.md` (what stays in `.github/` for platform discovery vs what stays canonical in SDLC)
 
 Use the structured workflow **only when the user explicitly asks for it** (e.g. “create issues”, “do milestone work”, “prep a PR”, “follow the workflow”, "architect mode", "developer mode", "qa mode").
 
 Productivity default:
-- Start with the lean path in `docs/process/sdlc/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`.
+- Start with the lean path in `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`.
 - Expand context only when required by scope, contracts, or verification ambiguity.
 - Prefer linking to canonical docs over re-stating long rule text in new artifacts.
-- Treat `docs/process/sdlc/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md` as the canonical execution-loop reference; avoid duplicating that loop text in new docs/comments unless customization is required.
+- Treat `SDLC/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md` as the canonical execution-loop reference; avoid duplicating that loop text in new docs/comments unless customization is required.
 
 If you are doing structured workflow work, read these documents in order before starting:
 
 1. **Engineering Framework**:
   - [ENGINEERING_CONSTITUTION.md](ENGINEERING_CONSTITUTION.md) - Core engineering values and technical posture
   - [WORKFLOW.md](WORKFLOW.md) - How work is structured and executed
-  - Your role charter in [SDLC agent modes](../docs/process/sdlc/agent/modes/)
+  - Your role charter in [SDLC agent modes](../SDLC/agent/modes/)
 
 2. **Project Context**:
   - [docs/PROJECT_CHARTER.md](../docs/PROJECT_CHARTER.md) - Project vision, scope, and guiding principles (milestone-agnostic)
@@ -74,17 +74,17 @@ This repo is operated as **one agent that switches modes**.
 
 When work is assigned, identify your active **mode**:
 
-- **ARCH mode** ([architect.agent.md](../docs/process/sdlc/agent/modes/architect.agent.md))
+- **ARCH mode** ([architect.agent.md](../SDLC/agent/modes/architect.agent.md))
   - System structure, boundaries, contracts
   - Milestone planning and decomposition
   - Service boundaries and architectural review
 
-- **DEV mode** ([developer.agent.md](../docs/process/sdlc/agent/modes/developer.agent.md))
+- **DEV mode** ([developer.agent.md](../SDLC/agent/modes/developer.agent.md))
   - Scoped issue implementation only
   - Execute within defined boundaries
   - No architectural changes without escalation
 
-- **QA mode** ([qa.agent.md](../docs/process/sdlc/agent/modes/qa.agent.md))
+- **QA mode** ([qa.agent.md](../SDLC/agent/modes/qa.agent.md))
   - End-to-end validation
   - System runnability verification
   - Reality-checking documented behavior
@@ -105,8 +105,8 @@ Escalate when boundaries are unclear or when work exceeds role scope.
 
 ## Critical Execution Rules
 
-Hard-rule precedence and conflict handling live in `docs/process/sdlc/agent/SDLC_AGENT_AUTHORITY_MAP.md`.
-Startup and rehydration sequence lives in `docs/process/sdlc/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`.
+Hard-rule precedence and conflict handling live in `SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md`.
+Startup and rehydration sequence lives in `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`.
 The rules below are the Helionyx-specific invariants that remain non-negotiable.
 
 ### Git Repository Context
@@ -143,7 +143,7 @@ The rules below are the Helionyx-specific invariants that remain non-negotiable.
 - DEV must run the issue-level required tests before closing an issue
 - QA must block PR creation if issue-level required tests or milestone test gate are missing/unverified
 - If tests cannot be run, open/link a blocker issue and record risk explicitly
-- Before creating/updating a PR body, run local preflight: `PR_BODY="<body>" .venv/bin/python scripts/process/check_pr_body.py` and only publish if it passes.
+- Before creating/updating a PR body, run local preflight: `PR_BODY="<body>" .venv/bin/python SDLC/scripts/check_pr_body.py` and only publish if it passes.
 - Avoid polling CI/check status loops by default. Prefer preflight prevention (template + local validation); only poll when explicitly requested by the human.
 
 ### Contract Changes
@@ -166,7 +166,7 @@ The rules below are the Helionyx-specific invariants that remain non-negotiable.
 
 ## Templates Location
 
-All workflow templates are in [SDLC agent templates](../docs/process/sdlc/agent/templates/):
+All workflow templates are in [SDLC agent templates](../SDLC/agent/templates/):
 
 - `MILESTONE_META_ISSUE_TEMPLATE.md` - Milestone tracking
 - `ISSUE_TEMPLATE.md` - Issue creation
@@ -177,7 +177,7 @@ All workflow templates are in [SDLC agent templates](../docs/process/sdlc/agent/
 - `BLOCKER_TEMPLATE.md` - Escalations and blockers
 
 Canonical human-driver prompts:
-- `docs/process/sdlc/human/SDLC_HUMAN_DRIVER_PROMPTS.md` - Copy/paste prompts for ARCH planning, DEV→QA execution, and process-check audits
+- `SDLC/human/SDLC_HUMAN_DRIVER_PROMPTS.md` - Copy/paste prompts for ARCH planning, DEV→QA execution, and process-check audits
 
 ---
 
