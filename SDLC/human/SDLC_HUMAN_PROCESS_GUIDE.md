@@ -62,6 +62,7 @@ Use this as the fast map instead of re-reading everything.
 - **Startup/rehydration path**: `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`
 - **Execution loop and PR preflight**: `SDLC/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md`
 - **Repo-level hard rules**: `.github/copilot-instructions.md`
+- **GitHub bridge boundary**: `SDLC/SDLC_GITHUB_BRIDGE_POLICY.md`
 - **Workflow lifecycle**: `SDLC/WORKFLOW.md`
 - **Mode constraints**: `SDLC/agent/modes/{architect,developer,qa}.agent.md`
 - **Operational prompt starters**: `SDLC/human/SDLC_HUMAN_DRIVER_PROMPTS.md`
@@ -86,7 +87,7 @@ When changing process behavior, use this sequence:
 4. Update templates/prompts only where operator behavior changes.
 5. Add a dated entry to `SDLC/SDLC_PROCESS_CHANGELOG.md`.
 6. Run a quick consistency check for stale references:
-    - `rg "COMMIT_MESSAGE_TEMPLATE|COMMIT_MSG_TEMPLATE|SDLC_AGENT_EXECUTION_RUNBOOK|PR_REQUEST_TEMPLATE|PULL_REQUEST_TEMPLATE|docs/process" .github SDLC`
+    - `rg "\\.github/WORKFLOW\\.md|\\.github/agents|TWO_PROMPTS|COMMIT_MESSAGE_TEMPLATE|COMMIT_MSG_TEMPLATE|SDLC_AGENT_EXECUTION_RUNBOOK|PR_REQUEST_TEMPLATE|PULL_REQUEST_TEMPLATE|docs/process" .github SDLC`
 
 ## Anti-drift checklist (quick)
 

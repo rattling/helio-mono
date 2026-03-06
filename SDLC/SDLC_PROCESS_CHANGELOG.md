@@ -4,6 +4,26 @@ Tracks durable updates to SDLC/process guidance (not per-run findings).
 
 ## 2026-03-06
 
+### Process Audit (Canonicalization + Token Reduction)
+- `.github/copilot-instructions.md`
+  - Reduced duplicated long-form workflow/mode/rehydration text that was already canonical in `SDLC/agent/*` and `SDLC/WORKFLOW.md`.
+  - Preserved Helionyx hard invariants (repo identity, `.venv` enforcement, milestone branch model, required tests, QA gate, PR preflight, escalation, runnable-system posture).
+  - Added a compact canonical-reference section to direct operators/agents to single-source docs.
+- `.github/ISSUE_TEMPLATE/implementation_issue.yml`
+  - Added canonical-source header pointing to `SDLC/agent/templates/ISSUE_TEMPLATE.md`.
+- `.github/ISSUE_TEMPLATE/milestone_meta_issue.yml`
+  - Added canonical-source header pointing to `SDLC/agent/templates/MILESTONE_META_ISSUE_TEMPLATE.md`.
+
+Intent:
+- Reduce token/context waste in high-frequency entrypoint docs.
+- Keep `.github` as bridge/discovery surface with explicit links to SDLC canonical ownership.
+- Preserve architecture discipline, test rigor, and delivery quality constraints.
+
+### Process Guide Consistency Refresh
+- `SDLC/human/SDLC_HUMAN_PROCESS_GUIDE.md`
+  - Added explicit pointer to `SDLC/SDLC_GITHUB_BRIDGE_POLICY.md` in the canonical map.
+  - Expanded the recommended stale-reference grep to include legacy bridge paths (`.github/WORKFLOW.md`, `.github/agents`, `TWO_PROMPTS`) in addition to template-name drift checks.
+
 ### Renamed / Reorganized
 - Moved SDLC process docs into audience-based structure:
   - Agent docs: `SDLC/agent/SDLC_AGENT_{AUTHORITY_MAP,SESSION_BOOTSTRAP,EXECUTION_RUNBOOK}.md`

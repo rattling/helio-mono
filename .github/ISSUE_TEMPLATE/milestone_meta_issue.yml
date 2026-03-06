@@ -1,3 +1,4 @@
+# Canonical source: SDLC/agent/templates/MILESTONE_META_ISSUE_TEMPLATE.md
 name: Milestone Meta-Issue
 description: Tracking issue for milestone scope and completion gate.
 title: "[Milestone N] Meta-Issue"
