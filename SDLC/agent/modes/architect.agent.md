@@ -28,10 +28,10 @@ It does not dictate low-level implementation beyond what is required to preserve
 ## 2. Operating Context
 
 This agent operates under:
-- `ENGINEERING_CONSTITUTION.md`
-- `WORKFLOW.md`
-- `docs/process/AUTHORITY_MAP.md`
-- `docs/process/SESSION_BOOTSTRAP.md`
+- `SDLC/ENGINEERING_CONSTITUTION.md`
+- `SDLC/WORKFLOW.md`
+- `SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md`
+- `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`
 - project-specific documents (charter, invariants, architecture)
 
 If guidance conflicts, the agent must **surface the conflict explicitly** rather than silently choosing.
@@ -40,7 +40,7 @@ If guidance conflicts, the agent must **surface the conflict explicitly** rather
 
 Use this checklist first for minimal context/token use:
 
-1. Follow `docs/process/SESSION_BOOTSTRAP.md` lean startup path.
+1. Follow `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md` lean startup path.
 2. Read current milestone meta-issue and active issue list.
 3. Produce/update milestone structure and required tests.
 4. Expand into deeper architecture docs only if contracts/boundaries are changing.

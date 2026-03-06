@@ -1,3 +1,4 @@
+# Canonical source: SDLC/agent/templates/ISSUE_TEMPLATE.md
 name: Implementation Issue
 description: Atomic issue for milestone execution work.
 title: "[Area] Action-oriented description"

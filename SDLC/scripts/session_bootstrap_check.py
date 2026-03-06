@@ -42,8 +42,8 @@ def main() -> int:
     print()
 
     process_docs = [
-        ROOT / "docs/process/AUTHORITY_MAP.md",
-        ROOT / "docs/process/SESSION_BOOTSTRAP.md",
+        ROOT / "SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md",
+        ROOT / "SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md",
     ]
     missing = [str(path.relative_to(ROOT)) for path in process_docs if not path.exists()]
     if missing:

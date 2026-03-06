@@ -1,3 +1,5 @@
+<!-- Canonical source: SDLC/agent/templates/PR_REQUEST_TEMPLATE.md -->
+
 ## Summary
 
 Describe what this PR delivers.

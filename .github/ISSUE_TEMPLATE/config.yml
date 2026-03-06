@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Process docs
-    url: https://github.com/rattling/helio-mono/tree/main/docs/process
+    url: https://github.com/rattling/helio-mono/tree/main/SDLC
     about: Authority map and session bootstrap runbook.

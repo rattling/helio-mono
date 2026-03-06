@@ -7,6 +7,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from shared.contracts import TaskPatchRequest, TaskPriority, TaskSnoozeRequest
+from . import scheduler
 
 from .formatters import format_todos_list, format_notes_list, format_tracks_list, format_tasks_list
 
@@ -64,6 +65,7 @@ Queries
 • /task_done <task_id> - Mark task done
 • /task_snooze <task_id> <iso-ts> - Snooze task
 • /task_priority <task_id> <p0|p1|p2|p3> - Update priority
+• /orchestrate <daily|weekly|urgent> - Trigger orchestration run
 • /stats - System statistics
 
 Information
@@ -309,3 +311,37 @@ async def task_priority_command(update: Update, context: ContextTypes.DEFAULT_TY
         f"🔁 Task `{task_id}` priority set to `{priority.value}`.",
         parse_mode="Markdown",
     )
+
+
+async def orchestrate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Trigger a manual orchestration run through shared scheduler boundary."""
+    if not context.args:
+        await update.message.reply_text("Usage: /orchestrate <daily|weekly|urgent>")
+        return
+
+    workflow_alias = context.args[0].strip().lower()
+    workflow_map = {
+        "daily": "daily_digest",
+        "weekly": "weekly_digest",
+        "urgent": "urgent_reminder",
+    }
+    workflow_name = workflow_map.get(workflow_alias)
+    if not workflow_name:
+        await update.message.reply_text("Invalid workflow. Use one of: daily, weekly, urgent")
+        return
+
+    result = await scheduler.run_orchestration_workflow(
+        bot=context.bot,
+        workflow_name=workflow_name,
+        dry_run=False,
+    )
+
+    status = result.get("status", "unknown")
+    reason = result.get("reason")
+    run_id = result.get("run_id")
+    response = f"Orchestration workflow `{workflow_name}` status: `{status}`"
+    if run_id:
+        response += f"\nrun_id: `{run_id}`"
+    if reason:
+        response += f"\nreason: `{reason}`"
+    await update.message.reply_text(response, parse_mode="Markdown")

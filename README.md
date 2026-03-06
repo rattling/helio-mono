@@ -31,6 +31,12 @@ make status
 make down
 ```
 
+### Technical Note: Python dependency workflow
+
+- Current standard: project virtualenv at `.venv/`, using `.venv/bin/python` and `.venv/bin/pip`.
+- This keeps local, CI, and deployment behavior aligned today.
+- A future migration to `uv` may be considered, but should be done as one coordinated change (docs + CI + setup commands) to avoid mixed workflows.
+
 ## Running the Service
 
 Helionyx runs as a unified service that combines:
@@ -182,11 +188,17 @@ See [`.env.template`](.env.template) for complete documentation of all configura
 
 ```
 helio-mono/
-├── .github/               # Engineering framework and workflow
-│   ├── ENGINEERING_CONSTITUTION.md
+├── .github/               # GitHub-discovery files and workflow entrypoints
 │   ├── WORKFLOW.md
 │   ├── copilot-instructions.md
-│   └── agents/           # Agent role charters and templates
+│   ├── workflows/
+│   ├── ISSUE_TEMPLATE/
+│   └── PULL_REQUEST_TEMPLATE.md
+├── SDLC/                 # SDLC framework (human + agent + scripts)
+│   ├── ENGINEERING_CONSTITUTION.md
+│   ├── agent/
+│   ├── human/
+│   └── scripts/
 ├── docs/                 # Project documentation
 │   ├── PROJECT_CHARTER.md
 │   ├── ARCHITECTURE_DECISION_M0.md
@@ -208,7 +220,6 @@ helio-mono/
 │   └── common/          # Common utilities
 ├── tests/               # Test suite
 ├── scripts/             # Operational scripts
-│   └── process/         # Process compliance and rehydration helpers
 ├── data/                # Runtime data (gitignored)
 │   ├── events/         # Event store files
 │   └── projections/    # SQLite projection databases
@@ -444,8 +455,8 @@ Deep-link contract for cross-surface reproducibility is URL-based:
 
 - **Project Charter**: [docs/PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md)
 - **Architecture Decision**: [docs/ARCHITECTURE_DECISION_M0.md](docs/ARCHITECTURE_DECISION_M0.md)
-- **Engineering Constitution**: [.github/ENGINEERING_CONSTITUTION.md](.github/ENGINEERING_CONSTITUTION.md)
-- **Workflow**: [.github/WORKFLOW.md](.github/WORKFLOW.md)
+- **Engineering Constitution**: [SDLC/ENGINEERING_CONSTITUTION.md](SDLC/ENGINEERING_CONSTITUTION.md)
+- **Workflow**: [SDLC/WORKFLOW.md](SDLC/WORKFLOW.md)
 
 ## Milestones
 
@@ -459,7 +470,7 @@ Deep-link contract for cross-surface reproducibility is URL-based:
 ## Contributing
 
 This is a personal project following structured agent-driven development.  
-See [.github/WORKFLOW.md](.github/WORKFLOW.md) for execution guidelines.
+See [SDLC/WORKFLOW.md](SDLC/WORKFLOW.md) for execution guidelines.
 
 ## License
 

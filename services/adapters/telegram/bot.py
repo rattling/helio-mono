@@ -30,6 +30,8 @@ def create_application(bot_token: str, services: dict, cfg) -> Application:
     # Inject services into handler modules
     handlers.query_service = services["query"]
     handlers.task_service = services["task"]
+    handlers.event_store = services["event_store"]
+    handlers.config = cfg
     message_handler.ingestion_service = services["ingestion"]
     message_handler.extraction_service = services["extraction"]
     scheduler.query_service = services["query"]
@@ -52,6 +54,7 @@ def create_application(bot_token: str, services: dict, cfg) -> Application:
     application.add_handler(CommandHandler("task_done", handlers.task_done_command))
     application.add_handler(CommandHandler("task_snooze", handlers.task_snooze_command))
     application.add_handler(CommandHandler("task_priority", handlers.task_priority_command))
+    application.add_handler(CommandHandler("orchestrate", handlers.orchestrate_command))
 
     # Add message handler (non-commands)
     application.add_handler(

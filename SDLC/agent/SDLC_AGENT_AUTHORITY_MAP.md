@@ -4,6 +4,8 @@
 
 This document defines instruction precedence and conflict handling for Helionyx workflow execution.
 
+For the human-oriented process overview and flow diagrams, see `SDLC/human/SDLC_HUMAN_PROCESS_GUIDE.md`.
+
 Use this whenever guidance appears to conflict across prompts, role docs, templates, and project docs.
 
 Productivity intent: resolve ambiguity quickly with minimal reading, then continue execution.
@@ -14,15 +16,15 @@ Productivity intent: resolve ambiguity quickly with minimal reading, then contin
 2. Human user explicit request for current session
 3. Repository hard rules in `.github/copilot-instructions.md`
 4. Workflow and mode operating guides:
-   - `.github/WORKFLOW.md`
-   - `.github/agents/architect.agent.md`
-   - `.github/agents/developer.agent.md`
-   - `.github/agents/qa.agent.md`
+   - `SDLC/WORKFLOW.md`
+   - `SDLC/agent/modes/architect.agent.md`
+   - `SDLC/agent/modes/developer.agent.md`
+   - `SDLC/agent/modes/qa.agent.md`
 5. Milestone/issue artifacts:
    - milestone charter
    - milestone meta-issue
    - issue body + acceptance criteria
-6. Templates and checklists in `.github/agents/templates/`
+6. Templates and checklists in `SDLC/agent/templates/`
 7. Agent defaults (when not in conflict with items above)
 
 If two sources at the same precedence conflict, choose the newer, more specific source and record the assumption in issue or PR notes.
@@ -61,8 +63,8 @@ Never silently choose a lower-precedence rule when a higher-precedence rule appl
 
 Default to the smallest context set that can safely unblock execution:
 
-1. `docs/process/SESSION_BOOTSTRAP.md` (mode + startup checks)
-2. Active mode guide (`.github/agents/*.agent.md`)
+1. `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md` (mode + startup checks)
+2. Active mode guide (`SDLC/agent/modes/*.agent.md`)
 3. Current issue or milestone meta-issue
 
 Expand context only if one of these is true:
@@ -71,7 +73,7 @@ Expand context only if one of these is true:
 - Verification expectations are unclear
 
 When expansion is needed, read in this order:
-1. `.github/WORKFLOW.md`
+1. `SDLC/WORKFLOW.md`
 2. `.github/copilot-instructions.md`
 3. Relevant architecture/project docs
 

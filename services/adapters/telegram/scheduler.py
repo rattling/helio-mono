@@ -14,6 +14,8 @@ from .errors import send_with_retry
 from services.query import database
 from services.attention import AttentionService
 from shared.contracts import ReminderSentEvent
+from services.control import ControlPolicy, ControlPolicyEvaluator
+from services.orchestration import OrchestrationRuntime
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +53,62 @@ def _attention_service() -> AttentionService:
     )
 
 
+def _runtime() -> OrchestrationRuntime:
+    allowed_workflows = set(
+        filter(
+            None,
+            str(
+                getattr(
+                    config,
+                    "ORCHESTRATION_ALLOWED_WORKFLOWS",
+                    "daily_digest,weekly_digest,urgent_reminder",
+                )
+            ).split(","),
+        )
+    )
+    allowed_reminder_types = set(
+        filter(
+            None,
+            str(
+                getattr(
+                    config,
+                    "ORCHESTRATION_ALLOWED_REMINDER_TYPES",
+                    "task_daily_digest,task_weekly_digest,task_urgent_reminder",
+                )
+            ).split(","),
+        )
+    )
+    tool_allowlist = set(
+        filter(
+            None,
+            str(getattr(config, "ORCHESTRATION_TOOL_ALLOWLIST", "telegram.send_message")).split(
+                ","
+            ),
+        )
+    )
+    side_effect_scopes = set(
+        filter(
+            None,
+            str(getattr(config, "ORCHESTRATION_SIDE_EFFECT_SCOPES", "telegram:notify")).split(","),
+        )
+    )
+
+    policy = ControlPolicy(
+        allowed_workflows=allowed_workflows,
+        allowed_reminder_types=allowed_reminder_types,
+        tool_allowlist=tool_allowlist,
+        side_effect_scopes=side_effect_scopes,
+        max_runtime_seconds=int(getattr(config, "ORCHESTRATION_MAX_RUNTIME_SECONDS", 60)),
+        max_tool_calls=int(getattr(config, "ORCHESTRATION_MAX_TOOL_CALLS", 3)),
+        max_estimated_tokens=int(getattr(config, "ORCHESTRATION_MAX_ESTIMATED_TOKENS", 8000)),
+        max_estimated_cost_usd=float(getattr(config, "ORCHESTRATION_MAX_ESTIMATED_COST_USD", 0.5)),
+    )
+    return OrchestrationRuntime(
+        event_store=event_store,
+        policy_evaluator=ControlPolicyEvaluator(policy=policy),
+    )
+
+
 async def check_and_send_urgent_reminders(bot):
     """Check urgent attention items and send deduplicated reminders."""
 
@@ -82,29 +140,62 @@ async def check_and_send_urgent_reminders(bot):
             ):
                 continue
 
-            message = format_task_urgent_reminder(item)
-            chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
-            if not chat_id:
-                logger.info("Skipping reminder send (TELEGRAM_CHAT_ID not set)")
-                return
+            async def _execute_delivery() -> dict:
+                message = format_task_urgent_reminder(item)
+                chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
+                if not chat_id:
+                    logger.info("Skipping reminder send (TELEGRAM_CHAT_ID not set)")
+                    return {"sent": False, "reason": "chat_id_not_configured"}
 
-            await send_with_retry(bot, chat_id=int(chat_id), text=message, parse_mode="Markdown")
-            if db_conn:
-                database.log_notification(
-                    db_conn,
-                    notification_type="task_urgent_reminder",
-                    object_id=task_id,
-                    metadata=json.dumps({"fingerprint": fingerprint}),
+                await send_with_retry(
+                    bot,
+                    chat_id=int(chat_id),
+                    text=message,
+                    parse_mode="Markdown",
                 )
-            if event_store:
-                await event_store.append(
-                    ReminderSentEvent(
-                        reminder_type="task_urgent_reminder",
+                if db_conn:
+                    database.log_notification(
+                        db_conn,
+                        notification_type="task_urgent_reminder",
                         object_id=task_id,
-                        fingerprint=fingerprint,
-                        metadata={"urgency_score": item.get("urgency_score")},
+                        metadata=json.dumps({"fingerprint": fingerprint}),
                     )
+                if event_store:
+                    await event_store.append(
+                        ReminderSentEvent(
+                            reminder_type="task_urgent_reminder",
+                            object_id=task_id,
+                            fingerprint=fingerprint,
+                            metadata={"urgency_score": item.get("urgency_score")},
+                        )
+                    )
+                return {"sent": True, "task_id": task_id}
+
+            runtime_result = await _runtime().run_flow(
+                workflow_name="urgent_reminder",
+                reminder_type="task_urgent_reminder",
+                execute=_execute_delivery,
+                envelope={
+                    "workflow_name": "urgent_reminder",
+                    "reminder_type": "task_urgent_reminder",
+                    "tool_name": "telegram.send_message",
+                    "side_effect_scope": "telegram:notify",
+                    "budgets": {
+                        "runtime_seconds": 15,
+                        "tool_calls": 1,
+                        "estimated_tokens": 120,
+                        "estimated_cost_usd": 0.01,
+                    },
+                },
+                fingerprint=fingerprint,
+            )
+            if runtime_result.get("status") != "completed":
+                logger.info(
+                    "Urgent reminder run halted status=%s reason=%s",
+                    runtime_result.get("status"),
+                    runtime_result.get("reason"),
                 )
+                continue
 
             logger.info(f"Sent urgent task reminder: {item.get('title', task_id)}")
 
@@ -131,19 +222,46 @@ async def check_and_send_daily_digest(bot):
 
     try:
         payload = await _attention_service().get_today_attention(limit=5)
-        message = format_attention_daily_digest(payload)
 
-        # Send
-        chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
-        if not chat_id:
-            logger.info("Skipping daily digest send (TELEGRAM_CHAT_ID not set)")
+        async def _execute_delivery() -> dict:
+            message = format_attention_daily_digest(payload)
+            chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
+            if not chat_id:
+                logger.info("Skipping daily digest send (TELEGRAM_CHAT_ID not set)")
+                return {"sent": False, "reason": "chat_id_not_configured"}
+
+            await send_with_retry(bot, chat_id=int(chat_id), text=message, parse_mode="Markdown")
+
+            if db_conn:
+                database.log_notification(db_conn, notification_type="task_daily_digest")
+            if event_store:
+                await event_store.append(ReminderSentEvent(reminder_type="task_daily_digest"))
+            return {"sent": True, "items": len(payload.get("top_actionable", []))}
+
+        runtime_result = await _runtime().run_flow(
+            workflow_name="daily_digest",
+            reminder_type="task_daily_digest",
+            execute=_execute_delivery,
+            envelope={
+                "workflow_name": "daily_digest",
+                "reminder_type": "task_daily_digest",
+                "tool_name": "telegram.send_message",
+                "side_effect_scope": "telegram:notify",
+                "budgets": {
+                    "runtime_seconds": 20,
+                    "tool_calls": 1,
+                    "estimated_tokens": 250,
+                    "estimated_cost_usd": 0.02,
+                },
+            },
+        )
+        if runtime_result.get("status") != "completed":
+            logger.info(
+                "Daily digest run halted status=%s reason=%s",
+                runtime_result.get("status"),
+                runtime_result.get("reason"),
+            )
             return
-        await send_with_retry(bot, chat_id=int(chat_id), text=message, parse_mode="Markdown")
-
-        if db_conn:
-            database.log_notification(db_conn, notification_type="task_daily_digest")
-        if event_store:
-            await event_store.append(ReminderSentEvent(reminder_type="task_daily_digest"))
 
         logger.info("Sent daily attention digest")
 
@@ -170,19 +288,199 @@ async def check_and_send_weekly_digest(bot):
 
     try:
         payload = await _attention_service().get_week_attention()
-        message = format_attention_weekly_digest(payload)
-        chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
-        if not chat_id:
-            logger.info("Skipping weekly digest send (TELEGRAM_CHAT_ID not set)")
-            return
 
-        await send_with_retry(bot, chat_id=int(chat_id), text=message, parse_mode="Markdown")
-        if db_conn:
-            database.log_notification(db_conn, notification_type="task_weekly_digest")
-        if event_store:
-            await event_store.append(ReminderSentEvent(reminder_type="task_weekly_digest"))
+        async def _execute_delivery() -> dict:
+            message = format_attention_weekly_digest(payload)
+            chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
+            if not chat_id:
+                logger.info("Skipping weekly digest send (TELEGRAM_CHAT_ID not set)")
+                return {"sent": False, "reason": "chat_id_not_configured"}
+
+            await send_with_retry(bot, chat_id=int(chat_id), text=message, parse_mode="Markdown")
+            if db_conn:
+                database.log_notification(db_conn, notification_type="task_weekly_digest")
+            if event_store:
+                await event_store.append(ReminderSentEvent(reminder_type="task_weekly_digest"))
+            return {"sent": True, "items": len(payload.get("due_this_week", []))}
+
+        runtime_result = await _runtime().run_flow(
+            workflow_name="weekly_digest",
+            reminder_type="task_weekly_digest",
+            execute=_execute_delivery,
+            envelope={
+                "workflow_name": "weekly_digest",
+                "reminder_type": "task_weekly_digest",
+                "tool_name": "telegram.send_message",
+                "side_effect_scope": "telegram:notify",
+                "budgets": {
+                    "runtime_seconds": 20,
+                    "tool_calls": 1,
+                    "estimated_tokens": 250,
+                    "estimated_cost_usd": 0.02,
+                },
+            },
+        )
+        if runtime_result.get("status") != "completed":
+            logger.info(
+                "Weekly digest run halted status=%s reason=%s",
+                runtime_result.get("status"),
+                runtime_result.get("reason"),
+            )
+            return
 
         logger.info("Sent weekly attention digest")
         await asyncio.sleep(300)
     except Exception as e:
         logger.error(f"Error sending weekly digest: {e}", exc_info=True)
+
+
+async def run_orchestration_workflow(bot, workflow_name: str, dry_run: bool = False) -> dict:
+    """Run a single orchestration workflow on demand via shared runtime boundary."""
+    workflow = (workflow_name or "").strip().lower()
+
+    if workflow == "daily_digest":
+        payload = await _attention_service().get_today_attention(limit=5)
+
+        async def _execute_daily() -> dict:
+            if dry_run:
+                return {
+                    "sent": True,
+                    "dry_run": True,
+                    "items": len(payload.get("top_actionable", [])),
+                }
+
+            message = format_attention_daily_digest(payload)
+            chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
+            if not chat_id:
+                return {"sent": False, "reason": "chat_id_not_configured"}
+            await send_with_retry(bot, chat_id=int(chat_id), text=message, parse_mode="Markdown")
+            if db_conn:
+                database.log_notification(db_conn, notification_type="task_daily_digest")
+            if event_store:
+                await event_store.append(ReminderSentEvent(reminder_type="task_daily_digest"))
+            return {"sent": True, "items": len(payload.get("top_actionable", []))}
+
+        return await _runtime().run_flow(
+            workflow_name="daily_digest",
+            reminder_type="task_daily_digest",
+            execute=_execute_daily,
+            envelope={
+                "workflow_name": "daily_digest",
+                "reminder_type": "task_daily_digest",
+                "tool_name": "telegram.send_message",
+                "side_effect_scope": "telegram:notify",
+                "budgets": {
+                    "runtime_seconds": 20,
+                    "tool_calls": 1,
+                    "estimated_tokens": 250,
+                    "estimated_cost_usd": 0.02,
+                },
+            },
+        )
+
+    if workflow == "weekly_digest":
+        payload = await _attention_service().get_week_attention()
+
+        async def _execute_weekly() -> dict:
+            if dry_run:
+                return {
+                    "sent": True,
+                    "dry_run": True,
+                    "items": len(payload.get("due_this_week", [])),
+                }
+
+            message = format_attention_weekly_digest(payload)
+            chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
+            if not chat_id:
+                return {"sent": False, "reason": "chat_id_not_configured"}
+            await send_with_retry(bot, chat_id=int(chat_id), text=message, parse_mode="Markdown")
+            if db_conn:
+                database.log_notification(db_conn, notification_type="task_weekly_digest")
+            if event_store:
+                await event_store.append(ReminderSentEvent(reminder_type="task_weekly_digest"))
+            return {"sent": True, "items": len(payload.get("due_this_week", []))}
+
+        return await _runtime().run_flow(
+            workflow_name="weekly_digest",
+            reminder_type="task_weekly_digest",
+            execute=_execute_weekly,
+            envelope={
+                "workflow_name": "weekly_digest",
+                "reminder_type": "task_weekly_digest",
+                "tool_name": "telegram.send_message",
+                "side_effect_scope": "telegram:notify",
+                "budgets": {
+                    "runtime_seconds": 20,
+                    "tool_calls": 1,
+                    "estimated_tokens": 250,
+                    "estimated_cost_usd": 0.02,
+                },
+            },
+        )
+
+    if workflow == "urgent_reminder":
+        threshold = float(getattr(config, "ATTENTION_URGENT_THRESHOLD", 60.0))
+        today = await _attention_service().get_today_attention(limit=20)
+        candidate = None
+        for item in today.get("top_actionable", []):
+            if float(item.get("urgency_score", 0.0)) >= threshold:
+                candidate = item
+                break
+
+        if not candidate:
+            return {"status": "skipped", "reason": "no_urgent_candidates"}
+
+        task_id = str(candidate.get("task_id"))
+        fingerprint = f"urgent:{task_id}:{candidate.get('urgency_score')}"
+
+        async def _execute_urgent() -> dict:
+            if dry_run:
+                return {"sent": True, "dry_run": True, "task_id": task_id}
+
+            message = format_task_urgent_reminder(candidate)
+            chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
+            if not chat_id:
+                return {"sent": False, "reason": "chat_id_not_configured"}
+            await send_with_retry(bot, chat_id=int(chat_id), text=message, parse_mode="Markdown")
+            if db_conn:
+                database.log_notification(
+                    db_conn,
+                    notification_type="task_urgent_reminder",
+                    object_id=task_id,
+                    metadata=json.dumps({"fingerprint": fingerprint}),
+                )
+            if event_store:
+                await event_store.append(
+                    ReminderSentEvent(
+                        reminder_type="task_urgent_reminder",
+                        object_id=task_id,
+                        fingerprint=fingerprint,
+                        metadata={"urgency_score": candidate.get("urgency_score")},
+                    )
+                )
+            return {"sent": True, "task_id": task_id}
+
+        return await _runtime().run_flow(
+            workflow_name="urgent_reminder",
+            reminder_type="task_urgent_reminder",
+            execute=_execute_urgent,
+            envelope={
+                "workflow_name": "urgent_reminder",
+                "reminder_type": "task_urgent_reminder",
+                "tool_name": "telegram.send_message",
+                "side_effect_scope": "telegram:notify",
+                "budgets": {
+                    "runtime_seconds": 15,
+                    "tool_calls": 1,
+                    "estimated_tokens": 120,
+                    "estimated_cost_usd": 0.01,
+                },
+            },
+            fingerprint=fingerprint,
+        )
+
+    return {
+        "status": "error",
+        "reason": "unsupported_workflow",
+        "supported_workflows": ["daily_digest", "weekly_digest", "urgent_reminder"],
+    }

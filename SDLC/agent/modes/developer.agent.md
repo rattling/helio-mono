@@ -22,10 +22,11 @@ It owns **correct execution**.
 
 In DEV mode, the agent operates strictly within the workflow defined in:
 
-- `WORKFLOW.md`
-- `ENGINEERING_CONSTITUTION.md`
-- `docs/process/AUTHORITY_MAP.md`
-- `docs/process/SESSION_BOOTSTRAP.md`
+- `SDLC/WORKFLOW.md`
+- `SDLC/ENGINEERING_CONSTITUTION.md`
+- `SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md`
+- `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`
+- `SDLC/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md`
 
 In particular:
 
@@ -38,13 +39,14 @@ In particular:
 
 Use this minimal loop before reading deeper sections:
 
-1. Startup: run lean path from `docs/process/SESSION_BOOTSTRAP.md`.
+1. Startup: run lean path from `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`.
 2. Pre-code: verify issue has `Required Tests (must pass)`.
 3. Implement: keep strictly in issue scope and preserve interaction paths.
 4. Verify: run required test commands and capture exact results.
 5. Close: handoff comment + close issue in GitHub.
 
 Read additional docs only if scope/contract ambiguity blocks progress.
+Treat `SDLC/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md` as canonical for the per-issue durable loop and PR preflight details.
 
 ---
 
@@ -78,6 +80,8 @@ For each assigned issue, the agent in **DEV mode** must:
 - confirm the issue fits within a single execution session
 
 Before starting code changes:
+- Read milestone meta-issue checklist and derive ordered issue list from that checklist only.
+- Do not infer the full milestone issue set from search, labels, or title pattern matches.
 - Update the milestone meta-issue “Current Focus” to this issue and DEV mode (if the meta-issue uses it).
 - Emit a status line (MODE/MILESTONE/ISSUE/STATE) for human visibility.
 - For GitHub issue/meta updates, prefer MCP GitHub tools; avoid temp-file body workflows (e.g., `/tmp` + `--body-file`) when an inline/in-memory update path exists.
@@ -105,6 +109,14 @@ While executing an issue:
 - respect service boundaries and contracts
 - do not introduce architectural changes implicitly
 - keep changes minimal, explicit, and readable
+- process issues in checklist order unless the human explicitly reprioritizes
+- complete the durable issue loop before moving to next issue:
+  1) implement
+  2) run required tests
+  3) commit and push
+  4) post handoff comment
+  5) close issue
+  6) update milestone meta-issue checklist/current focus
 
 If architectural pressure is discovered:
 - stop
@@ -192,7 +204,7 @@ Docs must reflect reality, not aspiration.
 An issue is **not complete** until the following handoff is written.
 
 **Required Actions**:
-1. Add closing comment using `.github/agents/templates/ISSUE_HANDOFF_TEMPLATE.md`
+1. Add closing comment using `SDLC/agent/templates/ISSUE_HANDOFF_TEMPLATE.md`
 2. **Close the issue in GitHub** (set state to closed)
 
 Implementation note:
@@ -214,6 +226,10 @@ Verification in handoff must include:
 - whether the issue’s Required Tests section is fully satisfied
 
 **Do not consider the issue complete until it is closed in GitHub with the handoff comment.**
+
+Before creating/updating milestone PR body, run local preflight validation with the full candidate body:
+- `PR_BODY="<body>" .venv/bin/python SDLC/scripts/check_pr_body.py`
+- If this check fails, fix missing sections before publishing PR updates.
 
 Assume the next agent has:
 - no chat history

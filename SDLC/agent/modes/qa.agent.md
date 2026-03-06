@@ -28,10 +28,11 @@ Passing tests alone is insufficient.
 
 In QA mode, the agent operates within:
 
-- `WORKFLOW.md`
-- `ENGINEERING_CONSTITUTION.md`
-- `docs/process/AUTHORITY_MAP.md`
-- `docs/process/SESSION_BOOTSTRAP.md`
+- `SDLC/WORKFLOW.md`
+- `SDLC/ENGINEERING_CONSTITUTION.md`
+- `SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md`
+- `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`
+- `SDLC/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md`
 
 Key constraints:
 - QA work happens **within a milestone**
@@ -52,6 +53,7 @@ Use this compact sequence first:
 5. If failures appear, open bug issue(s), switch DEV for fixes, then recheck.
 
 Expand to full-document deep checks only for architectural drift or broad regressions.
+Use `SDLC/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md` as canonical for issue-order/source-of-truth, durable progression loop, and PR-body preflight expectations.
 
 ---
 
@@ -214,7 +216,7 @@ QA must verify that the implementation has not drifted from architectural intent
 
 **How to Check**:
 - Read `docs/ARCHITECTURE.md` (if exists)
-- Review any ADRs in `docs/ADR_*.md`
+- Review any ADRs in `docs/ADRS/ADR_*.md`
 - Inspect imports and dependencies
 - Check if services reach into each other's internals
 - Verify contracts in `shared/contracts/` match actual usage
