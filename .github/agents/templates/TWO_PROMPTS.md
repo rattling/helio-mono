@@ -32,6 +32,14 @@ MILESTONE: <N + name>
 
 Input: Use the milestone meta-issue + all milestone issues as the source of truth.
 
+Session status context (required):
+- Starting fresh: "Starting work on Milestone <N>. Dev/test. No work done yet."
+- Continuing: "Continuing Milestone <N>. Dev/test. Current focus is issue #<id>. <x>/<total> issues completed."
+
+Issue source-of-truth rule:
+- Derive milestone issue list from the meta-issue checklist items only.
+- Do not infer full issue set from milestone-title search results.
+
 Do DEV-mode implementation, then switch to QA-mode validation.
 
 Critical QA rule: if you find a bug in QA mode, create a bug issue first; then switch to DEV mode to fix; then return to QA mode to recheck.

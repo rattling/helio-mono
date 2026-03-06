@@ -78,6 +78,8 @@ For each assigned issue, the agent in **DEV mode** must:
 - confirm the issue fits within a single execution session
 
 Before starting code changes:
+- Read milestone meta-issue checklist and derive ordered issue list from that checklist only.
+- Do not infer the full milestone issue set from search, labels, or title pattern matches.
 - Update the milestone meta-issue “Current Focus” to this issue and DEV mode (if the meta-issue uses it).
 - Emit a status line (MODE/MILESTONE/ISSUE/STATE) for human visibility.
 - For GitHub issue/meta updates, prefer MCP GitHub tools; avoid temp-file body workflows (e.g., `/tmp` + `--body-file`) when an inline/in-memory update path exists.
@@ -105,6 +107,14 @@ While executing an issue:
 - respect service boundaries and contracts
 - do not introduce architectural changes implicitly
 - keep changes minimal, explicit, and readable
+- process issues in checklist order unless the human explicitly reprioritizes
+- complete the durable issue loop before moving to next issue:
+  1) implement
+  2) run required tests
+  3) commit and push
+  4) post handoff comment
+  5) close issue
+  6) update milestone meta-issue checklist/current focus
 
 If architectural pressure is discovered:
 - stop
@@ -214,6 +224,10 @@ Verification in handoff must include:
 - whether the issue’s Required Tests section is fully satisfied
 
 **Do not consider the issue complete until it is closed in GitHub with the handoff comment.**
+
+Before creating/updating milestone PR body, run local preflight validation with the full candidate body:
+- `PR_BODY="<body>" .venv/bin/python scripts/process/check_pr_body.py`
+- If this check fails, fix missing sections before publishing PR updates.
 
 Assume the next agent has:
 - no chat history

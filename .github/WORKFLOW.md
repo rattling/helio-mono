@@ -276,9 +276,16 @@ After successful validation, the agent in **QA mode**:
 - confirms all milestone issues are closed with handoffs
 - confirms meta-issue is updated
 - confirms branch is mergeable with main
+- runs PR body preflight locally before publish/update:
+  - `PR_BODY="<body>" .venv/bin/python scripts/process/check_pr_body.py`
 - creates PR using `.github/agents/templates/PR_REQUEST_TEMPLATE.md`
 - includes QA validation summary in PR description
 - notifies human for review
+
+CI status polling posture:
+- Do not poll CI in tight loops by default.
+- Prefer prevention (template compliance + local preflight) over repeated remote status checks.
+- Poll CI only when explicitly requested by the human.
 
 ### 7.4 Pull Request Review and Merge (Human)
 The human reviews and merges:

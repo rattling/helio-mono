@@ -58,6 +58,8 @@ When in ARCH/DEV/QA mode, execute in order:
    - `docs/ARCHITECTURE.md` and relevant deep docs in `docs/architecture/`
 3. Rehydrate milestone state from GitHub:
    - open active milestone meta-issue
+   - extract checklist issue IDs from the meta-issue body and use that set as source of truth for milestone scope
+   - do not rely on issue title/label search alone to determine the milestone issue set
    - find first unchecked issue (or meta “Current Focus”)
    - inspect most recent closed issue handoff for verification commands/results
 4. If uncertain, re-run the most recent verification command before starting new work.
@@ -89,6 +91,10 @@ When operating in ADHOC mode:
 At start and major transitions, emit:
 
 `MODE: <ARCH|DEV|QA> | MILESTONE: <N> | ISSUE: #<id or n/a> | STATE: <starting|in-progress|done|blocked>`
+
+At session start, include one of:
+- `Starting work on Milestone <N>. DEV/QA. No work done yet.`
+- `Continuing Milestone <N>. DEV/QA. Current focus: #<id>. <x>/<total> issues complete.`
 
 ## Interruption Safety Checkpoint
 

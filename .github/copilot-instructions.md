@@ -131,12 +131,17 @@ The rules below are the Helionyx-specific invariants that remain non-negotiable.
 - Assume zero chat context for resumption
 - Every issue must define **Required Tests (must pass)** with explicit commands
 - Issue closure requires reporting exact test commands run + results
+- For milestone execution, the authoritative issue set is the checklist in the milestone meta-issue body. Do not infer the full issue set from title/label searches.
+- Work strictly in order from the milestone meta-issue checklist unless the human explicitly reprioritizes.
+- Execution loop per issue is mandatory: implement -> run required tests -> commit -> push -> handoff comment -> close issue -> update milestone meta-issue status/current focus.
 
 ### Test Discipline
 - Milestone meta-issues must define a **Milestone Test Gate** with explicit commands
 - DEV must run the issue-level required tests before closing an issue
 - QA must block PR creation if issue-level required tests or milestone test gate are missing/unverified
 - If tests cannot be run, open/link a blocker issue and record risk explicitly
+- Before creating/updating a PR body, run local preflight: `PR_BODY="<body>" .venv/bin/python scripts/process/check_pr_body.py` and only publish if it passes.
+- Avoid polling CI/check status loops by default. Prefer preflight prevention (template + local validation); only poll when explicitly requested by the human.
 
 ### Contract Changes
 - Service contracts are explicit and versioned
@@ -197,7 +202,8 @@ Minimum steps:
 3. Identify the active milestone branch (usually `milestone-N`).
 4. In GitHub:
    - open the **Milestone Meta-Issue** for the active milestone
-   - find the first unchecked issue (or the meta-issue “Current Focus”, if present)
+  - extract all issue numbers from the meta-issue checklist and treat this list as authoritative
+  - find the first unchecked issue (or the meta-issue “Current Focus”, if present)
    - scan the most recent closed issue handoff comments to see what’s done and how it was verified
 5. Re-run the most recent “How to Verify” command(s) from the last closed issue if there is any doubt.
 
