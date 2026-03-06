@@ -176,6 +176,20 @@ class FileEventStore:
             LabControlChangedEvent,
             LabExperimentAppliedEvent,
             LabExperimentRunEvent,
+            OrchestrationDeliveryAttemptedEvent,
+            OrchestrationDeliveryFailedEvent,
+            OrchestrationDeliverySucceededEvent,
+            OrchestrationNodeCompletedEvent,
+            OrchestrationNodeEnteredEvent,
+            OrchestrationNodeFallbackEvent,
+            OrchestrationNodeRetriedEvent,
+            OrchestrationPolicyAllowedEvent,
+            OrchestrationPolicyBlockedEvent,
+            OrchestrationPolicyEscalatedEvent,
+            OrchestrationRunCheckpointEvent,
+            OrchestrationRunFailedEvent,
+            OrchestrationRunFinishedEvent,
+            OrchestrationRunStartedEvent,
             MessageIngestedEvent,
             ModelScoreRecordedEvent,
             ObjectExtractedEvent,
@@ -227,6 +241,34 @@ class FileEventStore:
             return LabExperimentRunEvent(**event_data)
         elif event_type == EventType.LAB_EXPERIMENT_APPLIED.value:
             return LabExperimentAppliedEvent(**event_data)
+        elif event_type == EventType.ORCHESTRATION_RUN_STARTED.value:
+            return OrchestrationRunStartedEvent(**event_data)
+        elif event_type == EventType.ORCHESTRATION_RUN_CHECKPOINT.value:
+            return OrchestrationRunCheckpointEvent(**event_data)
+        elif event_type == EventType.ORCHESTRATION_RUN_FINISHED.value:
+            return OrchestrationRunFinishedEvent(**event_data)
+        elif event_type == EventType.ORCHESTRATION_RUN_FAILED.value:
+            return OrchestrationRunFailedEvent(**event_data)
+        elif event_type == EventType.ORCHESTRATION_NODE_ENTERED.value:
+            return OrchestrationNodeEnteredEvent(**event_data)
+        elif event_type == EventType.ORCHESTRATION_NODE_COMPLETED.value:
+            return OrchestrationNodeCompletedEvent(**event_data)
+        elif event_type == EventType.ORCHESTRATION_NODE_RETRIED.value:
+            return OrchestrationNodeRetriedEvent(**event_data)
+        elif event_type == EventType.ORCHESTRATION_NODE_FALLBACK.value:
+            return OrchestrationNodeFallbackEvent(**event_data)
+        elif event_type == EventType.ORCHESTRATION_POLICY_ALLOWED.value:
+            return OrchestrationPolicyAllowedEvent(**event_data)
+        elif event_type == EventType.ORCHESTRATION_POLICY_BLOCKED.value:
+            return OrchestrationPolicyBlockedEvent(**event_data)
+        elif event_type == EventType.ORCHESTRATION_POLICY_ESCALATED.value:
+            return OrchestrationPolicyEscalatedEvent(**event_data)
+        elif event_type == EventType.ORCHESTRATION_DELIVERY_ATTEMPTED.value:
+            return OrchestrationDeliveryAttemptedEvent(**event_data)
+        elif event_type == EventType.ORCHESTRATION_DELIVERY_SUCCEEDED.value:
+            return OrchestrationDeliverySucceededEvent(**event_data)
+        elif event_type == EventType.ORCHESTRATION_DELIVERY_FAILED.value:
+            return OrchestrationDeliveryFailedEvent(**event_data)
         else:
             # Fall back to base event
             return BaseEvent(**event_data)

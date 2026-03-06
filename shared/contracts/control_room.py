@@ -23,4 +23,5 @@ class ControlRoomOverview(BaseModel):
     readiness: ReadinessPayload
     attention_today: dict[str, Any]
     attention_week: dict[str, Any]
+    orchestration: dict[str, Any] = Field(default_factory=dict)
     generated_at: str = Field(description="UTC ISO timestamp for payload generation")

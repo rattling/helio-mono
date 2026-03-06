@@ -23,36 +23,21 @@ It governs:
 - escalation behavior
 - audit artifact requirements
 
-## Policy Envelope (v0)
+## Policy Envelope (v0, M12 runtime)
 
 Each run must resolve an effective policy envelope before execution starts.
 
 ```json
 {
-  "policy_version": "0.1",
-  "mode": "deterministic|shadow|bounded",
-  "allowlisted_tools": ["query", "task", "telegram"],
-  "allowlisted_integrations": [],
-  "side_effect_scope": {
-    "read": true,
-    "write": ["notifications"],
-    "forbidden": ["task_delete", "external_write"]
-  },
+  "workflow_name": "daily_digest|weekly_digest|urgent_reminder",
+  "reminder_type": "task_daily_digest|task_weekly_digest|task_urgent_reminder",
+  "tool_name": "telegram.send_message",
+  "side_effect_scope": "telegram:notify",
   "budgets": {
-    "max_runtime_seconds": 60,
-    "max_llm_tokens": 12000,
-    "max_llm_cost_usd": 0.25,
-    "max_tool_calls": 20
-  },
-  "retry_policy": {
-    "max_attempts": 2,
-    "backoff": "exponential",
-    "fallback": "deterministic_summary"
-  },
-  "escalation": {
-    "on_policy_violation": "hard_stop",
-    "on_budget_exceeded": "hard_stop",
-    "on_ambiguous_write": "require_human"
+    "runtime_seconds": 20,
+    "tool_calls": 1,
+    "estimated_tokens": 250,
+    "estimated_cost_usd": 0.02
   }
 }
 ```
@@ -64,6 +49,10 @@ Each run must resolve an effective policy envelope before execution starts.
 3. Write operations require explicit scope match.
 4. Out-of-budget execution halts the run.
 5. Policy violations are non-retriable unless classified transient by control rules.
+
+Deterministic evaluator reason codes (non-exhaustive):
+- Blocked: `missing_field:*`, `workflow_not_allowed`, `reminder_type_not_allowed`, `tool_not_allowed`, `scope_not_allowed`
+- Escalated: `runtime_budget_exceeded`, `tool_call_budget_exceeded`, `token_budget_exceeded`, `cost_budget_exceeded`
 
 ## Required Audit Artifacts
 

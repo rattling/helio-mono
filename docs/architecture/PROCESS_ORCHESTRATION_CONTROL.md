@@ -13,7 +13,8 @@ Define how Helionyx combines:
 ## Invariants
 
 1. Human authority is absolute.
-2. Agent autonomy is valid only in declared bounds.
+2. Agent autonomy is valid only in declared bound
+s.
 3. Out-of-bounds actions fail closed and escalate.
 4. Side effects execute through deterministic services/adapters.
 5. Every meaningful run and decision is durably reconstructable.
@@ -128,12 +129,18 @@ graph TB
 Policy envelope shape and deterministic enforcement details are versioned in:
 - `docs/CONTROL_PLANE_POLICY_CONTRACT.md`
 
-## Audit Event Families (Planned M12+)
+## Audit Event Families (Active in M12)
 
 - Orchestration run lifecycle (start/checkpoint/finish/failure)
 - Node transition outcomes (entered/completed/retried/fallback)
 - Policy outcomes (allowed/blocked/escalated with reason)
 - Delivery outcomes (attempted/succeeded/failed with dedup fingerprint)
+
+Primary contract and implementation anchors:
+- `shared/contracts/events.py` (event schemas and types)
+- `services/control/policy.py` (deterministic evaluator)
+- `services/orchestration/runtime.py` (runtime boundary + event emission)
+- `services/api/routes/control_room.py` (operator visibility)
 
 ## Operational Rule of Thumb
 

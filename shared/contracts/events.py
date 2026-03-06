@@ -37,6 +37,22 @@ class EventType(str, Enum):
     LAB_EXPERIMENT_RUN = "lab_experiment_run"
     LAB_EXPERIMENT_APPLIED = "lab_experiment_applied"
 
+    # Milestone 12 orchestration + control-plane transparency events
+    ORCHESTRATION_RUN_STARTED = "orchestration_run_started"
+    ORCHESTRATION_RUN_CHECKPOINT = "orchestration_run_checkpoint"
+    ORCHESTRATION_RUN_FINISHED = "orchestration_run_finished"
+    ORCHESTRATION_RUN_FAILED = "orchestration_run_failed"
+    ORCHESTRATION_NODE_ENTERED = "orchestration_node_entered"
+    ORCHESTRATION_NODE_COMPLETED = "orchestration_node_completed"
+    ORCHESTRATION_NODE_RETRIED = "orchestration_node_retried"
+    ORCHESTRATION_NODE_FALLBACK = "orchestration_node_fallback"
+    ORCHESTRATION_POLICY_ALLOWED = "orchestration_policy_allowed"
+    ORCHESTRATION_POLICY_BLOCKED = "orchestration_policy_blocked"
+    ORCHESTRATION_POLICY_ESCALATED = "orchestration_policy_escalated"
+    ORCHESTRATION_DELIVERY_ATTEMPTED = "orchestration_delivery_attempted"
+    ORCHESTRATION_DELIVERY_SUCCEEDED = "orchestration_delivery_succeeded"
+    ORCHESTRATION_DELIVERY_FAILED = "orchestration_delivery_failed"
+
 
 class LearningTarget(str, Enum):
     """First-class learning targets for contextual feedback semantics."""
@@ -305,3 +321,149 @@ class LabExperimentAppliedEvent(BaseEvent):
     action: str
     applied: bool
     reason: Optional[str] = None
+
+
+class OrchestrationRunStartedEvent(BaseEvent):
+    """Event recording orchestration run start boundary."""
+
+    event_type: EventType = EventType.ORCHESTRATION_RUN_STARTED
+    run_id: str
+    workflow_name: str
+    trigger: str
+
+
+class OrchestrationRunCheckpointEvent(BaseEvent):
+    """Event recording orchestration run checkpoints for replay visibility."""
+
+    event_type: EventType = EventType.ORCHESTRATION_RUN_CHECKPOINT
+    run_id: str
+    workflow_name: str
+    checkpoint: str
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class OrchestrationRunFinishedEvent(BaseEvent):
+    """Event recording successful orchestration run completion."""
+
+    event_type: EventType = EventType.ORCHESTRATION_RUN_FINISHED
+    run_id: str
+    workflow_name: str
+    status: str = "completed"
+    output: dict[str, Any] = Field(default_factory=dict)
+
+
+class OrchestrationRunFailedEvent(BaseEvent):
+    """Event recording orchestration run failure terminal state."""
+
+    event_type: EventType = EventType.ORCHESTRATION_RUN_FAILED
+    run_id: str
+    workflow_name: str
+    reason: str
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class OrchestrationNodeEnteredEvent(BaseEvent):
+    """Event recording node transition entered state."""
+
+    event_type: EventType = EventType.ORCHESTRATION_NODE_ENTERED
+    run_id: str
+    workflow_name: str
+    node_id: str
+
+
+class OrchestrationNodeCompletedEvent(BaseEvent):
+    """Event recording node transition completed state."""
+
+    event_type: EventType = EventType.ORCHESTRATION_NODE_COMPLETED
+    run_id: str
+    workflow_name: str
+    node_id: str
+    result: dict[str, Any] = Field(default_factory=dict)
+
+
+class OrchestrationNodeRetriedEvent(BaseEvent):
+    """Event recording node retry transition state."""
+
+    event_type: EventType = EventType.ORCHESTRATION_NODE_RETRIED
+    run_id: str
+    workflow_name: str
+    node_id: str
+    retry_count: int
+    reason: Optional[str] = None
+
+
+class OrchestrationNodeFallbackEvent(BaseEvent):
+    """Event recording node fallback transition state."""
+
+    event_type: EventType = EventType.ORCHESTRATION_NODE_FALLBACK
+    run_id: str
+    workflow_name: str
+    node_id: str
+    fallback_node_id: str
+    reason: str
+
+
+class OrchestrationPolicyAllowedEvent(BaseEvent):
+    """Event recording deterministic policy allow outcomes."""
+
+    event_type: EventType = EventType.ORCHESTRATION_POLICY_ALLOWED
+    run_id: str
+    workflow_name: str
+    reason: str
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class OrchestrationPolicyBlockedEvent(BaseEvent):
+    """Event recording deterministic policy blocked outcomes."""
+
+    event_type: EventType = EventType.ORCHESTRATION_POLICY_BLOCKED
+    run_id: str
+    workflow_name: str
+    reason: str
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class OrchestrationPolicyEscalatedEvent(BaseEvent):
+    """Event recording deterministic policy escalated outcomes."""
+
+    event_type: EventType = EventType.ORCHESTRATION_POLICY_ESCALATED
+    run_id: str
+    workflow_name: str
+    reason: str
+    envelope: dict[str, Any] = Field(default_factory=dict)
+
+
+class OrchestrationDeliveryAttemptedEvent(BaseEvent):
+    """Event recording delivery attempt from orchestration path."""
+
+    event_type: EventType = EventType.ORCHESTRATION_DELIVERY_ATTEMPTED
+    run_id: str
+    workflow_name: str
+    reminder_type: str
+    delivery_channel: str
+    fingerprint: Optional[str] = None
+
+
+class OrchestrationDeliverySucceededEvent(BaseEvent):
+    """Event recording successful orchestration delivery outcome."""
+
+    event_type: EventType = EventType.ORCHESTRATION_DELIVERY_SUCCEEDED
+    run_id: str
+    workflow_name: str
+    reminder_type: str
+    delivery_channel: str
+    fingerprint: Optional[str] = None
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class OrchestrationDeliveryFailedEvent(BaseEvent):
+    """Event recording failed orchestration delivery outcome."""
+
+    event_type: EventType = EventType.ORCHESTRATION_DELIVERY_FAILED
+    run_id: str
+    workflow_name: str
+    reminder_type: str
+    delivery_channel: str
+    reason: str
+    fingerprint: Optional[str] = None
+    details: dict[str, Any] = Field(default_factory=dict)
