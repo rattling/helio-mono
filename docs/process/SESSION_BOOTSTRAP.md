@@ -23,6 +23,16 @@ Run:
 
 Confirm expected repo identity and working-tree cleanliness before significant work.
 
+## Python Environment Standard (Always)
+
+For all Python commands in this repository:
+
+- Use `.venv/bin/python` (never bare `python`).
+- Use `.venv/bin/pip` (never bare `pip`).
+
+This avoids accidental system-Python usage and keeps dependency behavior consistent
+across local execution, automation, and CI.
+
 ## Lean Startup Path (Default)
 
 For most sessions, stop after these reads:

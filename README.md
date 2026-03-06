@@ -31,6 +31,12 @@ make status
 make down
 ```
 
+### Technical Note: Python dependency workflow
+
+- Current standard: project virtualenv at `.venv/`, using `.venv/bin/python` and `.venv/bin/pip`.
+- This keeps local, CI, and deployment behavior aligned today.
+- A future migration to `uv` may be considered, but should be done as one coordinated change (docs + CI + setup commands) to avoid mixed workflows.
+
 ## Running the Service
 
 Helionyx runs as a unified service that combines:

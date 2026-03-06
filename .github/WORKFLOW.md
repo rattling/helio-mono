@@ -97,6 +97,17 @@ If an issue is too large, it must be split.
 Session startup and rehydration procedure is defined in:
 - `docs/process/SESSION_BOOTSTRAP.md`
 
+### 3.0 Python Environment and Dependency Rule (Required)
+
+All Python execution in this repository must use the project virtual environment:
+
+- `.venv/bin/python` instead of `python`
+- `.venv/bin/pip` instead of `pip`
+
+Dependency installation and updates must be performed through `.venv/bin/pip`
+unless and until a different dependency manager is explicitly adopted in
+repository policy docs and CI.
+
 ### 3.1 Required Project Documents
 Before implementation begins, the following must exist:
 - PROJECT_CHARTER.md (core vision, principles, invariants - milestone-agnostic)
