@@ -25,6 +25,9 @@ Hard-rule precedence and startup flow are centralized in:
 - `docs/process/AUTHORITY_MAP.md`
 - `docs/process/SESSION_BOOTSTRAP.md`
 
+Execution-loop details are centralized in:
+- `docs/process/MILESTONE_EXECUTION_RUNBOOK.md`
+
 ---
 
 ## 1.1 Single Agent, Multiple Modes
@@ -197,7 +200,7 @@ During execution:
 If execution is interrupted mid-issue, the agent must leave a durable checkpoint (WIP commit + issue comment) so work can be resumed after a context reset.
 
 All commits must use:
-- `.github/agents/templates/COMMIT_MESSAGE_TEMPLATE.md`
+- `.github/agents/templates/COMMIT_MSG_TEMPLATE.md`
 
 If a contract must change:
 - the change is made explicit

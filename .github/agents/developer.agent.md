@@ -26,6 +26,7 @@ In DEV mode, the agent operates strictly within the workflow defined in:
 - `ENGINEERING_CONSTITUTION.md`
 - `docs/process/AUTHORITY_MAP.md`
 - `docs/process/SESSION_BOOTSTRAP.md`
+- `docs/process/MILESTONE_EXECUTION_RUNBOOK.md`
 
 In particular:
 
@@ -45,6 +46,7 @@ Use this minimal loop before reading deeper sections:
 5. Close: handoff comment + close issue in GitHub.
 
 Read additional docs only if scope/contract ambiguity blocks progress.
+Treat `docs/process/MILESTONE_EXECUTION_RUNBOOK.md` as canonical for the per-issue durable loop and PR preflight details.
 
 ---
 

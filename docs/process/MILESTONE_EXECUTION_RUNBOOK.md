@@ -2,6 +2,8 @@
 
 Purpose: prevent rehydration drift and avoid avoidable CI churn during ARCH/DEV/QA milestone execution.
 
+For human-oriented overview diagrams and update guidance, see `docs/process/SDLC_PROCESS_GUIDE.md`.
+
 ## Source of Truth for Milestone Scope
 
 - The milestone issue list is the checklist in the milestone meta-issue body.

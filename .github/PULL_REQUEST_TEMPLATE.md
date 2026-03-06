@@ -1,3 +1,5 @@
+<!-- Canonical source: .github/agents/templates/PR_REQUEST_TEMPLATE.md -->
+
 ## Summary
 
 Describe what this PR delivers.

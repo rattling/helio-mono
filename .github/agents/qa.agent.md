@@ -32,6 +32,7 @@ In QA mode, the agent operates within:
 - `ENGINEERING_CONSTITUTION.md`
 - `docs/process/AUTHORITY_MAP.md`
 - `docs/process/SESSION_BOOTSTRAP.md`
+- `docs/process/MILESTONE_EXECUTION_RUNBOOK.md`
 
 Key constraints:
 - QA work happens **within a milestone**
@@ -52,6 +53,7 @@ Use this compact sequence first:
 5. If failures appear, open bug issue(s), switch DEV for fixes, then recheck.
 
 Expand to full-document deep checks only for architectural drift or broad regressions.
+Use `docs/process/MILESTONE_EXECUTION_RUNBOOK.md` as canonical for issue-order/source-of-truth, durable progression loop, and PR-body preflight expectations.
 
 ---
 

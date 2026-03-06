@@ -43,6 +43,10 @@ For most sessions, stop after these reads:
 
 This is the default path for high productivity and low token usage.
 
+Token-efficiency rule:
+- Do not re-read the full process corpus on every issue.
+- Re-read only when mode changes, conflict appears, or requirements become ambiguous.
+
 ## Structured Workflow Startup
 
 When in ARCH/DEV/QA mode, execute in order:

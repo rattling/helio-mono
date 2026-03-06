@@ -34,6 +34,7 @@ This repo supports a structured milestone workflow (ARCH/DEV/QA + issues + hando
 Canonical process references (single source of truth):
 - `docs/process/AUTHORITY_MAP.md` (instruction precedence, mode authority, conflict handling)
 - `docs/process/SESSION_BOOTSTRAP.md` (startup + rehydration checklist)
+- `docs/process/MILESTONE_EXECUTION_RUNBOOK.md` (canonical per-issue execution loop and PR preflight)
 
 Use the structured workflow **only when the user explicitly asks for it** (e.g. “create issues”, “do milestone work”, “prep a PR”, “follow the workflow”, "architect mode", "developer mode", "qa mode").
 
@@ -41,6 +42,7 @@ Productivity default:
 - Start with the lean path in `docs/process/SESSION_BOOTSTRAP.md`.
 - Expand context only when required by scope, contracts, or verification ambiguity.
 - Prefer linking to canonical docs over re-stating long rule text in new artifacts.
+- Treat `docs/process/MILESTONE_EXECUTION_RUNBOOK.md` as the canonical execution-loop reference; avoid duplicating that loop text in new docs/comments unless customization is required.
 
 If you are doing structured workflow work, read these documents in order before starting:
 

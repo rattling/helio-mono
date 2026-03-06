@@ -4,6 +4,8 @@
 
 This document defines instruction precedence and conflict handling for Helionyx workflow execution.
 
+For the human-oriented process overview and flow diagrams, see `docs/process/SDLC_PROCESS_GUIDE.md`.
+
 Use this whenever guidance appears to conflict across prompts, role docs, templates, and project docs.
 
 Productivity intent: resolve ambiguity quickly with minimal reading, then continue execution.
