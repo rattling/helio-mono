@@ -49,7 +49,7 @@ If you are doing structured workflow work, read these documents in order before 
 
 1. **Engineering Framework**:
   - [SDLC/ENGINEERING_CONSTITUTION.md](../SDLC/ENGINEERING_CONSTITUTION.md) - Core engineering values and technical posture
-  - [WORKFLOW.md](WORKFLOW.md) - How work is structured and executed
+  - [SDLC/WORKFLOW.md](../SDLC/WORKFLOW.md) - How work is structured and executed
   - Your role charter in [SDLC agent modes](../SDLC/agent/modes/)
 
 2. **Project Context**:

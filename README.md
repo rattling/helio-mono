@@ -456,7 +456,7 @@ Deep-link contract for cross-surface reproducibility is URL-based:
 - **Project Charter**: [docs/PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md)
 - **Architecture Decision**: [docs/ARCHITECTURE_DECISION_M0.md](docs/ARCHITECTURE_DECISION_M0.md)
 - **Engineering Constitution**: [SDLC/ENGINEERING_CONSTITUTION.md](SDLC/ENGINEERING_CONSTITUTION.md)
-- **Workflow**: [.github/WORKFLOW.md](.github/WORKFLOW.md)
+- **Workflow**: [SDLC/WORKFLOW.md](SDLC/WORKFLOW.md)
 
 ## Milestones
 
@@ -470,7 +470,7 @@ Deep-link contract for cross-surface reproducibility is URL-based:
 ## Contributing
 
 This is a personal project following structured agent-driven development.  
-See [.github/WORKFLOW.md](.github/WORKFLOW.md) for execution guidelines.
+See [SDLC/WORKFLOW.md](SDLC/WORKFLOW.md) for execution guidelines.
 
 ## License
 

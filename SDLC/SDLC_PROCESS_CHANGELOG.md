@@ -45,6 +45,6 @@ Tracks durable updates to SDLC/process guidance (not per-run findings).
   - links to SDLC process guide for human-oriented orientation
 - `SDLC/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md`
   - links to SDLC process guide for diagrams/update guidance
-- `.github/WORKFLOW.md`
+- `SDLC/WORKFLOW.md`
   - PR preflight added to PR creation phase
   - CI polling posture documented

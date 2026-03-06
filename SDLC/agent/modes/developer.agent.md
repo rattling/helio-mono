@@ -22,7 +22,7 @@ It owns **correct execution**.
 
 In DEV mode, the agent operates strictly within the workflow defined in:
 
-- `WORKFLOW.md`
+- `SDLC/WORKFLOW.md`
 - `SDLC/ENGINEERING_CONSTITUTION.md`
 - `SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md`
 - `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`

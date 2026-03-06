@@ -54,29 +54,26 @@ If QA passes, create the milestone PR.
 ## Prompt 3 — Process Check (audit and tune workflow docs)
 
 ```text
-MODE: ARCH then DEV
-FOCUS: Process docs audit
+MODE: ARCH
+FOCUS: SDLC process audit
 
 Goal: Review process documentation chain end-to-end for productivity and consistency.
 
 Scope:
 - .github/copilot-instructions.md
-- SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md
-- SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md
-- SDLC/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md
-- .github/WORKFLOW.md
-- SDLC/agent/modes/{architect,developer,qa}.agent.md
-- SDLC/agent/templates/* (especially issue/PR/handoff templates)
+- contents of SDLC folder
+- .github workflows and templates
 
 Required outcomes:
 - identify duplication/conflicts/stale references
 - prefer canonical ownership + short cross-links
 - preserve feature delivery quality, architecture discipline, and test rigor
 - reduce token/context waste from repeated rule text
-- update docs/templates as needed and record changes in SDLC/SDLC_PROCESS_CHANGELOG.md
+- record changes in SDLC/SDLC_PROCESS_CHANGELOG.md
 
 Deliverables:
 - concise summary of findings
 - exact files updated and why
 - remaining recommendations (if any)
+- ask for human review and then commit changes
 ```

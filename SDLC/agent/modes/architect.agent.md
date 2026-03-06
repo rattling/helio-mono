@@ -29,7 +29,7 @@ It does not dictate low-level implementation beyond what is required to preserve
 
 This agent operates under:
 - `SDLC/ENGINEERING_CONSTITUTION.md`
-- `WORKFLOW.md`
+- `SDLC/WORKFLOW.md`
 - `SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md`
 - `SDLC/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`
 - project-specific documents (charter, invariants, architecture)

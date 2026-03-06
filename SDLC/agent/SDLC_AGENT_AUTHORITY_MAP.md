@@ -16,7 +16,7 @@ Productivity intent: resolve ambiguity quickly with minimal reading, then contin
 2. Human user explicit request for current session
 3. Repository hard rules in `.github/copilot-instructions.md`
 4. Workflow and mode operating guides:
-   - `.github/WORKFLOW.md`
+   - `SDLC/WORKFLOW.md`
    - `SDLC/agent/modes/architect.agent.md`
    - `SDLC/agent/modes/developer.agent.md`
    - `SDLC/agent/modes/qa.agent.md`
@@ -73,7 +73,7 @@ Expand context only if one of these is true:
 - Verification expectations are unclear
 
 When expansion is needed, read in this order:
-1. `.github/WORKFLOW.md`
+1. `SDLC/WORKFLOW.md`
 2. `.github/copilot-instructions.md`
 3. Relevant architecture/project docs
 

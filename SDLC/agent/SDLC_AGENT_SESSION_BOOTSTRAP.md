@@ -53,7 +53,7 @@ When in ARCH/DEV/QA mode, execute in order:
 
 1. Read:
    - `SDLC/ENGINEERING_CONSTITUTION.md`
-   - `.github/WORKFLOW.md`
+   - `SDLC/WORKFLOW.md`
    - active mode guide in `SDLC/agent/modes/`
    - `SDLC/agent/SDLC_AGENT_AUTHORITY_MAP.md`
 2. Read project context:
