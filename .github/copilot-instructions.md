@@ -51,7 +51,7 @@ If you are doing structured workflow work, read these documents in order before 
 
 2. **Project Context**:
   - [docs/PROJECT_CHARTER.md](../docs/PROJECT_CHARTER.md) - Project vision, scope, and guiding principles (milestone-agnostic)
-   - Current milestone charter (e.g., `docs/MILESTONE2_CHARTER.md`) - Active milestone goals and deliverables
+   - Current milestone charter (e.g., `docs/MILESTONES/MILESTONE2_CHARTER.md`) - Active milestone goals and deliverables
    - `docs/PROJECT_INVARIANTS.md` - Non-negotiable technical constraints (to be created)
    - `docs/ARCHITECTURE.md` - Current system structure (if exists)
    - Historical milestone charters (e.g., `MILESTONE0_CHARTER.md`, `MILESTONE1_CHARTER.md`) - Available for reference when needed

@@ -1,6 +1,6 @@
 # Milestone 6 --- Attention + Planning Assistant (Merged M6/M7)
 
-**Architecture ADR**: [ADR_M6_BOUNDED_LEARNING_FROM_FEEDBACK.md](ADR_M6_BOUNDED_LEARNING_FROM_FEEDBACK.md)
+**Architecture ADR**: [ADR_M6_BOUNDED_LEARNING_FROM_FEEDBACK.md](ADRS/ADR_M6_BOUNDED_LEARNING_FROM_FEEDBACK.md)
 
 ## Objective
 

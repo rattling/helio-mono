@@ -44,7 +44,7 @@ When in ARCH/DEV/QA mode, execute in order:
    - `docs/process/AUTHORITY_MAP.md`
 2. Read project context:
    - `docs/PROJECT_CHARTER.md`
-   - active milestone charter in `docs/Milestones/`
+   - active milestone charter in `docs/MILESTONES/`
    - `docs/ARCHITECTURE.md` and relevant deep docs in `docs/architecture/`
 3. Rehydrate milestone state from GitHub:
    - open active milestone meta-issue

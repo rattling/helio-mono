@@ -391,7 +391,7 @@ Helionyx operates as a **unified long-running service** that combines:
 - Error handling with exponential backoff and graceful degradation
 - Rate limiting via token bucket algorithm
 - Cost tracking and daily limits
-- See `docs/ADR_M1_LLM_INTEGRATION.md` for detailed architecture
+- See `docs/ADRS/ADR_M1_LLM_INTEGRATION.md` for detailed architecture
 
 ---
 
@@ -416,7 +416,7 @@ Helionyx operates as a **unified long-running service** that combines:
 - Schema includes todos, notes, tracks, metadata tables
 - Full projection rebuild from event log
 - Incremental updates for running system
-- See `docs/ADR_M1_SQLITE_PERSISTENCE.md` for detailed design
+- See `docs/ADRS/ADR_M1_SQLITE_PERSISTENCE.md` for detailed design
 - Schema definition: `services/query/schema.sql`
 
 ---
@@ -493,7 +493,7 @@ Adapters contain no business logic, only:
 - Background scheduler for push notifications (reminders, daily summaries)
 - Notification state tracked in projection database
 - Single-user configuration (one chat ID)
-- See `docs/ADR_M1_TELEGRAM_ARCHITECTURE.md` for detailed design
+- See `docs/ADRS/ADR_M1_TELEGRAM_ARCHITECTURE.md` for detailed design
 
 ---
 

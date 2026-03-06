@@ -21,7 +21,7 @@ Milestone 5 has been validated against the charter and meta-issue source of trut
 
 ## Validation Scope
 
-Per `docs/MILESTONE_5_CHARTER.md`, QA validated:
+Per `docs/MILESTONES/MILESTONE5_CHARTER.md`, QA validated:
 - Canonical Task lifecycle capabilities
 - Idempotent ingest via `source_ref`
 - Deterministic dedup + explainability/auditability
