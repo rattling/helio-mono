@@ -45,12 +45,15 @@ async def test_weekly_digest_runs_through_orchestration(monkeypatch, tmp_path):
     )
 
     send_mock = AsyncMock()
+    sleep_mock = AsyncMock()
     monkeypatch.setattr(scheduler, "send_with_retry", send_mock)
+    monkeypatch.setattr(scheduler.asyncio, "sleep", sleep_mock)
     monkeypatch.setattr(scheduler, "datetime", _FrozenDateTime)
 
     await scheduler.check_and_send_weekly_digest(bot=object())
 
     assert send_mock.await_count == 1
+    sleep_mock.assert_awaited()
 
     events = await store.stream_events()
     event_types = [event.event_type for event in events]
