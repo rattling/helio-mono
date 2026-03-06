@@ -6,13 +6,14 @@ from datetime import datetime
 from pathlib import Path
 from collections.abc import Generator
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from shared.common.config import Config
 from shared.contracts import ControlRoomOverview, EventType, ReadinessCheck, ReadinessPayload
 from services.attention import AttentionService
 from services.event_store.file_store import FileEventStore
 from services.query.service import QueryService
+from services.adapters.telegram import scheduler as telegram_scheduler
 
 router = APIRouter()
 
@@ -173,3 +174,26 @@ async def get_orchestration_visibility() -> dict:
     """Return orchestration run/node/policy/delivery visibility summary."""
     config = Config.from_env()
     return await _orchestration_visibility(config=config, limit=50)
+
+
+@router.post("/orchestration/run", response_model=dict)
+async def run_orchestration_workflow(
+    workflow_name: str = Query(..., description="daily_digest|weekly_digest|urgent_reminder"),
+    dry_run: bool = Query(True),
+) -> dict:
+    """Trigger a single orchestration workflow run via API through shared runtime boundary."""
+    config = Config.from_env()
+    event_store = FileEventStore(data_dir=config.EVENT_STORE_PATH)
+    query_service = QueryService(event_store, db_path=Path(config.PROJECTIONS_DB_PATH))
+    try:
+        telegram_scheduler.config = config
+        telegram_scheduler.event_store = event_store
+        telegram_scheduler.query_service = query_service
+        telegram_scheduler.db_conn = query_service.conn
+        return await telegram_scheduler.run_orchestration_workflow(
+            bot=None,
+            workflow_name=workflow_name,
+            dry_run=dry_run,
+        )
+    finally:
+        query_service.close()
