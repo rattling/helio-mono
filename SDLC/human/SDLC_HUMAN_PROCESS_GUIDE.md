@@ -86,7 +86,7 @@ When changing process behavior, use this sequence:
 4. Update templates/prompts only where operator behavior changes.
 5. Add a dated entry to `SDLC/SDLC_PROCESS_CHANGELOG.md`.
 6. Run a quick consistency check for stale references:
-   - `rg "COMMIT_MESSAGE_TEMPLATE|COMMIT_MSG_TEMPLATE|MILESTONE_EXECUTION_RUNBOOK|PR_REQUEST_TEMPLATE|PULL_REQUEST_TEMPLATE" .github docs/process`
+    - `rg "COMMIT_MESSAGE_TEMPLATE|COMMIT_MSG_TEMPLATE|SDLC_AGENT_EXECUTION_RUNBOOK|PR_REQUEST_TEMPLATE|PULL_REQUEST_TEMPLATE|docs/process" .github SDLC`
 
 ## Anti-drift checklist (quick)
 
@@ -95,4 +95,4 @@ When changing process behavior, use this sequence:
 - Does every issue still require explicit test commands?
 - Does PR preflight still run before PR body publish/update?
 - Are prompts concise and linked to canonical docs (not duplicating them)?
-- Is the change recorded in `PROCESS_CHANGELOG.md`?
+- Is the change recorded in `SDLC/SDLC_PROCESS_CHANGELOG.md`?
