@@ -15,18 +15,21 @@ It specifies:
 
 This document assumes the constraints and posture defined in:
 - ENGINEERING_CONSTITUTION.md
-- Role charters in `.github/agents/`
+- Role charters in `docs/process/sdlc/agent/modes/`
 - Process authority and startup runbook in `docs/process/`
 
 All execution artifacts must conform to the templates defined in:
-- `.github/agents/templates/`
+- `docs/process/sdlc/agent/templates/`
 
 Hard-rule precedence and startup flow are centralized in:
-- `docs/process/AUTHORITY_MAP.md`
-- `docs/process/SESSION_BOOTSTRAP.md`
+- `docs/process/sdlc/agent/SDLC_AGENT_AUTHORITY_MAP.md`
+- `docs/process/sdlc/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`
 
 Execution-loop details are centralized in:
-- `docs/process/MILESTONE_EXECUTION_RUNBOOK.md`
+- `docs/process/sdlc/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md`
+
+GitHub bridge boundary is defined in:
+- `docs/process/sdlc/SDLC_GITHUB_BRIDGE_POLICY.md`
 
 ---
 
@@ -44,16 +47,18 @@ Modes:
 - If switching modes mid-session, the agent must announce the switch and follow that mode’s rules.
 
 For mode authority boundaries and conflict resolution precedence, see:
-- `docs/process/AUTHORITY_MAP.md`
+- `docs/process/sdlc/agent/SDLC_AGENT_AUTHORITY_MAP.md`
 
-### Two-Prompt Cadence (Default)
+### Human Driver Prompt Cadence (Default)
 
-Milestones are typically executed with **two human prompts**:
+Milestones are typically executed with **two primary human prompts**:
 1. **Architecture prompt** (ARCH mode): decompose the milestone, create issues/meta-issue, establish/adjust contracts and architecture artifacts.
 2. **Implementation prompt** (DEV → QA loop): implement issues, validate end-to-end, raise bug issues as needed, fix them, re-validate, then create the PR.
 
+An optional **Process Check** prompt is used for SDLC documentation audits and process-tuning passes.
+
 Canonical prompt templates live in:
-- `.github/agents/templates/TWO_PROMPTS.md`
+- `docs/process/sdlc/human/SDLC_HUMAN_DRIVER_PROMPTS.md`
 
 The human intervenes primarily to:
 - approve the ARCH output (milestone plan/contracts)
@@ -78,7 +83,7 @@ A milestone:
 - is delivered via a single PR to the main branch (initially)
 
 Each milestone must be tracked using the **Milestone Meta-Issue Template**:
-- `.github/agents/templates/MILESTONE_META_ISSUE_TEMPLATE.md`
+- `docs/process/sdlc/agent/templates/MILESTONE_META_ISSUE_TEMPLATE.md`
 
 ### 2.3 Issue (Execution Unit)
 An issue is the **atomic execution unit**.
@@ -89,7 +94,7 @@ An issue must:
 - produce durable artifacts
 
 All issues must be created using:
-- `.github/agents/templates/ISSUE_TEMPLATE.md`
+- `docs/process/sdlc/agent/templates/ISSUE_TEMPLATE.md`
 
 If an issue is too large, it must be split.
 
@@ -98,7 +103,7 @@ If an issue is too large, it must be split.
 ## 3. Project Startup
 
 Session startup and rehydration procedure is defined in:
-- `docs/process/SESSION_BOOTSTRAP.md`
+- `docs/process/sdlc/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`
 
 ### 3.0 Python Environment and Dependency Rule (Required)
 
@@ -189,7 +194,7 @@ When starting an issue, the agent must:
 - confirm scope is reasonable
 
 If not, the issue must be split or escalated using:
-- `.github/agents/templates/BLOCKER_TEMPLATE.md`
+- `docs/process/sdlc/agent/templates/BLOCKER_TEMPLATE.md`
 
 ### 5.2 Execution
 During execution:
@@ -200,13 +205,13 @@ During execution:
 If execution is interrupted mid-issue, the agent must leave a durable checkpoint (WIP commit + issue comment) so work can be resumed after a context reset.
 
 All commits must use:
-- `.github/agents/templates/COMMIT_MSG_TEMPLATE.md`
+- `docs/process/sdlc/agent/templates/COMMIT_MSG_TEMPLATE.md`
 
 If a contract must change:
 - the change is made explicit
 - downstream impact is documented
 - an ADR is created if the change is non-trivial:
-  - `.github/agents/templates/ADR_TEMPLATE.md`
+  - `docs/process/sdlc/agent/templates/ADR_TEMPLATE.md`
 
 ### 5.3 Completion (Handoff Bundle)
 An issue is complete only when **all** of the following are done:
@@ -215,7 +220,7 @@ An issue is complete only when **all** of the following are done:
 - tests pass
 - docs/runbooks updated if affected
 - issue closed in GitHub with handoff comment using:
-  - `.github/agents/templates/ISSUE_HANDOFF_TEMPLATE.md`
+  - `docs/process/sdlc/agent/templates/ISSUE_HANDOFF_TEMPLATE.md`
 
 **The issue must be marked as closed (state=closed) in GitHub.**
 
@@ -281,7 +286,7 @@ After successful validation, the agent in **QA mode**:
 - confirms branch is mergeable with main
 - runs PR body preflight locally before publish/update:
   - `PR_BODY="<body>" .venv/bin/python scripts/process/check_pr_body.py`
-- creates PR using `.github/agents/templates/PR_REQUEST_TEMPLATE.md`
+- creates PR using `docs/process/sdlc/agent/templates/PR_REQUEST_TEMPLATE.md`
 - includes QA validation summary in PR description
 - notifies human for review
 
@@ -314,7 +319,7 @@ All necessary state must be recoverable from:
 
 If work cannot be resumed from these artifacts, the workflow has failed.
 
-Use the checklist in `docs/process/SESSION_BOOTSTRAP.md` to rehydrate quickly.
+Use the checklist in `docs/process/sdlc/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md` to rehydrate quickly.
 
 ---
 
@@ -327,7 +332,7 @@ Agents must stop and escalate when:
 - a decision would affect multiple services or milestones
 
 Escalation must use:
-- `.github/agents/templates/BLOCKER_TEMPLATE.md`
+- `docs/process/sdlc/agent/templates/BLOCKER_TEMPLATE.md`
 
 ---
 

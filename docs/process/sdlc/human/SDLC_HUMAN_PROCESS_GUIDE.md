@@ -58,14 +58,14 @@ flowchart LR
 
 Use this as the fast map instead of re-reading everything.
 
-- **Precedence and conflict handling**: `docs/process/AUTHORITY_MAP.md`
-- **Startup/rehydration path**: `docs/process/SESSION_BOOTSTRAP.md`
-- **Execution loop and PR preflight**: `docs/process/MILESTONE_EXECUTION_RUNBOOK.md`
+- **Precedence and conflict handling**: `docs/process/sdlc/agent/SDLC_AGENT_AUTHORITY_MAP.md`
+- **Startup/rehydration path**: `docs/process/sdlc/agent/SDLC_AGENT_SESSION_BOOTSTRAP.md`
+- **Execution loop and PR preflight**: `docs/process/sdlc/agent/SDLC_AGENT_EXECUTION_RUNBOOK.md`
 - **Repo-level hard rules**: `.github/copilot-instructions.md`
 - **Workflow lifecycle**: `.github/WORKFLOW.md`
-- **Mode constraints**: `.github/agents/{architect,developer,qa}.agent.md`
-- **Operational prompt starters**: `.github/agents/templates/TWO_PROMPTS.md`
-- **Durable process history**: `docs/process/PROCESS_CHANGELOG.md`
+- **Mode constraints**: `docs/process/sdlc/agent/modes/{architect,developer,qa}.agent.md`
+- **Operational prompt starters**: `docs/process/sdlc/human/SDLC_HUMAN_DRIVER_PROMPTS.md`
+- **Durable process history**: `docs/process/sdlc/SDLC_PROCESS_CHANGELOG.md`
 
 ## Why this produces productive work
 
@@ -84,7 +84,7 @@ When changing process behavior, use this sequence:
 2. Update that canonical doc first.
 3. In other docs, prefer short references over duplicated long rule text.
 4. Update templates/prompts only where operator behavior changes.
-5. Add a dated entry to `docs/process/PROCESS_CHANGELOG.md`.
+5. Add a dated entry to `docs/process/sdlc/SDLC_PROCESS_CHANGELOG.md`.
 6. Run a quick consistency check for stale references:
    - `rg "COMMIT_MESSAGE_TEMPLATE|COMMIT_MSG_TEMPLATE|MILESTONE_EXECUTION_RUNBOOK|PR_REQUEST_TEMPLATE|PULL_REQUEST_TEMPLATE" .github docs/process`
 
