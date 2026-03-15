@@ -2,6 +2,7 @@
 
 import pytest
 from services.adapters.telegram.formatters import (
+    format_attention_weekly_digest,
     format_todos_list,
     format_notes_list,
     format_tracks_list,
@@ -137,3 +138,26 @@ def test_format_tasks_list_with_tasks():
     assert "Ship milestone" in result
     assert "Review queue" in result
     assert "⚠️" in result
+
+
+def test_format_attention_weekly_digest_monday_shape():
+    result = format_attention_weekly_digest(
+        {
+            "digest_type": "monday_weekly_day_ahead",
+            "weekly_lookahead": [
+                {"title": "Ship milestone", "due_at": "2026-03-17T09:00:00", "priority": "p1"}
+            ],
+            "day_ahead": [{"title": "Team Sync", "starts_at": "2026-03-16T10:00:00Z"}],
+            "top_actionable": [{"title": "Review queue", "priority": "p0"}],
+            "calendar": {
+                "provider_status": {"google": "ok", "zoho": "degraded"},
+                "warnings": ["zoho:event[1]=missing_end"],
+            },
+        }
+    )
+
+    assert "Monday Weekly + Day-Ahead Digest" in result
+    assert "Ship milestone" in result
+    assert "Team Sync" in result
+    assert "google: ok" in result
+    assert "zoho:event[1]=missing_end" in result

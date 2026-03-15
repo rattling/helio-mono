@@ -245,6 +245,55 @@ def format_attention_daily_digest(payload: dict) -> str:
 
 def format_attention_weekly_digest(payload: dict) -> str:
     """Format M6 weekly digest payload for Telegram."""
+    if payload.get("digest_type") == "monday_weekly_day_ahead":
+        weekly_lookahead = payload.get("weekly_lookahead") or []
+        day_ahead = payload.get("day_ahead") or []
+        top_actionable = payload.get("top_actionable") or []
+        calendar = payload.get("calendar") or {}
+
+        lines = ["🗓 *Monday Weekly + Day-Ahead Digest*\n"]
+
+        lines.append("*Weekly lookahead*")
+        if not weekly_lookahead:
+            lines.append("• None")
+        else:
+            for item in weekly_lookahead[:8]:
+                due = format_due_date(item.get("due_at"))
+                lines.append(
+                    f"• {item.get('title', 'Untitled')} ({due or item.get('priority', 'p2')})"
+                )
+
+        lines.append("\n*Today and next 24h schedule*")
+        if not day_ahead:
+            lines.append("• None")
+        else:
+            for event in day_ahead[:8]:
+                start = format_due_date(event.get("starts_at")) or event.get(
+                    "starts_at", "scheduled"
+                )
+                lines.append(f"• {event.get('title', 'Untitled')} ({start})")
+
+        lines.append("\n*Top actionable tasks*")
+        if not top_actionable:
+            lines.append("• None")
+        else:
+            for item in top_actionable[:5]:
+                lines.append(f"• {item.get('title', 'Untitled')} ({item.get('priority', 'p2')})")
+
+        provider_status = calendar.get("provider_status") or {}
+        if provider_status:
+            lines.append("\n*Calendar providers*")
+            for provider, status in provider_status.items():
+                lines.append(f"• {provider}: {status}")
+
+        warnings = calendar.get("warnings") or []
+        if warnings:
+            lines.append("\n*Calendar warnings*")
+            for warning in warnings[:5]:
+                lines.append(f"• {warning}")
+
+        return "\n".join(lines)
+
     due_this_week = payload.get("due_this_week") or []
     high_priority_without_due = payload.get("high_priority_without_due") or []
     blocked_summary = payload.get("blocked_summary") or []

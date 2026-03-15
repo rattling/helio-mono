@@ -3,7 +3,7 @@
 import logging
 import asyncio
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from .formatters import (
     format_attention_daily_digest,
@@ -11,11 +11,12 @@ from .formatters import (
     format_task_urgent_reminder,
 )
 from .errors import send_with_retry
+from services.adapters.calendar import GoogleCalendarAdapter, ZohoCalendarAdapter
 from services.query import database
 from services.attention import AttentionService
 from shared.contracts import ReminderSentEvent
 from services.control import ControlPolicy, ControlPolicyEvaluator
-from services.orchestration import OrchestrationRuntime
+from services.orchestration import OrchestrationRuntime, build_monday_digest_payload
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +129,10 @@ def _daily_digest_delivery_plan(payload: dict) -> dict:
 def _weekly_digest_context(payload: dict) -> dict:
     return {
         "due_this_week_count": len(payload.get("due_this_week", [])),
-        "upcoming_count": len(payload.get("upcoming", [])),
+        "weekly_lookahead_count": len(payload.get("weekly_lookahead", [])),
+        "day_ahead_count": len(payload.get("day_ahead", [])),
+        "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
+        "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
     }
 
 
@@ -136,9 +140,45 @@ def _weekly_digest_delivery_plan(payload: dict) -> dict:
     message = format_attention_weekly_digest(payload)
     return {
         "message": message,
-        "item_count": len(payload.get("due_this_week", [])),
+        "item_count": len(payload.get("weekly_lookahead", []) or payload.get("due_this_week", [])),
         "delivery_channel": "telegram",
     }
+
+
+async def _fetch_calendar_reads(time_min: str, time_max: str):
+    google = GoogleCalendarAdapter(
+        access_token=getattr(config, "GOOGLE_CALENDAR_ACCESS_TOKEN", None),
+        calendar_id=getattr(config, "GOOGLE_CALENDAR_ID", None),
+        base_url=getattr(
+            config, "GOOGLE_CALENDAR_BASE_URL", "https://www.googleapis.com/calendar/v3"
+        ),
+    )
+    zoho = ZohoCalendarAdapter(
+        access_token=getattr(config, "ZOHO_CALENDAR_ACCESS_TOKEN", None),
+        calendar_id=getattr(config, "ZOHO_CALENDAR_ID", None),
+        base_url=getattr(config, "ZOHO_CALENDAR_BASE_URL", "https://calendar.zoho.com/api/v1"),
+    )
+    return await asyncio.gather(
+        google.list_events(time_min=time_min, time_max=time_max),
+        zoho.list_events(time_min=time_min, time_max=time_max),
+    )
+
+
+async def _build_monday_digest_payload(now: datetime) -> dict:
+    today_attention = await _attention_service().get_today_attention(limit=5)
+    week_attention = await _attention_service().get_week_attention()
+    tasks = await query_service.get_tasks(limit=25) if query_service else []
+    calendar_reads = await _fetch_calendar_reads(
+        time_min=now.isoformat(),
+        time_max=(now + timedelta(days=7)).isoformat(),
+    )
+    return build_monday_digest_payload(
+        tasks=tasks,
+        today_attention=today_attention,
+        week_attention=week_attention,
+        calendar_reads=calendar_reads,
+        now=now,
+    )
 
 
 def _urgent_reminder_context(item: dict) -> dict:
@@ -345,7 +385,7 @@ async def check_and_send_weekly_digest(bot):
         return
 
     try:
-        payload = await _attention_service().get_week_attention()
+        payload = await _build_monday_digest_payload(now)
         delivery_plan = _weekly_digest_delivery_plan(payload)
 
         async def _execute_delivery() -> dict:
@@ -364,7 +404,13 @@ async def check_and_send_weekly_digest(bot):
                 database.log_notification(db_conn, notification_type="task_weekly_digest")
             if event_store:
                 await event_store.append(ReminderSentEvent(reminder_type="task_weekly_digest"))
-            return {"sent": True, "items": delivery_plan["item_count"]}
+            return {
+                "sent": True,
+                "items": delivery_plan["item_count"],
+                "digest_type": payload.get("digest_type"),
+                "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
+                "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
+            }
 
         runtime_result = await _runtime().run_flow(
             workflow_name="weekly_digest",
@@ -451,7 +497,7 @@ async def run_orchestration_workflow(bot, workflow_name: str, dry_run: bool = Fa
         )
 
     if workflow == "weekly_digest":
-        payload = await _attention_service().get_week_attention()
+        payload = await _build_monday_digest_payload(datetime.now())
         delivery_plan = _weekly_digest_delivery_plan(payload)
 
         async def _execute_weekly() -> dict:
@@ -460,6 +506,9 @@ async def run_orchestration_workflow(bot, workflow_name: str, dry_run: bool = Fa
                     "sent": True,
                     "dry_run": True,
                     "items": delivery_plan["item_count"],
+                    "digest_type": payload.get("digest_type"),
+                    "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
+                    "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
                 }
 
             chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
@@ -475,7 +524,13 @@ async def run_orchestration_workflow(bot, workflow_name: str, dry_run: bool = Fa
                 database.log_notification(db_conn, notification_type="task_weekly_digest")
             if event_store:
                 await event_store.append(ReminderSentEvent(reminder_type="task_weekly_digest"))
-            return {"sent": True, "items": delivery_plan["item_count"]}
+            return {
+                "sent": True,
+                "items": delivery_plan["item_count"],
+                "digest_type": payload.get("digest_type"),
+                "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
+                "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
+            }
 
         return await _runtime().run_flow(
             workflow_name="weekly_digest",
