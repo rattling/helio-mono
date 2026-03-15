@@ -2,6 +2,7 @@
 
 import pytest
 from services.adapters.telegram.formatters import (
+    format_attention_daily_digest,
     format_attention_weekly_digest,
     format_todos_list,
     format_notes_list,
@@ -161,3 +162,20 @@ def test_format_attention_weekly_digest_monday_shape():
     assert "Team Sync" in result
     assert "google: ok" in result
     assert "zoho:event[1]=missing_end" in result
+
+
+def test_format_attention_daily_digest_weekday_shape():
+    result = format_attention_daily_digest(
+        {
+            "digest_type": "weekday_day_ahead",
+            "top_actionable": [{"title": "Review queue", "priority": "p0"}],
+            "day_ahead": [{"title": "Customer Call", "starts_at": "2026-03-18T09:30:00Z"}],
+            "due_next_72h": [{"title": "Ship milestone", "due_at": "2026-03-19T09:00:00"}],
+            "calendar": {"provider_status": {"google": "ok", "zoho": "unconfigured"}},
+        }
+    )
+
+    assert "Weekday Day-Ahead Digest" in result
+    assert "Customer Call" in result
+    assert "Ship milestone" in result
+    assert "zoho: unconfigured" in result

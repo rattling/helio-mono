@@ -117,3 +117,45 @@ def build_monday_digest_payload(
             "calendar_events_this_week": len(upcoming_calendar),
         },
     }
+
+
+def build_weekday_day_ahead_payload(
+    *,
+    tasks: list[dict[str, Any]],
+    today_attention: dict[str, Any],
+    calendar_reads: list[CalendarProviderReadResult],
+    now: datetime,
+) -> dict[str, Any]:
+    calendar = merge_calendar_reads(calendar_reads)
+    top_actionable = [
+        _serialize_task(item) for item in (today_attention.get("top_actionable") or [])[:5]
+    ]
+    due_next_72h = [
+        _serialize_task(item) for item in (today_attention.get("due_next_72h") or [])[:5]
+    ]
+    stale_candidate = today_attention.get("stale_cleanup_candidate")
+
+    day_ahead = [
+        event
+        for event in calendar["events"]
+        if (parsed := _parse_timestamp(event.get("starts_at"))) is not None
+        and now <= parsed <= now + timedelta(days=1)
+    ][:8]
+    open_tasks = [
+        _serialize_task(task) for task in tasks if task.get("status") not in {"done", "cancelled"}
+    ]
+
+    return {
+        "digest_type": "weekday_day_ahead",
+        "generated_at": now.isoformat(),
+        "top_actionable": top_actionable,
+        "due_next_72h": due_next_72h,
+        "stale_cleanup_candidate": _serialize_task(stale_candidate) if stale_candidate else None,
+        "day_ahead": day_ahead,
+        "calendar": calendar,
+        "open_task_count": len(open_tasks),
+        "summary": {
+            "top_actionable": len(top_actionable),
+            "day_ahead_items": len(day_ahead),
+        },
+    }

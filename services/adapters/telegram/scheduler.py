@@ -17,6 +17,7 @@ from services.attention import AttentionService
 from shared.contracts import ReminderSentEvent
 from services.control import ControlPolicy, ControlPolicyEvaluator
 from services.orchestration import OrchestrationRuntime, build_monday_digest_payload
+from services.orchestration import build_weekday_day_ahead_payload
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +114,9 @@ def _runtime() -> OrchestrationRuntime:
 def _daily_digest_context(payload: dict) -> dict:
     return {
         "top_actionable_count": len(payload.get("top_actionable", [])),
-        "bucket_count": len(payload.get("buckets", [])),
+        "day_ahead_count": len(payload.get("day_ahead", [])),
+        "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
+        "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
     }
 
 
@@ -176,6 +179,21 @@ async def _build_monday_digest_payload(now: datetime) -> dict:
         tasks=tasks,
         today_attention=today_attention,
         week_attention=week_attention,
+        calendar_reads=calendar_reads,
+        now=now,
+    )
+
+
+async def _build_weekday_day_ahead_payload(now: datetime) -> dict:
+    today_attention = await _attention_service().get_today_attention(limit=5)
+    tasks = await query_service.get_tasks(limit=25) if query_service else []
+    calendar_reads = await _fetch_calendar_reads(
+        time_min=now.isoformat(),
+        time_max=(now + timedelta(days=1)).isoformat(),
+    )
+    return build_weekday_day_ahead_payload(
+        tasks=tasks,
+        today_attention=today_attention,
         calendar_reads=calendar_reads,
         now=now,
     )
@@ -312,7 +330,7 @@ async def check_and_send_daily_digest(bot):
         return
 
     try:
-        payload = await _attention_service().get_today_attention(limit=5)
+        payload = await _build_weekday_day_ahead_payload(now)
         delivery_plan = _daily_digest_delivery_plan(payload)
 
         async def _execute_delivery() -> dict:
@@ -332,7 +350,13 @@ async def check_and_send_daily_digest(bot):
                 database.log_notification(db_conn, notification_type="task_daily_digest")
             if event_store:
                 await event_store.append(ReminderSentEvent(reminder_type="task_daily_digest"))
-            return {"sent": True, "items": delivery_plan["item_count"]}
+            return {
+                "sent": True,
+                "items": delivery_plan["item_count"],
+                "digest_type": payload.get("digest_type"),
+                "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
+                "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
+            }
 
         runtime_result = await _runtime().run_flow(
             workflow_name="daily_digest",
@@ -450,7 +474,7 @@ async def run_orchestration_workflow(bot, workflow_name: str, dry_run: bool = Fa
     workflow = (workflow_name or "").strip().lower()
 
     if workflow == "daily_digest":
-        payload = await _attention_service().get_today_attention(limit=5)
+        payload = await _build_weekday_day_ahead_payload(datetime.now())
         delivery_plan = _daily_digest_delivery_plan(payload)
 
         async def _execute_daily() -> dict:
@@ -459,6 +483,9 @@ async def run_orchestration_workflow(bot, workflow_name: str, dry_run: bool = Fa
                     "sent": True,
                     "dry_run": True,
                     "items": delivery_plan["item_count"],
+                    "digest_type": payload.get("digest_type"),
+                    "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
+                    "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
                 }
 
             chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
@@ -474,7 +501,13 @@ async def run_orchestration_workflow(bot, workflow_name: str, dry_run: bool = Fa
                 database.log_notification(db_conn, notification_type="task_daily_digest")
             if event_store:
                 await event_store.append(ReminderSentEvent(reminder_type="task_daily_digest"))
-            return {"sent": True, "items": delivery_plan["item_count"]}
+            return {
+                "sent": True,
+                "items": delivery_plan["item_count"],
+                "digest_type": payload.get("digest_type"),
+                "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
+                "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
+            }
 
         return await _runtime().run_flow(
             workflow_name="daily_digest",
