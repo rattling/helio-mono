@@ -59,6 +59,18 @@ class Config:
         self.REMINDER_ADVANCE_HOURS = int(os.getenv("REMINDER_ADVANCE_HOURS", "24"))
         self.ATTENTION_URGENT_THRESHOLD = float(os.getenv("ATTENTION_URGENT_THRESHOLD", "60"))
 
+        # Calendar integrations (M13)
+        self.GOOGLE_CALENDAR_ACCESS_TOKEN = os.getenv("GOOGLE_CALENDAR_ACCESS_TOKEN")
+        self.GOOGLE_CALENDAR_ID = os.getenv("GOOGLE_CALENDAR_ID")
+        self.GOOGLE_CALENDAR_BASE_URL = os.getenv(
+            "GOOGLE_CALENDAR_BASE_URL", "https://www.googleapis.com/calendar/v3"
+        )
+        self.ZOHO_CALENDAR_ACCESS_TOKEN = os.getenv("ZOHO_CALENDAR_ACCESS_TOKEN")
+        self.ZOHO_CALENDAR_ID = os.getenv("ZOHO_CALENDAR_ID")
+        self.ZOHO_CALENDAR_BASE_URL = os.getenv(
+            "ZOHO_CALENDAR_BASE_URL", "https://calendar.zoho.com/api/v1"
+        )
+
         # Learning / personalization controls (M7)
         shadow_enabled_raw = os.getenv("SHADOW_RANKER_ENABLED", "true").lower() in (
             "1",

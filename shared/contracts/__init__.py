@@ -101,6 +101,7 @@ from shared.contracts.tasks import (
     TaskStatus,
 )
 from shared.contracts.control_room import ControlRoomOverview, ReadinessCheck, ReadinessPayload
+from shared.contracts.calendar import CalendarEvent, CalendarProviderReadResult
 from shared.contracts.explorer import (
     ExplorerEvidenceRef,
     ExplorerGuidedInsightsResponse,
@@ -198,6 +199,8 @@ __all__ = [
     "ReadinessCheck",
     "ReadinessPayload",
     "ControlRoomOverview",
+    "CalendarEvent",
+    "CalendarProviderReadResult",
     # Data Explorer (M10)
     "ExplorerEntityType",
     "ExplorerMode",

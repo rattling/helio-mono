@@ -123,6 +123,21 @@ class TestEnvironmentConfig:
         assert config.OPENAI_MAX_TOKENS == 1000
         assert config.LOG_LEVEL == "INFO"
         assert config.ENV == "dev"
+        assert config.GOOGLE_CALENDAR_BASE_URL == "https://www.googleapis.com/calendar/v3"
+        assert config.ZOHO_CALENDAR_BASE_URL == "https://calendar.zoho.com/api/v1"
+
+    def test_calendar_config_reads_environment(self, monkeypatch):
+        monkeypatch.setenv("GOOGLE_CALENDAR_ACCESS_TOKEN", "google-token")
+        monkeypatch.setenv("GOOGLE_CALENDAR_ID", "primary")
+        monkeypatch.setenv("ZOHO_CALENDAR_ACCESS_TOKEN", "zoho-token")
+        monkeypatch.setenv("ZOHO_CALENDAR_ID", "team-cal")
+
+        config = Config()
+
+        assert config.GOOGLE_CALENDAR_ACCESS_TOKEN == "google-token"
+        assert config.GOOGLE_CALENDAR_ID == "primary"
+        assert config.ZOHO_CALENDAR_ACCESS_TOKEN == "zoho-token"
+        assert config.ZOHO_CALENDAR_ID == "team-cal"
 
     def test_backwards_compatibility(self):
         """Test that existing code using Config() still works."""
