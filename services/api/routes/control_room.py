@@ -18,6 +18,86 @@ from services.adapters.telegram import scheduler as telegram_scheduler
 router = APIRouter()
 
 
+def _default_run_summary(*, run_id: str, workflow_name: str) -> dict:
+    return {
+        "run_id": run_id,
+        "workflow_name": workflow_name,
+        "status": "in_progress",
+        "checkpoints": [],
+        "latest_checkpoint": None,
+        "interrupt": None,
+        "resume": {
+            "eligible": False,
+            "supported": True,
+            "pending": False,
+            "last_decision": None,
+            "action": {
+                "method": "POST",
+                "path": "/api/v1/control-room/orchestration/resume",
+                "required_fields": ["run_id", "resume_value"],
+            },
+        },
+        "delivery": {
+            "planned_channels": [],
+            "attempted_channels": [],
+            "succeeded_channels": [],
+            "failed_channels": [],
+            "pending_channels": [],
+        },
+        "degraded": False,
+        "degraded_reasons": [],
+        "partial_delivery": False,
+    }
+
+
+def _ensure_run(run_status: dict[str, dict], *, run_id: str, workflow_name: str) -> dict:
+    existing = run_status.get(run_id)
+    if existing:
+        if workflow_name and not existing.get("workflow_name"):
+            existing["workflow_name"] = workflow_name
+        return existing
+
+    run = _default_run_summary(run_id=run_id, workflow_name=workflow_name)
+    run_status[run_id] = run
+    return run
+
+
+def _append_unique(target: list[str], values: list[str]) -> None:
+    for value in values:
+        if value and value not in target:
+            target.append(value)
+
+
+def _mark_degraded(run: dict, reason: str) -> None:
+    run["degraded"] = True
+    if reason not in run["degraded_reasons"]:
+        run["degraded_reasons"].append(reason)
+
+
+def _apply_output_degradation(run: dict, payload: dict) -> None:
+    if not payload:
+        return
+
+    delivery = run["delivery"]
+    _append_unique(delivery["succeeded_channels"], list(payload.get("sent_channels") or []))
+    _append_unique(delivery["failed_channels"], list(payload.get("failed_channels") or []))
+
+    calendar_status = payload.get("calendar_status") or {}
+    if payload.get("calendar_degraded"):
+        _mark_degraded(run, "calendar_provider_degraded")
+    for provider, status in calendar_status.items():
+        if status != "ok":
+            _mark_degraded(run, f"calendar:{provider}:{status}")
+
+    if payload.get("partial_success"):
+        run["partial_delivery"] = True
+        _mark_degraded(run, "partial_delivery")
+
+    channel_results = payload.get("channel_results") or []
+    if any(not item.get("sent") for item in channel_results):
+        _mark_degraded(run, "delivery_channel_failure")
+
+
 def get_control_room_services() -> Generator[tuple[Config, AttentionService], None, None]:
     """Get configured services used for control room payloads."""
     config = Config.from_env()
@@ -84,23 +164,77 @@ async def _orchestration_visibility(config: Config, limit: int = 25) -> dict:
     for event in orchestration_events:
         run_id = str(getattr(event, "run_id", ""))
         workflow_name = str(getattr(event, "workflow_name", ""))
+        run = _ensure_run(run_status, run_id=run_id, workflow_name=workflow_name)
 
         if event.event_type == EventType.ORCHESTRATION_RUN_STARTED:
-            run_status[run_id] = {
-                "run_id": run_id,
-                "workflow_name": workflow_name,
-                "started_at": event.timestamp.isoformat(),
-                "status": "in_progress",
+            run["started_at"] = event.timestamp.isoformat()
+            run["status"] = "in_progress"
+            run["trigger"] = str(getattr(event, "trigger", ""))
+            run["metadata"] = getattr(event, "metadata", {})
+        elif event.event_type == EventType.ORCHESTRATION_RUN_CHECKPOINT:
+            checkpoint = str(getattr(event, "checkpoint", ""))
+            details = getattr(event, "details", {})
+            checkpoint_payload = {
+                "checkpoint": checkpoint,
+                "timestamp": event.timestamp.isoformat(),
+                "details": details,
             }
+            run["checkpoints"].append(checkpoint_payload)
+            run["latest_checkpoint"] = checkpoint_payload
+
+            if checkpoint == "interrupt_requested":
+                run["status"] = "interrupted"
+                run["reason"] = str(details.get("reason") or run.get("reason") or "interrupted")
+                run["interrupt"] = {
+                    "pending": True,
+                    "requested_at": event.timestamp.isoformat(),
+                    "resumed_at": None,
+                    "reason": str(details.get("reason") or "manual_approval_required"),
+                    "details": details,
+                }
+                run["resume"] = {
+                    "eligible": True,
+                    "supported": True,
+                    "pending": True,
+                    "last_decision": None,
+                    "action": {
+                        "method": "POST",
+                        "path": "/api/v1/control-room/orchestration/resume",
+                        "required_fields": ["run_id", "resume_value"],
+                        "run_id": run_id,
+                    },
+                }
+            elif checkpoint == "interrupt_resumed":
+                interrupt_payload = run.get("interrupt") or {}
+                interrupt_payload["pending"] = False
+                interrupt_payload["resumed_at"] = event.timestamp.isoformat()
+                run["interrupt"] = interrupt_payload
+                run["resume"]["eligible"] = False
+                run["resume"]["pending"] = False
+                run["resume"]["last_decision"] = details
+                if run.get("status") == "interrupted":
+                    run["status"] = "in_progress"
+            elif checkpoint == "delivery_attempt":
+                planned_channels = [
+                    str(value)
+                    for value in list(details.get("planned_channels") or [])
+                    if str(value)
+                ]
+                if not planned_channels:
+                    single_channel = str(details.get("delivery_channel") or "")
+                    planned_channels = [single_channel] if single_channel else []
+                _append_unique(run["delivery"]["planned_channels"], planned_channels)
         elif event.event_type == EventType.ORCHESTRATION_RUN_FINISHED:
-            run_status.setdefault(run_id, {"run_id": run_id, "workflow_name": workflow_name})
-            run_status[run_id]["status"] = "completed"
-            run_status[run_id]["finished_at"] = event.timestamp.isoformat()
+            run["status"] = "completed"
+            run["finished_at"] = event.timestamp.isoformat()
+            run["output"] = getattr(event, "output", {})
+            _apply_output_degradation(run, run["output"])
         elif event.event_type == EventType.ORCHESTRATION_RUN_FAILED:
-            run_status.setdefault(run_id, {"run_id": run_id, "workflow_name": workflow_name})
-            run_status[run_id]["status"] = "failed"
-            run_status[run_id]["finished_at"] = event.timestamp.isoformat()
-            run_status[run_id]["reason"] = str(getattr(event, "reason", "unknown"))
+            run["status"] = "failed"
+            run["finished_at"] = event.timestamp.isoformat()
+            run["reason"] = str(getattr(event, "reason", "unknown"))
+            run["details"] = getattr(event, "details", {})
+            _apply_output_degradation(run, run["details"])
 
         if event.event_type in {
             EventType.ORCHESTRATION_POLICY_ALLOWED,
@@ -116,6 +250,11 @@ async def _orchestration_visibility(config: Config, limit: int = 25) -> dict:
                     "timestamp": event.timestamp.isoformat(),
                 }
             )
+            run["policy"] = {
+                "outcome": event.event_type.value,
+                "reason": str(getattr(event, "reason", "")),
+                "timestamp": event.timestamp.isoformat(),
+            }
 
         if event.event_type in {
             EventType.ORCHESTRATION_DELIVERY_ATTEMPTED,
@@ -129,9 +268,32 @@ async def _orchestration_visibility(config: Config, limit: int = 25) -> dict:
                     "outcome": event.event_type.value,
                     "reminder_type": str(getattr(event, "reminder_type", "")),
                     "delivery_channel": str(getattr(event, "delivery_channel", "")),
+                    "reason": str(getattr(event, "reason", "")),
+                    "details": getattr(event, "details", {}),
                     "timestamp": event.timestamp.isoformat(),
                 }
             )
+            delivery_channel = str(getattr(event, "delivery_channel", ""))
+            if event.event_type == EventType.ORCHESTRATION_DELIVERY_ATTEMPTED:
+                _append_unique(run["delivery"]["attempted_channels"], [delivery_channel])
+            elif event.event_type == EventType.ORCHESTRATION_DELIVERY_SUCCEEDED:
+                _append_unique(run["delivery"]["succeeded_channels"], [delivery_channel])
+            elif event.event_type == EventType.ORCHESTRATION_DELIVERY_FAILED:
+                _append_unique(run["delivery"]["failed_channels"], [delivery_channel])
+                _mark_degraded(run, "delivery_channel_failure")
+
+    for run in run_status.values():
+        pending_channels = [
+            channel
+            for channel in run["delivery"]["planned_channels"]
+            if channel
+            and channel not in run["delivery"]["succeeded_channels"]
+            and channel not in run["delivery"]["failed_channels"]
+        ]
+        run["delivery"]["pending_channels"] = pending_channels
+        if run["delivery"]["succeeded_channels"] and run["delivery"]["failed_channels"]:
+            run["partial_delivery"] = True
+            _mark_degraded(run, "partial_delivery")
 
     recent_runs = sorted(
         run_status.values(),
@@ -144,6 +306,13 @@ async def _orchestration_visibility(config: Config, limit: int = 25) -> dict:
         "runs": recent_runs,
         "policy_outcomes": policy_outcomes[-limit:],
         "delivery_outcomes": delivery_outcomes[-limit:],
+        "summary": {
+            "interrupted_runs": sum(
+                1 for item in recent_runs if item.get("status") == "interrupted"
+            ),
+            "degraded_runs": sum(1 for item in recent_runs if item.get("degraded")),
+            "partial_delivery_runs": sum(1 for item in recent_runs if item.get("partial_delivery")),
+        },
     }
 
 

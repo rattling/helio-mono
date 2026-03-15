@@ -3,7 +3,7 @@
 import logging
 import asyncio
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from .formatters import (
     format_attention_daily_digest,
@@ -11,11 +11,18 @@ from .formatters import (
     format_task_urgent_reminder,
 )
 from .errors import send_with_retry
+from services.adapters.email import (
+    format_attention_daily_digest_email,
+    format_attention_weekly_digest_email,
+    send_email_smtp,
+)
+from services.adapters.calendar import GoogleCalendarAdapter, ZohoCalendarAdapter
 from services.query import database
 from services.attention import AttentionService
 from shared.contracts import ReminderSentEvent
 from services.control import ControlPolicy, ControlPolicyEvaluator
-from services.orchestration import OrchestrationRuntime
+from services.orchestration import OrchestrationRuntime, build_monday_digest_payload
+from services.orchestration import build_weekday_day_ahead_payload
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +31,145 @@ query_service = None
 event_store = None
 config = None
 db_conn = None
+
+
+def _delivery_channels_for_digest(
+    *, payload: dict, telegram_message: str, email_render: dict
+) -> list[dict]:
+    channels: list[dict] = []
+
+    chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
+    if chat_id:
+        channels.append(
+            {
+                "delivery_channel": "telegram",
+                "chat_id": int(chat_id),
+                "message": telegram_message,
+                "parse_mode": "Markdown",
+            }
+        )
+
+    email_host = getattr(config, "EMAIL_SMTP_HOST", None)
+    email_from = getattr(config, "EMAIL_FROM_ADDRESS", None)
+    email_to = getattr(config, "EMAIL_TO_ADDRESS", None)
+    if email_host and email_from and email_to:
+        channels.append(
+            {
+                "delivery_channel": "email",
+                "smtp_host": email_host,
+                "smtp_port": int(getattr(config, "EMAIL_SMTP_PORT", 587)),
+                "smtp_username": getattr(config, "EMAIL_SMTP_USERNAME", None),
+                "smtp_password": getattr(config, "EMAIL_SMTP_PASSWORD", None),
+                "from_address": email_from,
+                "to_address": email_to,
+                "use_tls": bool(getattr(config, "EMAIL_USE_TLS", True)),
+                "subject": email_render["subject"],
+                "body": email_render["body"],
+            }
+        )
+
+    return channels
+
+
+async def _execute_digest_delivery(
+    *, bot, reminder_type: str, payload: dict, delivery_plan: dict
+) -> dict:
+    channel_results: list[dict] = []
+
+    for channel in delivery_plan.get("channels") or []:
+        delivery_channel = channel.get("delivery_channel")
+        try:
+            if delivery_channel == "telegram":
+                if bot is None:
+                    raise RuntimeError("telegram_bot_not_available")
+                await send_with_retry(
+                    bot,
+                    chat_id=int(channel["chat_id"]),
+                    text=channel["message"],
+                    parse_mode=channel.get("parse_mode", "Markdown"),
+                )
+                details = {
+                    "chat_id": str(channel["chat_id"]),
+                    "digest_type": payload.get("digest_type"),
+                }
+            elif delivery_channel == "email":
+                email_result = await send_email_smtp(
+                    host=channel["smtp_host"],
+                    port=int(channel["smtp_port"]),
+                    username=channel.get("smtp_username"),
+                    password=channel.get("smtp_password"),
+                    from_address=channel["from_address"],
+                    to_address=channel["to_address"],
+                    subject=channel["subject"],
+                    body=channel["body"],
+                    use_tls=bool(channel.get("use_tls", True)),
+                )
+                details = {
+                    "recipient": email_result.get("recipient"),
+                    "subject": email_result.get("subject"),
+                    "digest_type": payload.get("digest_type"),
+                }
+            else:
+                raise RuntimeError(f"unsupported_delivery_channel:{delivery_channel}")
+
+            if db_conn:
+                database.log_notification(
+                    db_conn,
+                    notification_type=reminder_type,
+                    metadata=json.dumps(
+                        {
+                            "delivery_channel": delivery_channel,
+                            "digest_type": payload.get("digest_type"),
+                        }
+                    ),
+                )
+            if event_store:
+                await event_store.append(
+                    ReminderSentEvent(
+                        reminder_type=reminder_type,
+                        delivery_channel=delivery_channel,
+                        metadata={
+                            "digest_type": payload.get("digest_type"),
+                            **details,
+                        },
+                    )
+                )
+            channel_results.append(
+                {
+                    "delivery_channel": delivery_channel,
+                    "sent": True,
+                    "details": details,
+                }
+            )
+        except Exception as exc:
+            channel_results.append(
+                {
+                    "delivery_channel": delivery_channel,
+                    "sent": False,
+                    "reason": str(exc),
+                    "details": {
+                        "digest_type": payload.get("digest_type"),
+                    },
+                }
+            )
+
+    sent_channels = [item["delivery_channel"] for item in channel_results if item.get("sent")]
+    failed_channels = [item["delivery_channel"] for item in channel_results if not item.get("sent")]
+
+    result = {
+        "sent": bool(sent_channels),
+        "partial_success": bool(sent_channels and failed_channels),
+        "channel_results": channel_results,
+        "sent_channels": sent_channels,
+        "failed_channels": failed_channels,
+        "items": delivery_plan["item_count"],
+        "digest_type": payload.get("digest_type"),
+        "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
+        "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
+    }
+    if not sent_channels:
+        result["reason"] = "all_delivery_channels_failed"
+    return result
 
 
 async def notification_scheduler(application):
@@ -109,6 +255,121 @@ def _runtime() -> OrchestrationRuntime:
     )
 
 
+def _daily_digest_context(payload: dict) -> dict:
+    return {
+        "top_actionable_count": len(payload.get("top_actionable", [])),
+        "day_ahead_count": len(payload.get("day_ahead", [])),
+        "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
+        "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
+    }
+
+
+def _daily_digest_delivery_plan(payload: dict) -> dict:
+    telegram_message = format_attention_daily_digest(payload)
+    email_render = format_attention_daily_digest_email(payload)
+    return {
+        "channels": _delivery_channels_for_digest(
+            payload=payload,
+            telegram_message=telegram_message,
+            email_render=email_render,
+        ),
+        "item_count": len(payload.get("top_actionable", [])),
+        "delivery_channel": "multi_channel",
+    }
+
+
+def _weekly_digest_context(payload: dict) -> dict:
+    return {
+        "due_this_week_count": len(payload.get("due_this_week", [])),
+        "weekly_lookahead_count": len(payload.get("weekly_lookahead", [])),
+        "day_ahead_count": len(payload.get("day_ahead", [])),
+        "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
+        "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
+    }
+
+
+def _weekly_digest_delivery_plan(payload: dict) -> dict:
+    telegram_message = format_attention_weekly_digest(payload)
+    email_render = format_attention_weekly_digest_email(payload)
+    return {
+        "channels": _delivery_channels_for_digest(
+            payload=payload,
+            telegram_message=telegram_message,
+            email_render=email_render,
+        ),
+        "item_count": len(payload.get("weekly_lookahead", []) or payload.get("due_this_week", [])),
+        "delivery_channel": "multi_channel",
+    }
+
+
+async def _fetch_calendar_reads(time_min: str, time_max: str):
+    google = GoogleCalendarAdapter(
+        access_token=getattr(config, "GOOGLE_CALENDAR_ACCESS_TOKEN", None),
+        calendar_id=getattr(config, "GOOGLE_CALENDAR_ID", None),
+        base_url=getattr(
+            config, "GOOGLE_CALENDAR_BASE_URL", "https://www.googleapis.com/calendar/v3"
+        ),
+    )
+    zoho = ZohoCalendarAdapter(
+        access_token=getattr(config, "ZOHO_CALENDAR_ACCESS_TOKEN", None),
+        calendar_id=getattr(config, "ZOHO_CALENDAR_ID", None),
+        base_url=getattr(config, "ZOHO_CALENDAR_BASE_URL", "https://calendar.zoho.com/api/v1"),
+    )
+    return await asyncio.gather(
+        google.list_events(time_min=time_min, time_max=time_max),
+        zoho.list_events(time_min=time_min, time_max=time_max),
+    )
+
+
+async def _build_monday_digest_payload(now: datetime) -> dict:
+    today_attention = await _attention_service().get_today_attention(limit=5)
+    week_attention = await _attention_service().get_week_attention()
+    tasks = await query_service.get_tasks(limit=25) if query_service else []
+    calendar_reads = await _fetch_calendar_reads(
+        time_min=now.isoformat(),
+        time_max=(now + timedelta(days=7)).isoformat(),
+    )
+    return build_monday_digest_payload(
+        tasks=tasks,
+        today_attention=today_attention,
+        week_attention=week_attention,
+        calendar_reads=calendar_reads,
+        now=now,
+    )
+
+
+async def _build_weekday_day_ahead_payload(now: datetime) -> dict:
+    today_attention = await _attention_service().get_today_attention(limit=5)
+    tasks = await query_service.get_tasks(limit=25) if query_service else []
+    calendar_reads = await _fetch_calendar_reads(
+        time_min=now.isoformat(),
+        time_max=(now + timedelta(days=1)).isoformat(),
+    )
+    return build_weekday_day_ahead_payload(
+        tasks=tasks,
+        today_attention=today_attention,
+        calendar_reads=calendar_reads,
+        now=now,
+    )
+
+
+def _urgent_reminder_context(item: dict) -> dict:
+    return {
+        "task_id": str(item.get("task_id")),
+        "urgency_score": item.get("urgency_score"),
+        "priority": item.get("priority"),
+    }
+
+
+def _urgent_reminder_delivery_plan(item: dict) -> dict:
+    message = format_task_urgent_reminder(item)
+    return {
+        "message": message,
+        "task_id": str(item.get("task_id")),
+        "delivery_channel": "telegram",
+    }
+
+
 async def check_and_send_urgent_reminders(bot):
     """Check urgent attention items and send deduplicated reminders."""
 
@@ -131,6 +392,7 @@ async def check_and_send_urgent_reminders(bot):
 
             task_id = str(item.get("task_id"))
             fingerprint = f"urgent:{task_id}:{item.get('urgency_score')}"
+            delivery_plan = _urgent_reminder_delivery_plan(item)
             if db_conn and database.was_notification_sent_recently(
                 db_conn,
                 notification_type="task_urgent_reminder",
@@ -141,7 +403,6 @@ async def check_and_send_urgent_reminders(bot):
                 continue
 
             async def _execute_delivery() -> dict:
-                message = format_task_urgent_reminder(item)
                 chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
                 if not chat_id:
                     logger.info("Skipping reminder send (TELEGRAM_CHAT_ID not set)")
@@ -150,7 +411,7 @@ async def check_and_send_urgent_reminders(bot):
                 await send_with_retry(
                     bot,
                     chat_id=int(chat_id),
-                    text=message,
+                    text=delivery_plan["message"],
                     parse_mode="Markdown",
                 )
                 if db_conn:
@@ -175,6 +436,8 @@ async def check_and_send_urgent_reminders(bot):
                 workflow_name="urgent_reminder",
                 reminder_type="task_urgent_reminder",
                 execute=_execute_delivery,
+                gather_context=lambda item=item: _urgent_reminder_context(item),
+                prepare_delivery=lambda delivery_plan=delivery_plan: delivery_plan,
                 envelope={
                     "workflow_name": "urgent_reminder",
                     "reminder_type": "task_urgent_reminder",
@@ -221,27 +484,26 @@ async def check_and_send_daily_digest(bot):
         return
 
     try:
-        payload = await _attention_service().get_today_attention(limit=5)
+        payload = await _build_weekday_day_ahead_payload(now)
+        delivery_plan = _daily_digest_delivery_plan(payload)
 
         async def _execute_delivery() -> dict:
-            message = format_attention_daily_digest(payload)
-            chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
-            if not chat_id:
-                logger.info("Skipping daily digest send (TELEGRAM_CHAT_ID not set)")
-                return {"sent": False, "reason": "chat_id_not_configured"}
-
-            await send_with_retry(bot, chat_id=int(chat_id), text=message, parse_mode="Markdown")
-
-            if db_conn:
-                database.log_notification(db_conn, notification_type="task_daily_digest")
-            if event_store:
-                await event_store.append(ReminderSentEvent(reminder_type="task_daily_digest"))
-            return {"sent": True, "items": len(payload.get("top_actionable", []))}
+            if not delivery_plan["channels"]:
+                logger.info("Skipping daily digest send (no delivery channels configured)")
+                return {"sent": False, "reason": "no_delivery_channels_configured"}
+            return await _execute_digest_delivery(
+                bot=bot,
+                reminder_type="task_daily_digest",
+                payload=payload,
+                delivery_plan=delivery_plan,
+            )
 
         runtime_result = await _runtime().run_flow(
             workflow_name="daily_digest",
             reminder_type="task_daily_digest",
             execute=_execute_delivery,
+            gather_context=lambda: _daily_digest_context(payload),
+            prepare_delivery=lambda: delivery_plan,
             envelope={
                 "workflow_name": "daily_digest",
                 "reminder_type": "task_daily_digest",
@@ -287,26 +549,26 @@ async def check_and_send_weekly_digest(bot):
         return
 
     try:
-        payload = await _attention_service().get_week_attention()
+        payload = await _build_monday_digest_payload(now)
+        delivery_plan = _weekly_digest_delivery_plan(payload)
 
         async def _execute_delivery() -> dict:
-            message = format_attention_weekly_digest(payload)
-            chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
-            if not chat_id:
-                logger.info("Skipping weekly digest send (TELEGRAM_CHAT_ID not set)")
-                return {"sent": False, "reason": "chat_id_not_configured"}
-
-            await send_with_retry(bot, chat_id=int(chat_id), text=message, parse_mode="Markdown")
-            if db_conn:
-                database.log_notification(db_conn, notification_type="task_weekly_digest")
-            if event_store:
-                await event_store.append(ReminderSentEvent(reminder_type="task_weekly_digest"))
-            return {"sent": True, "items": len(payload.get("due_this_week", []))}
+            if not delivery_plan["channels"]:
+                logger.info("Skipping weekly digest send (no delivery channels configured)")
+                return {"sent": False, "reason": "no_delivery_channels_configured"}
+            return await _execute_digest_delivery(
+                bot=bot,
+                reminder_type="task_weekly_digest",
+                payload=payload,
+                delivery_plan=delivery_plan,
+            )
 
         runtime_result = await _runtime().run_flow(
             workflow_name="weekly_digest",
             reminder_type="task_weekly_digest",
             execute=_execute_delivery,
+            gather_context=lambda: _weekly_digest_context(payload),
+            prepare_delivery=lambda: delivery_plan,
             envelope={
                 "workflow_name": "weekly_digest",
                 "reminder_type": "task_weekly_digest",
@@ -339,31 +601,42 @@ async def run_orchestration_workflow(bot, workflow_name: str, dry_run: bool = Fa
     workflow = (workflow_name or "").strip().lower()
 
     if workflow == "daily_digest":
-        payload = await _attention_service().get_today_attention(limit=5)
+        payload = await _build_weekday_day_ahead_payload(datetime.now())
+        delivery_plan = _daily_digest_delivery_plan(payload)
 
         async def _execute_daily() -> dict:
             if dry_run:
                 return {
                     "sent": True,
                     "dry_run": True,
-                    "items": len(payload.get("top_actionable", [])),
+                    "channel_results": [
+                        {
+                            "delivery_channel": channel["delivery_channel"],
+                            "sent": True,
+                            "details": {"dry_run": True},
+                        }
+                        for channel in delivery_plan["channels"]
+                    ],
+                    "items": delivery_plan["item_count"],
+                    "digest_type": payload.get("digest_type"),
+                    "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
+                    "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
                 }
-
-            message = format_attention_daily_digest(payload)
-            chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
-            if not chat_id:
-                return {"sent": False, "reason": "chat_id_not_configured"}
-            await send_with_retry(bot, chat_id=int(chat_id), text=message, parse_mode="Markdown")
-            if db_conn:
-                database.log_notification(db_conn, notification_type="task_daily_digest")
-            if event_store:
-                await event_store.append(ReminderSentEvent(reminder_type="task_daily_digest"))
-            return {"sent": True, "items": len(payload.get("top_actionable", []))}
+            if not delivery_plan["channels"]:
+                return {"sent": False, "reason": "no_delivery_channels_configured"}
+            return await _execute_digest_delivery(
+                bot=bot,
+                reminder_type="task_daily_digest",
+                payload=payload,
+                delivery_plan=delivery_plan,
+            )
 
         return await _runtime().run_flow(
             workflow_name="daily_digest",
             reminder_type="task_daily_digest",
             execute=_execute_daily,
+            gather_context=lambda: _daily_digest_context(payload),
+            prepare_delivery=lambda: delivery_plan,
             envelope={
                 "workflow_name": "daily_digest",
                 "reminder_type": "task_daily_digest",
@@ -379,31 +652,42 @@ async def run_orchestration_workflow(bot, workflow_name: str, dry_run: bool = Fa
         )
 
     if workflow == "weekly_digest":
-        payload = await _attention_service().get_week_attention()
+        payload = await _build_monday_digest_payload(datetime.now())
+        delivery_plan = _weekly_digest_delivery_plan(payload)
 
         async def _execute_weekly() -> dict:
             if dry_run:
                 return {
                     "sent": True,
                     "dry_run": True,
-                    "items": len(payload.get("due_this_week", [])),
+                    "channel_results": [
+                        {
+                            "delivery_channel": channel["delivery_channel"],
+                            "sent": True,
+                            "details": {"dry_run": True},
+                        }
+                        for channel in delivery_plan["channels"]
+                    ],
+                    "items": delivery_plan["item_count"],
+                    "digest_type": payload.get("digest_type"),
+                    "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
+                    "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
                 }
-
-            message = format_attention_weekly_digest(payload)
-            chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
-            if not chat_id:
-                return {"sent": False, "reason": "chat_id_not_configured"}
-            await send_with_retry(bot, chat_id=int(chat_id), text=message, parse_mode="Markdown")
-            if db_conn:
-                database.log_notification(db_conn, notification_type="task_weekly_digest")
-            if event_store:
-                await event_store.append(ReminderSentEvent(reminder_type="task_weekly_digest"))
-            return {"sent": True, "items": len(payload.get("due_this_week", []))}
+            if not delivery_plan["channels"]:
+                return {"sent": False, "reason": "no_delivery_channels_configured"}
+            return await _execute_digest_delivery(
+                bot=bot,
+                reminder_type="task_weekly_digest",
+                payload=payload,
+                delivery_plan=delivery_plan,
+            )
 
         return await _runtime().run_flow(
             workflow_name="weekly_digest",
             reminder_type="task_weekly_digest",
             execute=_execute_weekly,
+            gather_context=lambda: _weekly_digest_context(payload),
+            prepare_delivery=lambda: delivery_plan,
             envelope={
                 "workflow_name": "weekly_digest",
                 "reminder_type": "task_weekly_digest",
@@ -432,16 +716,21 @@ async def run_orchestration_workflow(bot, workflow_name: str, dry_run: bool = Fa
 
         task_id = str(candidate.get("task_id"))
         fingerprint = f"urgent:{task_id}:{candidate.get('urgency_score')}"
+        delivery_plan = _urgent_reminder_delivery_plan(candidate)
 
         async def _execute_urgent() -> dict:
             if dry_run:
                 return {"sent": True, "dry_run": True, "task_id": task_id}
 
-            message = format_task_urgent_reminder(candidate)
             chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
             if not chat_id:
                 return {"sent": False, "reason": "chat_id_not_configured"}
-            await send_with_retry(bot, chat_id=int(chat_id), text=message, parse_mode="Markdown")
+            await send_with_retry(
+                bot,
+                chat_id=int(chat_id),
+                text=delivery_plan["message"],
+                parse_mode="Markdown",
+            )
             if db_conn:
                 database.log_notification(
                     db_conn,
@@ -464,6 +753,8 @@ async def run_orchestration_workflow(bot, workflow_name: str, dry_run: bool = Fa
             workflow_name="urgent_reminder",
             reminder_type="task_urgent_reminder",
             execute=_execute_urgent,
+            gather_context=lambda: _urgent_reminder_context(candidate),
+            prepare_delivery=lambda: delivery_plan,
             envelope={
                 "workflow_name": "urgent_reminder",
                 "reminder_type": "task_urgent_reminder",

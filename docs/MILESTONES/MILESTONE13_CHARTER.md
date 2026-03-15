@@ -5,6 +5,10 @@
 Add external integration capabilities for calendar-aware digests and email
 notification delivery on top of the Milestone 12 LangGraph orchestration plane.
 
+See `docs/MILESTONES/MILESTONE13_DESIGN.md` for the concrete architecture and
+orchestration design choices that refine this charter into implementation
+shape.
+
 In this milestone, also mature LangGraph usage from baseline wiring to
 full-use orchestration patterns across both existing M12 workflows and new M13
 calendar/email flows.

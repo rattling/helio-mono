@@ -1,7 +1,7 @@
 # Helionyx Architecture
 
-**Version**: 0.6 (M12 LangGraph Runtime Active)  
-**Last Updated**: March 6, 2026  
+**Version**: 0.7 (M12 LangGraph Runtime Active, operating-profile posture documented)  
+**Last Updated**: March 15, 2026  
 **Status**: Active
 
 ## Purpose
@@ -114,6 +114,8 @@ Use these as the source of truth for detailed behavior and evolution.
 
 - `docs/architecture/PROCESS_ORCHESTRATION_CONTROL.md`
   - LangGraph runtime model, control-plane boundaries, audit event families.
+- `docs/architecture/PROCESS_OPERATING_PROFILES_AGENTIC_POSTURE.md`
+  - Operating-profile layer, invocation/handoff model, and Helionyx posture toward agentic paradigms.
 - `docs/architecture/PROCESS_MESSAGE_PIPELINE.md`
   - Canonical message→extraction→projection flow, state machines, data flow.
 - `docs/architecture/PROCESS_RUNTIME_DEPLOYMENT.md`
@@ -151,3 +153,4 @@ This keeps architecture maintenance focused: one major change, one process doc.
 | 0.4 | 2026-03-05 | Architect Agent | Added M12/M13 direction (orchestration + bounded autonomy) |
 | 0.5 | 2026-03-05 | Architect Agent | Refactored into concise index; moved deep details to `docs/architecture/` |
 | 0.6 | 2026-03-06 | Architect Agent | Confirmed M12 LangGraph runtime is active in orchestration boundary and aligned index metadata |
+| 0.7 | 2026-03-15 | GitHub Copilot | Added operating-profile and agentic-posture architecture note to clarify future assistant/profile boundaries |
