@@ -96,11 +96,13 @@ async def _orchestration_visibility(config: Config, limit: int = 25) -> dict:
             run_status.setdefault(run_id, {"run_id": run_id, "workflow_name": workflow_name})
             run_status[run_id]["status"] = "completed"
             run_status[run_id]["finished_at"] = event.timestamp.isoformat()
+            run_status[run_id]["output"] = getattr(event, "output", {})
         elif event.event_type == EventType.ORCHESTRATION_RUN_FAILED:
             run_status.setdefault(run_id, {"run_id": run_id, "workflow_name": workflow_name})
             run_status[run_id]["status"] = "failed"
             run_status[run_id]["finished_at"] = event.timestamp.isoformat()
             run_status[run_id]["reason"] = str(getattr(event, "reason", "unknown"))
+            run_status[run_id]["details"] = getattr(event, "details", {})
 
         if event.event_type in {
             EventType.ORCHESTRATION_POLICY_ALLOWED,
@@ -129,6 +131,8 @@ async def _orchestration_visibility(config: Config, limit: int = 25) -> dict:
                     "outcome": event.event_type.value,
                     "reminder_type": str(getattr(event, "reminder_type", "")),
                     "delivery_channel": str(getattr(event, "delivery_channel", "")),
+                    "reason": str(getattr(event, "reason", "")),
+                    "details": getattr(event, "details", {}),
                     "timestamp": event.timestamp.isoformat(),
                 }
             )

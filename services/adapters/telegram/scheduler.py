@@ -11,6 +11,11 @@ from .formatters import (
     format_task_urgent_reminder,
 )
 from .errors import send_with_retry
+from services.adapters.email import (
+    format_attention_daily_digest_email,
+    format_attention_weekly_digest_email,
+    send_email_smtp,
+)
 from services.adapters.calendar import GoogleCalendarAdapter, ZohoCalendarAdapter
 from services.query import database
 from services.attention import AttentionService
@@ -26,6 +31,145 @@ query_service = None
 event_store = None
 config = None
 db_conn = None
+
+
+def _delivery_channels_for_digest(
+    *, payload: dict, telegram_message: str, email_render: dict
+) -> list[dict]:
+    channels: list[dict] = []
+
+    chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
+    if chat_id:
+        channels.append(
+            {
+                "delivery_channel": "telegram",
+                "chat_id": int(chat_id),
+                "message": telegram_message,
+                "parse_mode": "Markdown",
+            }
+        )
+
+    email_host = getattr(config, "EMAIL_SMTP_HOST", None)
+    email_from = getattr(config, "EMAIL_FROM_ADDRESS", None)
+    email_to = getattr(config, "EMAIL_TO_ADDRESS", None)
+    if email_host and email_from and email_to:
+        channels.append(
+            {
+                "delivery_channel": "email",
+                "smtp_host": email_host,
+                "smtp_port": int(getattr(config, "EMAIL_SMTP_PORT", 587)),
+                "smtp_username": getattr(config, "EMAIL_SMTP_USERNAME", None),
+                "smtp_password": getattr(config, "EMAIL_SMTP_PASSWORD", None),
+                "from_address": email_from,
+                "to_address": email_to,
+                "use_tls": bool(getattr(config, "EMAIL_USE_TLS", True)),
+                "subject": email_render["subject"],
+                "body": email_render["body"],
+            }
+        )
+
+    return channels
+
+
+async def _execute_digest_delivery(
+    *, bot, reminder_type: str, payload: dict, delivery_plan: dict
+) -> dict:
+    channel_results: list[dict] = []
+
+    for channel in delivery_plan.get("channels") or []:
+        delivery_channel = channel.get("delivery_channel")
+        try:
+            if delivery_channel == "telegram":
+                if bot is None:
+                    raise RuntimeError("telegram_bot_not_available")
+                await send_with_retry(
+                    bot,
+                    chat_id=int(channel["chat_id"]),
+                    text=channel["message"],
+                    parse_mode=channel.get("parse_mode", "Markdown"),
+                )
+                details = {
+                    "chat_id": str(channel["chat_id"]),
+                    "digest_type": payload.get("digest_type"),
+                }
+            elif delivery_channel == "email":
+                email_result = await send_email_smtp(
+                    host=channel["smtp_host"],
+                    port=int(channel["smtp_port"]),
+                    username=channel.get("smtp_username"),
+                    password=channel.get("smtp_password"),
+                    from_address=channel["from_address"],
+                    to_address=channel["to_address"],
+                    subject=channel["subject"],
+                    body=channel["body"],
+                    use_tls=bool(channel.get("use_tls", True)),
+                )
+                details = {
+                    "recipient": email_result.get("recipient"),
+                    "subject": email_result.get("subject"),
+                    "digest_type": payload.get("digest_type"),
+                }
+            else:
+                raise RuntimeError(f"unsupported_delivery_channel:{delivery_channel}")
+
+            if db_conn:
+                database.log_notification(
+                    db_conn,
+                    notification_type=reminder_type,
+                    metadata=json.dumps(
+                        {
+                            "delivery_channel": delivery_channel,
+                            "digest_type": payload.get("digest_type"),
+                        }
+                    ),
+                )
+            if event_store:
+                await event_store.append(
+                    ReminderSentEvent(
+                        reminder_type=reminder_type,
+                        delivery_channel=delivery_channel,
+                        metadata={
+                            "digest_type": payload.get("digest_type"),
+                            **details,
+                        },
+                    )
+                )
+            channel_results.append(
+                {
+                    "delivery_channel": delivery_channel,
+                    "sent": True,
+                    "details": details,
+                }
+            )
+        except Exception as exc:
+            channel_results.append(
+                {
+                    "delivery_channel": delivery_channel,
+                    "sent": False,
+                    "reason": str(exc),
+                    "details": {
+                        "digest_type": payload.get("digest_type"),
+                    },
+                }
+            )
+
+    sent_channels = [item["delivery_channel"] for item in channel_results if item.get("sent")]
+    failed_channels = [item["delivery_channel"] for item in channel_results if not item.get("sent")]
+
+    result = {
+        "sent": bool(sent_channels),
+        "partial_success": bool(sent_channels and failed_channels),
+        "channel_results": channel_results,
+        "sent_channels": sent_channels,
+        "failed_channels": failed_channels,
+        "items": delivery_plan["item_count"],
+        "digest_type": payload.get("digest_type"),
+        "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
+        "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
+    }
+    if not sent_channels:
+        result["reason"] = "all_delivery_channels_failed"
+    return result
 
 
 async def notification_scheduler(application):
@@ -121,11 +265,16 @@ def _daily_digest_context(payload: dict) -> dict:
 
 
 def _daily_digest_delivery_plan(payload: dict) -> dict:
-    message = format_attention_daily_digest(payload)
+    telegram_message = format_attention_daily_digest(payload)
+    email_render = format_attention_daily_digest_email(payload)
     return {
-        "message": message,
+        "channels": _delivery_channels_for_digest(
+            payload=payload,
+            telegram_message=telegram_message,
+            email_render=email_render,
+        ),
         "item_count": len(payload.get("top_actionable", [])),
-        "delivery_channel": "telegram",
+        "delivery_channel": "multi_channel",
     }
 
 
@@ -140,11 +289,16 @@ def _weekly_digest_context(payload: dict) -> dict:
 
 
 def _weekly_digest_delivery_plan(payload: dict) -> dict:
-    message = format_attention_weekly_digest(payload)
+    telegram_message = format_attention_weekly_digest(payload)
+    email_render = format_attention_weekly_digest_email(payload)
     return {
-        "message": message,
+        "channels": _delivery_channels_for_digest(
+            payload=payload,
+            telegram_message=telegram_message,
+            email_render=email_render,
+        ),
         "item_count": len(payload.get("weekly_lookahead", []) or payload.get("due_this_week", [])),
-        "delivery_channel": "telegram",
+        "delivery_channel": "multi_channel",
     }
 
 
@@ -334,29 +488,15 @@ async def check_and_send_daily_digest(bot):
         delivery_plan = _daily_digest_delivery_plan(payload)
 
         async def _execute_delivery() -> dict:
-            chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
-            if not chat_id:
-                logger.info("Skipping daily digest send (TELEGRAM_CHAT_ID not set)")
-                return {"sent": False, "reason": "chat_id_not_configured"}
-
-            await send_with_retry(
-                bot,
-                chat_id=int(chat_id),
-                text=delivery_plan["message"],
-                parse_mode="Markdown",
+            if not delivery_plan["channels"]:
+                logger.info("Skipping daily digest send (no delivery channels configured)")
+                return {"sent": False, "reason": "no_delivery_channels_configured"}
+            return await _execute_digest_delivery(
+                bot=bot,
+                reminder_type="task_daily_digest",
+                payload=payload,
+                delivery_plan=delivery_plan,
             )
-
-            if db_conn:
-                database.log_notification(db_conn, notification_type="task_daily_digest")
-            if event_store:
-                await event_store.append(ReminderSentEvent(reminder_type="task_daily_digest"))
-            return {
-                "sent": True,
-                "items": delivery_plan["item_count"],
-                "digest_type": payload.get("digest_type"),
-                "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
-                "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
-            }
 
         runtime_result = await _runtime().run_flow(
             workflow_name="daily_digest",
@@ -413,28 +553,15 @@ async def check_and_send_weekly_digest(bot):
         delivery_plan = _weekly_digest_delivery_plan(payload)
 
         async def _execute_delivery() -> dict:
-            chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
-            if not chat_id:
-                logger.info("Skipping weekly digest send (TELEGRAM_CHAT_ID not set)")
-                return {"sent": False, "reason": "chat_id_not_configured"}
-
-            await send_with_retry(
-                bot,
-                chat_id=int(chat_id),
-                text=delivery_plan["message"],
-                parse_mode="Markdown",
+            if not delivery_plan["channels"]:
+                logger.info("Skipping weekly digest send (no delivery channels configured)")
+                return {"sent": False, "reason": "no_delivery_channels_configured"}
+            return await _execute_digest_delivery(
+                bot=bot,
+                reminder_type="task_weekly_digest",
+                payload=payload,
+                delivery_plan=delivery_plan,
             )
-            if db_conn:
-                database.log_notification(db_conn, notification_type="task_weekly_digest")
-            if event_store:
-                await event_store.append(ReminderSentEvent(reminder_type="task_weekly_digest"))
-            return {
-                "sent": True,
-                "items": delivery_plan["item_count"],
-                "digest_type": payload.get("digest_type"),
-                "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
-                "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
-            }
 
         runtime_result = await _runtime().run_flow(
             workflow_name="weekly_digest",
@@ -482,32 +609,27 @@ async def run_orchestration_workflow(bot, workflow_name: str, dry_run: bool = Fa
                 return {
                     "sent": True,
                     "dry_run": True,
+                    "channel_results": [
+                        {
+                            "delivery_channel": channel["delivery_channel"],
+                            "sent": True,
+                            "details": {"dry_run": True},
+                        }
+                        for channel in delivery_plan["channels"]
+                    ],
                     "items": delivery_plan["item_count"],
                     "digest_type": payload.get("digest_type"),
                     "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
                     "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
                 }
-
-            chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
-            if not chat_id:
-                return {"sent": False, "reason": "chat_id_not_configured"}
-            await send_with_retry(
-                bot,
-                chat_id=int(chat_id),
-                text=delivery_plan["message"],
-                parse_mode="Markdown",
+            if not delivery_plan["channels"]:
+                return {"sent": False, "reason": "no_delivery_channels_configured"}
+            return await _execute_digest_delivery(
+                bot=bot,
+                reminder_type="task_daily_digest",
+                payload=payload,
+                delivery_plan=delivery_plan,
             )
-            if db_conn:
-                database.log_notification(db_conn, notification_type="task_daily_digest")
-            if event_store:
-                await event_store.append(ReminderSentEvent(reminder_type="task_daily_digest"))
-            return {
-                "sent": True,
-                "items": delivery_plan["item_count"],
-                "digest_type": payload.get("digest_type"),
-                "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
-                "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
-            }
 
         return await _runtime().run_flow(
             workflow_name="daily_digest",
@@ -538,32 +660,27 @@ async def run_orchestration_workflow(bot, workflow_name: str, dry_run: bool = Fa
                 return {
                     "sent": True,
                     "dry_run": True,
+                    "channel_results": [
+                        {
+                            "delivery_channel": channel["delivery_channel"],
+                            "sent": True,
+                            "details": {"dry_run": True},
+                        }
+                        for channel in delivery_plan["channels"]
+                    ],
                     "items": delivery_plan["item_count"],
                     "digest_type": payload.get("digest_type"),
                     "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
                     "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
                 }
-
-            chat_id = getattr(config, "TELEGRAM_CHAT_ID", None)
-            if not chat_id:
-                return {"sent": False, "reason": "chat_id_not_configured"}
-            await send_with_retry(
-                bot,
-                chat_id=int(chat_id),
-                text=delivery_plan["message"],
-                parse_mode="Markdown",
+            if not delivery_plan["channels"]:
+                return {"sent": False, "reason": "no_delivery_channels_configured"}
+            return await _execute_digest_delivery(
+                bot=bot,
+                reminder_type="task_weekly_digest",
+                payload=payload,
+                delivery_plan=delivery_plan,
             )
-            if db_conn:
-                database.log_notification(db_conn, notification_type="task_weekly_digest")
-            if event_store:
-                await event_store.append(ReminderSentEvent(reminder_type="task_weekly_digest"))
-            return {
-                "sent": True,
-                "items": delivery_plan["item_count"],
-                "digest_type": payload.get("digest_type"),
-                "calendar_status": (payload.get("calendar") or {}).get("provider_status", {}),
-                "calendar_degraded": (payload.get("calendar") or {}).get("degraded", False),
-            }
 
         return await _runtime().run_flow(
             workflow_name="weekly_digest",

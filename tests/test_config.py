@@ -125,6 +125,8 @@ class TestEnvironmentConfig:
         assert config.ENV == "dev"
         assert config.GOOGLE_CALENDAR_BASE_URL == "https://www.googleapis.com/calendar/v3"
         assert config.ZOHO_CALENDAR_BASE_URL == "https://calendar.zoho.com/api/v1"
+        assert config.EMAIL_SMTP_PORT == 587
+        assert config.EMAIL_USE_TLS is True
 
     def test_calendar_config_reads_environment(self, monkeypatch):
         monkeypatch.setenv("GOOGLE_CALENDAR_ACCESS_TOKEN", "google-token")
@@ -138,6 +140,40 @@ class TestEnvironmentConfig:
         assert config.GOOGLE_CALENDAR_ID == "primary"
         assert config.ZOHO_CALENDAR_ACCESS_TOKEN == "zoho-token"
         assert config.ZOHO_CALENDAR_ID == "team-cal"
+
+    def test_email_config_reads_environment(self, monkeypatch):
+        monkeypatch.setenv("EMAIL_SMTP_HOST", "smtp.gmail.com")
+        monkeypatch.setenv("EMAIL_SMTP_PORT", "2525")
+        monkeypatch.setenv("EMAIL_SMTP_USERNAME", "ops@example.com")
+        monkeypatch.setenv("EMAIL_SMTP_PASSWORD", "secret")
+        monkeypatch.setenv("EMAIL_FROM_ADDRESS", "ops@example.com")
+        monkeypatch.setenv("EMAIL_TO_ADDRESS", "john@example.com")
+        monkeypatch.setenv("EMAIL_USE_TLS", "false")
+
+        config = Config()
+
+        assert config.EMAIL_SMTP_HOST == "smtp.gmail.com"
+        assert config.EMAIL_SMTP_PORT == 2525
+        assert config.EMAIL_SMTP_USERNAME == "ops@example.com"
+        assert config.EMAIL_FROM_ADDRESS == "ops@example.com"
+        assert config.EMAIL_TO_ADDRESS == "john@example.com"
+        assert config.EMAIL_USE_TLS is False
+
+    def test_validate_email_notifications(self, monkeypatch):
+        monkeypatch.delenv("EMAIL_SMTP_HOST", raising=False)
+        monkeypatch.delenv("EMAIL_FROM_ADDRESS", raising=False)
+        monkeypatch.delenv("EMAIL_TO_ADDRESS", raising=False)
+
+        config = Config()
+        with pytest.raises(ValueError, match="Missing email configuration"):
+            config.validate_email_notifications()
+
+        monkeypatch.setenv("EMAIL_SMTP_HOST", "smtp.gmail.com")
+        monkeypatch.setenv("EMAIL_FROM_ADDRESS", "ops@example.com")
+        monkeypatch.setenv("EMAIL_TO_ADDRESS", "john@example.com")
+
+        config = Config()
+        config.validate_email_notifications()
 
     def test_backwards_compatibility(self):
         """Test that existing code using Config() still works."""

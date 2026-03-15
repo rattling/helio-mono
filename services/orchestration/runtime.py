@@ -160,6 +160,31 @@ class OrchestrationRuntime:
         return {"value": result}
 
     @staticmethod
+    def _planned_delivery_channels(state: FlowState) -> list[str]:
+        prepared_delivery = state.get("prepared_delivery") or {}
+        channels = []
+        for channel in prepared_delivery.get("channels") or []:
+            delivery_channel = str(channel.get("delivery_channel", "")).strip()
+            if delivery_channel:
+                channels.append(delivery_channel)
+        return channels or [state["delivery_channel"]]
+
+    @staticmethod
+    def _channel_results(state: FlowState) -> list[dict[str, Any]]:
+        result = state.get("result") or {}
+        channel_results = result.get("channel_results") or []
+        if channel_results:
+            return channel_results
+        return [
+            {
+                "delivery_channel": state["delivery_channel"],
+                "sent": bool(result.get("sent")),
+                "reason": result.get("reason"),
+                "details": result,
+            }
+        ]
+
+    @staticmethod
     def _policy_route(state: FlowState) -> str:
         if state.get("status") == PolicyOutcome.BLOCKED.value:
             return "failure"
@@ -367,23 +392,29 @@ class OrchestrationRuntime:
                 node_id="delivery_execution",
             )
         )
+        planned_channels = self._planned_delivery_channels(state)
         await self.event_store.append(
             OrchestrationRunCheckpointEvent(
                 run_id=run_id,
                 workflow_name=workflow_name,
                 checkpoint="delivery_attempt",
-                details={"reminder_type": reminder_type, "delivery_channel": delivery_channel},
+                details={
+                    "reminder_type": reminder_type,
+                    "delivery_channel": delivery_channel,
+                    "planned_channels": planned_channels,
+                },
             )
         )
-        await self.event_store.append(
-            OrchestrationDeliveryAttemptedEvent(
-                run_id=run_id,
-                workflow_name=workflow_name,
-                reminder_type=reminder_type,
-                delivery_channel=delivery_channel,
-                fingerprint=fingerprint,
+        for planned_channel in planned_channels:
+            await self.event_store.append(
+                OrchestrationDeliveryAttemptedEvent(
+                    run_id=run_id,
+                    workflow_name=workflow_name,
+                    reminder_type=reminder_type,
+                    delivery_channel=planned_channel,
+                    fingerprint=fingerprint,
+                )
             )
-        )
 
         try:
             execute = self._callback_bundle(run_id).execute
@@ -428,16 +459,31 @@ class OrchestrationRuntime:
         fingerprint = state.get("fingerprint")
         result = state.get("result") or {}
 
-        await self.event_store.append(
-            OrchestrationDeliverySucceededEvent(
-                run_id=run_id,
-                workflow_name=workflow_name,
-                reminder_type=reminder_type,
-                delivery_channel=delivery_channel,
-                fingerprint=fingerprint,
-                details=result,
-            )
-        )
+        for channel_result in self._channel_results(state):
+            channel_name = str(channel_result.get("delivery_channel") or delivery_channel)
+            if bool(channel_result.get("sent")):
+                await self.event_store.append(
+                    OrchestrationDeliverySucceededEvent(
+                        run_id=run_id,
+                        workflow_name=workflow_name,
+                        reminder_type=reminder_type,
+                        delivery_channel=channel_name,
+                        fingerprint=fingerprint,
+                        details=channel_result.get("details") or channel_result,
+                    )
+                )
+            else:
+                await self.event_store.append(
+                    OrchestrationDeliveryFailedEvent(
+                        run_id=run_id,
+                        workflow_name=workflow_name,
+                        reminder_type=reminder_type,
+                        delivery_channel=channel_name,
+                        reason=str(channel_result.get("reason") or "delivery_not_sent"),
+                        fingerprint=fingerprint,
+                        details=channel_result.get("details") or channel_result,
+                    )
+                )
         await self.event_store.append(
             OrchestrationNodeCompletedEvent(
                 run_id=run_id,
@@ -473,17 +519,20 @@ class OrchestrationRuntime:
             details = {"policy_outcome": state.get("policy_outcome")}
 
         if state.get("failure_stage") == "delivery":
-            await self.event_store.append(
-                OrchestrationDeliveryFailedEvent(
-                    run_id=run_id,
-                    workflow_name=workflow_name,
-                    reminder_type=reminder_type,
-                    delivery_channel=delivery_channel,
-                    reason=reason,
-                    fingerprint=fingerprint,
-                    details=details,
+            for channel_result in self._channel_results(state):
+                await self.event_store.append(
+                    OrchestrationDeliveryFailedEvent(
+                        run_id=run_id,
+                        workflow_name=workflow_name,
+                        reminder_type=reminder_type,
+                        delivery_channel=str(
+                            channel_result.get("delivery_channel") or delivery_channel
+                        ),
+                        reason=str(channel_result.get("reason") or reason),
+                        fingerprint=fingerprint,
+                        details=channel_result.get("details") or details,
+                    )
                 )
-            )
         await self.event_store.append(
             OrchestrationRunFailedEvent(
                 run_id=run_id,

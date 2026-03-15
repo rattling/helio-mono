@@ -71,6 +71,20 @@ class Config:
             "ZOHO_CALENDAR_BASE_URL", "https://calendar.zoho.com/api/v1"
         )
 
+        # Email delivery (M13)
+        self.EMAIL_SMTP_HOST = os.getenv("EMAIL_SMTP_HOST")
+        self.EMAIL_SMTP_PORT = int(os.getenv("EMAIL_SMTP_PORT", "587"))
+        self.EMAIL_SMTP_USERNAME = os.getenv("EMAIL_SMTP_USERNAME")
+        self.EMAIL_SMTP_PASSWORD = os.getenv("EMAIL_SMTP_PASSWORD")
+        self.EMAIL_FROM_ADDRESS = os.getenv("EMAIL_FROM_ADDRESS")
+        self.EMAIL_TO_ADDRESS = os.getenv("EMAIL_TO_ADDRESS")
+        self.EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "true").lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
+
         # Learning / personalization controls (M7)
         shadow_enabled_raw = os.getenv("SHADOW_RANKER_ENABLED", "true").lower() in (
             "1",
@@ -208,3 +222,14 @@ class Config:
         self.validate_telegram()
         if not self.TELEGRAM_CHAT_ID:
             raise ValueError("TELEGRAM_CHAT_ID not set")
+
+    def validate_email_notifications(self):
+        """Validate email delivery configuration."""
+        required = {
+            "EMAIL_SMTP_HOST": self.EMAIL_SMTP_HOST,
+            "EMAIL_FROM_ADDRESS": self.EMAIL_FROM_ADDRESS,
+            "EMAIL_TO_ADDRESS": self.EMAIL_TO_ADDRESS,
+        }
+        missing = [key for key, value in required.items() if not value]
+        if missing:
+            raise ValueError(f"Missing email configuration: {', '.join(missing)}")
